@@ -1,50 +1,74 @@
-// src/middleware/auth.middleware.js
-//  (JWT í† í° ê²€ì¦ ë¯¸ë“¤ì›¨ì–´)
+/**
+ * ÀÇÁ¸¼º:
+ *   - jsonwebtoken: JWT ÅäÅ« °ËÁõ ¶óÀÌºê·¯¸®
+ */
 
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 /**
- * JWT í† í°ì„ ê²€ì¦í•˜ëŠ” ë¯¸ë“¤ì›¨ì–´
+ * 
+ * @param {Object} req - Express ¿äÃ» °´Ã¼
+ * @param {Object} res - Express ÀÀ´ä °´Ã¼
+ * @param {Function} next - ´ÙÀ½ ¹Ìµé¿ş¾î·Î ³Ñ¾î°¡´Â ÇÔ¼ö
+ * 
  */
 const verifyToken = (req, res, next) => {
-  // Authorization í—¤ë”ì—ì„œ í† í° ì¶”ì¶œ (í˜•ì‹: "Bearer <TOKEN>")
+  // 1´Ü°è: Authorization Çì´õ¿¡¼­ ÅäÅ« ÃßÃâ
   const authHeader = req.headers['authorization'];
+  
+  // 2´Ü°è: ÅäÅ« ÆÄ½Ì
   const token = authHeader && authHeader.split(' ')[1];
 
+  // 3´Ü°è: ÅäÅ« Á¸Àç ¿©ºÎ È®ÀÎ
   if (!token) {
-    return res.status(403).json({ message: 'í† í°ì´ í•„ìš”í•©ë‹ˆë‹¤.' });
+    return res.status(403).json({ 
+      message: 'ÅäÅ«ÀÌ ÇÊ¿äÇÕ´Ï´Ù.' 
+    });
   }
 
   try {
-    // .envì˜ ë¹„ë°€í‚¤ë¡œ í† í° ê²€ì¦
+    // 4´Ü°è: JWT ÅäÅ« °ËÁõ ¹× µğÄÚµù
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     
-    // ê²€ì¦ëœ ì‚¬ìš©ì ì •ë³´ë¥¼ req ê°ì²´ì— ì €ì¥í•˜ì—¬ ë‹¤ìŒ í•¸ë“¤ëŸ¬(ë¼ìš°í„°)ë¡œ ì „ë‹¬
-    req.user = decoded; // (ì˜ˆ: req.user.memberId, req.user.role)
+    // 5´Ü°è: °ËÁõµÈ »ç¿ëÀÚ Á¤º¸¸¦ req °´Ã¼¿¡ ÀúÀå
+    req.user = decoded;
     
   } catch (err) {
-    return res.status(401).json({ message: 'ìœ íš¨í•˜ì§€ ì•Šì€ í† í°ì…ë‹ˆë‹¤.' });
+    // 6´Ü°è: ÅäÅ« °ËÁõ ½ÇÆĞ Ã³¸®
+    return res.status(401).json({ 
+      message: 'À¯È¿ÇÏÁö ¾ÊÀº ÅäÅ«ÀÔ´Ï´Ù.' 
+    });
   }
 
-  // ë‹¤ìŒ ë¯¸ë“¤ì›¨ì–´ ë˜ëŠ” ë¼ìš°í„° í•¸ë“¤ëŸ¬ë¡œ ì´ë™
+  // 7´Ü°è: ´ÙÀ½ ¹Ìµé¿ş¾î ¶Ç´Â ¶ó¿ìÅÍ·Î ¿äÃ» Àü´Ş
   return next();
 };
 
 /**
- * ê´€ë¦¬ì ê¶Œí•œì„ ê²€ì¦í•˜ëŠ” ë¯¸ë“¤ì›¨ì–´
+ * °ü¸®ÀÚ ±ÇÇÑÀ» È®ÀÎÇÏ´Â ¹Ìµé¿ş¾î
+ * 
+ * @param {Object} req - Express ¿äÃ» °´Ã¼ (req.user°¡ ¼³Á¤µÇ¾î ÀÖ¾î¾ß ÇÔ)
+ * @param {Object} res - Express ÀÀ´ä °´Ã¼
+ * @param {Function} next - ´ÙÀ½ ¹Ìµé¿ş¾î·Î ³Ñ¾î°¡´Â ÇÔ¼ö
  */
 const isAdmin = (req, res, next) => {
-  // verifyToken ë¯¸ë“¤ì›¨ì–´ê°€ ë¨¼ì € ì‹¤í–‰ë˜ì–´ req.userê°€ ìˆì–´ì•¼ í•¨
+
+  // req.user°¡ Á¸ÀçÇÏ°í ¿ªÇÒÀÌ 'admin'ÀÎÁö È®ÀÎ
   if (req.user && req.user.role === 'admin') {
+    // °ü¸®ÀÚ ±ÇÇÑÀÌ ÀÖÀ¸¸é ´ÙÀ½ ¹Ìµé¿ş¾î/¶ó¿ìÅÍ·Î ÁøÇà
     next();
   } else {
-    res.status(403).json({ message: 'ê´€ë¦¬ì ê¶Œí•œì´ í•„ìš”í•©ë‹ˆë‹¤.' });
+    // °ü¸®ÀÚ ±ÇÇÑÀÌ ¾øÀ¸¸é 403 Forbidden ¹İÈ¯
+    res.status(403).json({ 
+      message: '°ü¸®ÀÚ ±ÇÇÑÀÌ ÇÊ¿äÇÕ´Ï´Ù.' 
+    });
   }
 };
 
-
+// ¹Ìµé¿ş¾î ÇÔ¼öµéÀ» ¸ğµâ·Î ³»º¸³»±â
+// app.js³ª ¶ó¿ìÅÍ¿¡¼­ »ç¿ëÇÒ ¼ö ÀÖµµ·Ï export
 module.exports = {
-  verifyToken,
-  isAdmin
+  verifyToken,  // JWT ÅäÅ« °ËÁõ ¹Ìµé¿ş¾î
+  isAdmin       // °ü¸®ÀÚ ±ÇÇÑ È®ÀÎ ¹Ìµé¿ş¾î
 };
