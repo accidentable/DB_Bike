@@ -2,7 +2,7 @@
 // (모든 import 경로 수정 완료)
 
 import { useState, useEffect } from "react";
-import { MapPin, Search, Navigation, Bike, Clock } from "lucide-react";
+import { MapPin, Search, Navigation, Bike, Clock, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // (수정) ../api/ (O)
@@ -17,6 +17,16 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
 
 // (Interface 정의는 동일)
 // ... (Station, Bike, RentedBikeInfo interface) ...
@@ -60,6 +70,9 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [returnDialog, setReturnDialog] = useState<{ open: boolean; station: Station | null }>({ open: false, station: null });
+  const [returning, setReturning] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // --- API 호출 함수 ---
   const fetchStations = async (query = "", lat?: number, lon?: number) => {
@@ -70,7 +83,7 @@ export default function HomePage() {
       if (data.success && data.data) {
         setStations(data.data);
       }
-    } catch (err) {
+    } catch {
       setError("대여소 정보를 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -78,23 +91,31 @@ export default function HomePage() {
   };
 
   const fetchCurrentRental = async () => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      setRentedBike(null);
+      setElapsedTime(0);
+      return;
+    }
     try {
       const data = await getCurrentRental();
       if (data.success && data.data) {
         // Rental 타입을 RentedBikeInfo 타입으로 변환
-        setRentedBike({
+        const rentalInfo: RentedBikeInfo = {
           rental_id: data.data.rental_id,
           start_time: data.data.start_time,
-          start_station_name: '', // API에서 제공하지 않으면 빈 문자열
+          start_station_name: (data.data as { start_station_name?: string }).start_station_name || '', // API에서 제공하지 않으면 빈 문자열
           bike_id: data.data.bike_id
-        } as RentedBikeInfo);
+        };
+        setRentedBike(rentalInfo);
+        // elapsedTime은 useEffect에서 계산하므로 여기서는 설정하지 않음
       } else {
         setRentedBike(null);
+        setElapsedTime(0);
       }
     } catch (err) {
       console.error("현재 대여 정보 로드 실패", err);
       setRentedBike(null);
+      setElapsedTime(0);
     }
   };
   
@@ -122,7 +143,7 @@ export default function HomePage() {
       if (data.success && data.data) {
         setBikes(data.data);
       }
-    } catch (err) {
+    } catch {
       setError("자전거 정보를 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);
@@ -163,22 +184,64 @@ export default function HomePage() {
     setIsLoading(false);
   };
 
-  const handleReturn = async () => {
-    if (!isLoggedIn) return navigate('/login');
-    if (!rentedBike) return setError("반납할 자전거가 없습니다.");
-    if (!selectedStation) return setError("반납할 대여소를 선택해주세요.");
+  // 반납 확인 다이얼로그 열기
+  const handleReturnClick = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    if (!rentedBike) {
+      setError("반납할 자전거가 없습니다.");
+      return;
+    }
+    if (!selectedStation) {
+      setError("반납할 대여소를 선택해주세요.");
+      return;
+    }
+    setReturnDialog({ open: true, station: selectedStation });
+  };
 
-    setIsLoading(true);
+  // 실제 반납 처리
+  const handleConfirmReturn = async () => {
+    if (!returnDialog.station || !rentedBike) return;
+
+    setReturning(true);
     setError(null);
+    setSuccessMessage(null);
+    
     try {
-      await returnBike(selectedStation.station_id);
-      setRentedBike(null);
-      setElapsedTime(0);
-      setSelectedStation(null);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "반납에 실패했습니다.");
+      const response = await returnBike(returnDialog.station.station_id);
+      
+      if (response.success) {
+        // 반납 성공
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        setSuccessMessage(`${returnDialog.station.name}에 반납이 완료되었습니다.\n이용 시간: ${minutes}분 ${seconds}초`);
+        
+        // 상태 초기화
+        setRentedBike(null);
+        setElapsedTime(0);
+        setSelectedStation(null);
+        setReturnDialog({ open: false, station: null });
+        
+        // 대여소 목록 새로고침
+        await fetchStations(searchQuery);
+        
+        // 성공 메시지 3초 후 자동 제거
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
+      } else {
+        setError(response.message || "반납에 실패했습니다.");
+      }
+    } catch (err: unknown) {
+      console.error("반납 에러:", err);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "반납에 실패했습니다.";
+      setError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setReturning(false);
     }
   };
 
@@ -196,16 +259,36 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchCurrentRental();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (rentedBike) {
-      const interval = setInterval(() => {
+    if (rentedBike && rentedBike.start_time) {
+      // 즉시 경과 시간 계산
+      const updateElapsedTime = () => {
         const now = new Date();
-        const diff = Math.floor((now.getTime() - new Date(rentedBike.start_time).getTime()) / 1000);
-        setElapsedTime(diff);
-      }, 1000);
+        const startTime = new Date(rentedBike.start_time);
+        
+        // start_time이 유효한 날짜인지 확인
+        if (isNaN(startTime.getTime())) {
+          console.error('Invalid start_time in useEffect:', rentedBike.start_time);
+          setElapsedTime(0);
+          return;
+        }
+        
+        const diff = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+        setElapsedTime(Math.max(0, diff)); // 음수 방지
+      };
+      
+      // 초기 계산
+      updateElapsedTime();
+      
+      // 1초마다 업데이트
+      const interval = setInterval(updateElapsedTime, 1000);
       return () => clearInterval(interval);
+    } else {
+      // rentedBike가 없으면 elapsedTime을 0으로 초기화
+      setElapsedTime(0);
     }
   }, [rentedBike]);
 
@@ -238,11 +321,11 @@ export default function HomePage() {
               </div>
             </div>
             <Button
-              onClick={handleReturn}
+              onClick={handleReturnClick}
               className="w-full mt-4 bg-[#00A862] hover:bg-[#008F54]"
-              disabled={!selectedStation || isLoading}
+              disabled={!selectedStation || isLoading || returning}
             >
-              {selectedStation ? `${selectedStation.name}에 반납하기` : "반납할 대여소 선택"}
+              {returning ? "반납 중..." : selectedStation ? `${selectedStation.name.replace(/^\d+\.\s*/, '')}에 반납하기` : "반납할 대여소 선택"}
             </Button>
           </Card>
         </div>
@@ -252,6 +335,12 @@ export default function HomePage() {
         {error && (
           <div className="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
             {error}
+          </div>
+        )}
+        {successMessage && (
+          <div className="p-4 mb-4 text-green-700 bg-green-100 border border-green-400 rounded flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5" />
+            <div className="whitespace-pre-line">{successMessage}</div>
           </div>
         )}
         <div className="mb-8">
@@ -368,6 +457,48 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* 반납 확인 다이얼로그 */}
+      <AlertDialog open={returnDialog.open} onOpenChange={(open) => setReturnDialog({ open, station: returnDialog.station })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>자전거 반납 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              {returnDialog.station && rentedBike && (
+                <>
+                  <div className="mb-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">반납할 대여소:</span>
+                      <span className="font-semibold">{returnDialog.station.name.replace(/^\d+\.\s*/, '')}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">자전거 번호:</span>
+                      <span className="font-semibold">{rentedBike.bike_id}번</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">이용 시간:</span>
+                      <span className="font-semibold">
+                        {Math.floor(elapsedTime / 60)}분 {elapsedTime % 60}초
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-4">정말 반납하시겠습니까?</p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={returning}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReturn}
+              disabled={returning}
+              className="bg-[#00A862] hover:bg-[#008F54]"
+            >
+              {returning ? "반납 중..." : "반납하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

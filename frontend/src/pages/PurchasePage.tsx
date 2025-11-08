@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { Check, ThumbsUp, MessageCircle } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import Header from "../components/layout/Header";
 import { getTicketTypes, purchaseTicket } from "../api/ticketApi";
 import type { TicketType } from "../api/ticketApi";
 import { isAuthenticated, getCurrentUser } from "../api/authApi";
@@ -95,7 +94,6 @@ export default function PurchasePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">이용권 구매</h1>
