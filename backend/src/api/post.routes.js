@@ -52,7 +52,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
-        message: '제목, 내용, 카테고리를 모두 입력해주세요.'
+        message: 'Title, content, and category are required.'
       });
     }
 
@@ -138,7 +138,7 @@ router.get('/', async (req, res) => {
     // 4. 에러 처리
     res.status(500).json({
       success: false,
-      message: error.message || '게시글 목록을 불러오는 중 오류가 발생했습니다.'
+      message: error.message || 'Failed to load posts.'
     });
   }
 });
@@ -170,7 +170,7 @@ router.get('/:id', async (req, res) => {
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '올바른 게시글 ID가 아닙니다.'
+        message: 'Invalid post ID.'
       });
     }
 
@@ -186,7 +186,7 @@ router.get('/:id', async (req, res) => {
 
   } catch (error) {
     // 4. 에러 처리
-    const statusCode = error.message.includes('찾을 수 없습니다') ? 404 : 500;
+    const statusCode = error.message.includes('not found') || error.message.includes('Not found') ? 404 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message
@@ -226,7 +226,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '올바른 게시글 ID가 아닙니다.'
+        message: 'Invalid post ID.'
       });
     }
 
@@ -237,7 +237,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
-        message: '제목, 내용, 카테고리를 모두 입력해주세요.'
+        message: 'Title, content, and category are required.'
       });
     }
 
@@ -261,9 +261,9 @@ router.put('/:id', verifyToken, async (req, res) => {
   } catch (error) {
     // 6. 에러 처리
     let statusCode = 500;
-    if (error.message.includes('찾을 수 없습니다')) statusCode = 404;
-    else if (error.message.includes('권한')) statusCode = 403;
-    else if (error.message.includes('입력')) statusCode = 400;
+    if (error.message.includes('not found') || error.message.includes('Not found')) statusCode = 404;
+    else if (error.message.includes('permission') || error.message.includes('authorized') || error.message.includes('authority')) statusCode = 403;
+    else if (error.message.includes('required') || error.message.includes('Invalid')) statusCode = 400;
 
     res.status(statusCode).json({
       success: false,
@@ -299,7 +299,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '올바른 게시글 ID가 아닙니다.'
+        message: 'Invalid post ID.'
       });
     }
 
@@ -314,14 +314,14 @@ router.delete('/:id', verifyToken, async (req, res) => {
     // 3. 성공 응답 반환 (200 OK)
     res.status(200).json({
       success: true,
-      message: '게시글이 삭제되었습니다.'
+      message: 'Post deleted successfully.'
     });
 
   } catch (error) {
     // 4. 에러 처리
     let statusCode = 500;
-    if (error.message.includes('찾을 수 없습니다')) statusCode = 404;
-    else if (error.message.includes('권한')) statusCode = 403;
+    if (error.message.includes('not found') || error.message.includes('Not found')) statusCode = 404;
+    else if (error.message.includes('permission') || error.message.includes('authorized') || error.message.includes('authority')) statusCode = 403;
 
     res.status(statusCode).json({
       success: false,
@@ -360,7 +360,7 @@ router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '올바른 게시글 ID가 아닙니다.'
+        message: 'Invalid post ID.'
       });
     }
 
@@ -370,7 +370,7 @@ router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
     if (typeof is_pinned !== 'boolean') {
       return res.status(400).json({
         success: false,
-        message: 'is_pinned는 boolean 값이어야 합니다.'
+        message: 'is_pinned must be a boolean value.'
       });
     }
 
@@ -391,8 +391,8 @@ router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
   } catch (error) {
     // 5. 에러 처리
     let statusCode = 500;
-    if (error.message.includes('찾을 수 없습니다')) statusCode = 404;
-    else if (error.message.includes('관리자')) statusCode = 403;
+    if (error.message.includes('not found') || error.message.includes('Not found')) statusCode = 404;
+    else if (error.message.includes('admin') || error.message.includes('Admin')) statusCode = 403;
 
     res.status(statusCode).json({
       success: false,

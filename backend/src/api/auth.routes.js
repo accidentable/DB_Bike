@@ -22,7 +22,7 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: '이메일과 비밀번호를 모두 입력해주세요.' 
+        message: 'Email and password are required.' 
       });
     }
     
@@ -52,7 +52,7 @@ router.post('/signup', async (req, res) => {
     if (!username || !email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: '사용자명, 이메일, 비밀번호는 필수 입력 항목입니다.' 
+        message: 'Username, email, and password are required.' 
       });
     }
     
@@ -61,7 +61,7 @@ router.post('/signup', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ 
         success: false, 
-        message: '올바른 이메일 형식이 아닙니다.' 
+        message: 'Invalid email format.' 
       });
     }
     
@@ -69,7 +69,7 @@ router.post('/signup', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ 
         success: false, 
-        message: '비밀번호는 최소 6자 이상이어야 합니다.' 
+        message: 'Password must be at least 6 characters long.' 
       });
     }
     

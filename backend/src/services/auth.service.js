@@ -35,7 +35,7 @@ const authService = {
     const user = await memberRepository.findByEmail(email);
     
     if (!user) {
-      throw new Error('사용자를 찾을 수 없습니다.');
+      throw new Error('User not found.');
     }
 
     // 2단계: 비밀번호 검증
@@ -43,7 +43,7 @@ const authService = {
     
     // 비밀번호가 일치하지 않으면 에러 발생
     if (!isPasswordValid) {
-      throw new Error('비밀번호가 일치하지 않습니다.');
+      throw new Error('Invalid password.');
     }
 
     // 3단계: JWT 토큰 생성
@@ -90,14 +90,14 @@ const authService = {
     
     // 이미 사용 중인 이메일이면 에러 발생
     if (existingUser) {
-      throw new Error('이미 사용 중인 이메일입니다.');
+      throw new Error('Email already in use.');
     }
 
     // 2단계: 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 3단계: Repository를 통해 사용자 생성
-     // role은 기본값 'user'로 설정
+    // role은 기본값 'user'로 설정
     const newUser = await memberRepository.createUser(
       username,        // 사용자명
       email,           // 이메일

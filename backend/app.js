@@ -7,6 +7,15 @@ require('dotenv').config();
 
 const app = express();
 
+// 모든 JSON 응답을 UTF-8로 인코딩하도록 설정
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
+app.use(express.json({ charset: 'utf-8' })); 
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+
 // --- 1. 전역 미들웨어 설정 ---
 app.use(cors()); // CORS 허용
 app.use(express.json({ charset: 'utf-8' })); // Request Body의 JSON 파싱 (UTF-8)
@@ -44,5 +53,9 @@ app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send('Ddareungi Backend Server is running!');
 });
+app.get('/ping', (req, res) => {
+  res.json({ message: 'pong from Ddareungi server' });
+});
+
 
 module.exports = app; // server.js에서 사용하기 위해 내보내기

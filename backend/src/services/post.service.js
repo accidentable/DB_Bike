@@ -29,18 +29,18 @@ const postService = {
   createPost: async (memberId, title, content, category, isPinned = false, userRole = 'user') => {
     // 권한 검증: 일반 사용자는 고정 게시글을 생성할 수 없음
     if (isPinned && userRole !== 'admin') {
-      throw new Error('고정 게시글은 관리자만 생성할 수 있습니다.');
+      throw new Error('Only administrators can create pinned posts.');
     }
 
     // 입력값 검증
     if (!title || !title.trim()) {
-      throw new Error('제목을 입력해주세요.');
+      throw new Error('Title is required.');
     }
     if (!content || !content.trim()) {
-      throw new Error('내용을 입력해주세요.');
+      throw new Error('Content is required.');
     }
     if (!category) {
-      throw new Error('카테고리를 선택해주세요.');
+      throw new Error('Category is required.');
     }
 
     // Repository를 통해 게시글 생성
@@ -93,7 +93,7 @@ const postService = {
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('게시글을 찾을 수 없습니다.');
+      throw new Error('Post not found.');
     }
 
     // 조회수 증가 (비동기로 처리하여 응답 속도 향상)
@@ -121,23 +121,23 @@ const postService = {
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('게시글을 찾을 수 없습니다.');
+      throw new Error('Post not found.');
     }
 
     // 권한 검증: 작성자 또는 관리자만 수정 가능
     if (post.member_id !== memberId && userRole !== 'admin') {
-      throw new Error('게시글을 수정할 권한이 없습니다.');
+      throw new Error('You do not have permission to edit this post.');
     }
 
     // 입력값 검증
     if (!title || !title.trim()) {
-      throw new Error('제목을 입력해주세요.');
+      throw new Error('Title is required.');
     }
     if (!content || !content.trim()) {
-      throw new Error('내용을 입력해주세요.');
+      throw new Error('Content is required.');
     }
     if (!category) {
-      throw new Error('카테고리를 선택해주세요.');
+      throw new Error('Category is required.');
     }
 
     // Repository를 통해 게시글 수정
@@ -164,12 +164,12 @@ const postService = {
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('게시글을 찾을 수 없습니다.');
+      throw new Error('Post not found.');
     }
 
     // 권한 검증: 작성자 또는 관리자만 삭제 가능
     if (post.member_id !== memberId && userRole !== 'admin') {
-      throw new Error('게시글을 삭제할 권한이 없습니다.');
+      throw new Error('You do not have permission to delete this post.');
     }
 
     // Repository를 통해 게시글 삭제
@@ -187,14 +187,14 @@ const postService = {
   togglePinned: async (postId, isPinned, userRole = 'user') => {
     // 권한 검증: 관리자만 가능
     if (userRole !== 'admin') {
-      throw new Error('관리자만 게시글을 고정할 수 있습니다.');
+      throw new Error('Only administrators can pin posts.');
     }
 
     // 게시글 조회
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('게시글을 찾을 수 없습니다.');
+      throw new Error('Post not found.');
     }
 
     // Repository를 통해 고정 상태 업데이트

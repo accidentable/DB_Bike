@@ -23,7 +23,7 @@ const verifyToken = (req, res, next) => {
   // 3단계: 토큰 존재 여부 확인
   if (!token) {
     return res.status(403).json({ 
-      message: '토큰이 필요합니다.' 
+      message: 'Token is required.' 
     });
   }
 
@@ -37,7 +37,7 @@ const verifyToken = (req, res, next) => {
   } catch (err) {
     // 6단계: 토큰 검증 실패 처리
     return res.status(401).json({ 
-      message: '유효하지 않은 토큰입니다.' 
+      message: 'Invalid token.' 
     });
   }
 
@@ -61,7 +61,7 @@ const isAdmin = (req, res, next) => {
   } else {
     // 관리자 권한이 없으면 403 Forbidden 반환
     res.status(403).json({ 
-      message: '관리자 권한이 필요합니다.' 
+      message: 'Admin permission required.' 
     });
   }
 };
