@@ -27,8 +27,10 @@ git clone [여기에 Git Repository URL을 입력하세요]
 cd ddareungi-backend
 
 # 3. Node.js 패키지를 설치합니다.
-npm install
+npm install 
+```
 
+---
 
 2단계: .env 파일 생성 (중요)
 프로젝트 루트(package.json과 같은 위치)에 .env 파일을 직접 생성하고, 아래 내용을 복사/붙여넣기 하세요.
@@ -37,7 +39,7 @@ npm install
 
 코드 스니펫
 
-```
+```bash
 # Node.js 서버 설정
 NODE_ENV=development
 PORT=3000
@@ -57,8 +59,8 @@ DB_PORT=5432
 3단계: Docker DB 실행
 터미널에서 ddareungi-backend 폴더가 맞는지 확인한 후, 다음 명령어를 실행하세요.
 
-Bash
-```
+
+```bash
 # Docker Desktop이 실행 중이어야 합니다.
 docker-compose up -d
 이 명령어는 docker-compose.yml 파일을 읽어 백그라운드에서 PostgreSQL 데이터베이스를 실행합니다.
@@ -130,7 +132,7 @@ server.js: 실제 서버를 실행하는 파일입니다.
 
 🐳 4. (참고) Docker 명령어 팁
 
-```
+```bash
 # 1. DB 끄기 (데이터는 보존됨)
 docker-compose down
 
