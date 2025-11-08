@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-// ¿©±â¿¡ °ü¸®ÀÚ °ü·Ã API ¿£µåÆ÷ÀÎÆ®¸¦ Á¤ÀÇÇÕ´Ï´Ù.
-// ÇöÀç´Â ºó ¶ó¿ìÅÍ·Î µÎ¾î ¼­¹ö ½ÃÀÛ ¿À·ù¸¦ ÇØ°áÇÕ´Ï´Ù.
+// ì—¬ê¸°ì— ê´€ë¦¬ìž ì „ìš© API ì—”ë“œí¬ì¸íŠ¸ë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤.
+// ëŒ€ì‹œë³´ë“œ í†µê³„, íšŒì› ê´€ë¦¬, ìžì „ê±° ê´€ë¦¬, ëŒ€ì—¬ì†Œ ê´€ë¦¬ ë“±ì„ ì²˜ë¦¬í•©ë‹ˆë‹¤.
 
 module.exports = router;
 

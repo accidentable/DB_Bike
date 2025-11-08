@@ -18,7 +18,8 @@ const postRoutes = require('./src/api/post.routes'); // post.routes도 추가된
 const rentalRoutes = require('./src/api/rental.routes');
 const stationRoutes = require('./src/api/station.routes');
 const adminRoutes = require('./src/api/admin.routes');
-// ... (ticket.routes.js, support.routes.js 등) ...
+const ticketRoutes = require('./src/api/ticket.routes'); // 이용권 API
+// ... (support.routes.js 등) ...
 
 // --- 3. 미들웨어 불러오기 ---
 const { verifyToken, isAdmin } = require('./src/middleware/auth.middleware');
@@ -38,6 +39,11 @@ app.use('/api/posts', verifyToken, postRoutes);
 
 // /api/admin 경로는 관리자 권한(isAdmin)까지 필요
 app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
+
+// (신규) /api/tickets (이용권) 경로
+// - /api/tickets/types는 공개 (누구나 조회 가능)
+// - /api/tickets/purchase, /api/tickets/my-tickets, /api/tickets/history는 로그인 필요
+app.use('/api/tickets', ticketRoutes);
 
 
 // --- 5. 서버 헬스 체크 ---

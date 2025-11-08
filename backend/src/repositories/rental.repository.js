@@ -16,16 +16,7 @@ const rentalRepository = {
       // --- 트랜잭션 시작 ---
       await client.query('BEGIN');
 
-      // 1. (PDF [cite: 96]) 사용자가 이용권이 있는지 확인 (init.sql 스키마)
-      const userCheck = await client.query(
-        'SELECT has_subscription FROM members WHERE member_id = $1',
-        [memberId]
-      );
-      if (!userCheck.rows[0] || !userCheck.rows[0].has_subscription) {
-        throw new Error('이용권이 없습니다. 먼저 이용권을 구매해주세요.');
-      }
-
-      // 2. (PDF [cite: 97]) 자전거 상태 변경 (init.sql 스키마 반영)
+      // 1. (PDF [cite: 97]) 자전거 상태 변경 (init.sql 스키마 반영)
       // lock_status를 'IN_USE'로, station_id를 NULL로 변경
       const bikeUpdate = await client.query(
         `UPDATE bikes 
@@ -38,7 +29,7 @@ const rentalRepository = {
         throw new Error('대여할 수 없는 자전거이거나 이미 사용 중입니다.');
       }
 
-      // 3. (PDF [cite: 99]) 대여소 자전거 재고 1 감소
+      // 2. (PDF [cite: 99]) 대여소 자전거 재고 1 감소
       const stationUpdate = await client.query(
         'UPDATE stations SET bike_count = bike_count - 1 WHERE station_id = $1 AND bike_count > 0',
         [startStationId]
@@ -47,14 +38,14 @@ const rentalRepository = {
         throw new Error('대여소 재고 정보에 오류가 발생했습니다.');
       }
 
-      // 4. (PDF [cite: 100]) 대여 기록(rentals) 생성
+      // 3. (PDF [cite: 100]) 대여 기록(rentals) 생성
       await client.query(
         `INSERT INTO rentals (member_id, bike_id, start_station_id, start_time) 
          VALUES ($1, $2, $3, NOW())`,
         [memberId, bikeId, startStationId]
       );
       
-      // 5. (PDF [cite: 101]) 사용자의 마지막 이용 자전거 기록
+      // 4. (PDF [cite: 101]) 사용자의 마지막 이용 자전거 기록
       await client.query(
         'UPDATE members SET last_bike_id = $1 WHERE member_id = $2',
         [bikeId, memberId]
