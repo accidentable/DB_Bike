@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { MapPin, Search, Navigation, Bike, Battery, Clock, CheckCircle2, X } from "lucide-react";
-import { rentBike as rentBikeApi, returnBike as returnBikeApi, getCurrentRental, isLoggedIn } from "../utils/api";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Header } from "./Header";
+import { rentBike as rentBikeApi, returnBike as returnBikeApi, getCurrentRental, isLoggedIn } from "../api/client";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
+import { Header } from "../components/layout/Header";
 
 interface StationFinderPageProps {
   onClose: () => void;
@@ -44,81 +44,36 @@ interface Bike {
   status: "available" | "rented" | "maintenance";
 }
 
-const mockStations: Station[] = [
-  {
-    id: 1,
-    name: "강남역 1번 출구",
-    address: "서울시 강남구 강남대로 지하 396",
-    available: 12,
-    total: 20,
-    distance: "0.2km",
-    bikes: [
-      { id: "b1", number: "1001", battery: 95, status: "available" },
-      { id: "b2", number: "1002", battery: 87, status: "available" },
-      { id: "b3", number: "1003", battery: 72, status: "available" },
-      { id: "b4", number: "1004", battery: 91, status: "available" },
-      { id: "b5", number: "1005", battery: 0, status: "rented" },
-      { id: "b6", number: "1006", battery: 88, status: "available" },
-      { id: "b7", number: "1007", battery: 65, status: "available" },
-      { id: "b8", number: "1008", battery: 0, status: "rented" },
-    ],
-  },
-  {
-    id: 2,
-    name: "역삼역 2번 출구",
-    address: "서울시 강남구 테헤란로 지하 151",
-    available: 8,
-    total: 15,
-    distance: "0.5km",
-    bikes: [
-      { id: "b9", number: "2001", battery: 93, status: "available" },
-      { id: "b10", number: "2002", battery: 78, status: "available" },
-      { id: "b11", number: "2003", battery: 0, status: "rented" },
-      { id: "b12", number: "2004", battery: 85, status: "available" },
-      { id: "b13", number: "2005", battery: 69, status: "available" },
-    ],
-  },
-  {
-    id: 3,
-    name: "선릉역 3번 출구",
-    address: "서울시 강남구 선릉로 428",
-    available: 15,
-    total: 25,
-    distance: "0.7km",
-    bikes: [
-      { id: "b14", number: "3001", battery: 96, status: "available" },
-      { id: "b15", number: "3002", battery: 82, status: "available" },
-      { id: "b16", number: "3003", battery: 77, status: "available" },
-      { id: "b17", number: "3004", battery: 91, status: "available" },
-      { id: "b18", number: "3005", battery: 88, status: "available" },
-      { id: "b19", number: "3006", battery: 0, status: "rented" },
-    ],
-  },
-  {
-    id: 4,
-    name: "삼성역 4번 출구",
-    address: "서울시 강남구 영동대로 지하 524",
-    available: 3,
-    total: 18,
-    distance: "0.9km",
-    bikes: [
-      { id: "b20", number: "4001", battery: 71, status: "available" },
-      { id: "b21", number: "4002", battery: 0, status: "rented" },
-      { id: "b22", number: "4003", battery: 83, status: "available" },
-      { id: "b23", number: "4004", battery: 0, status: "rented" },
-    ],
-  },
-];
-
 export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoticeClick, onCommunityClick, onPurchaseClick, onFaqClick, onHomeClick, onProfileClick, onRankingClick }: StationFinderPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [stations, setStations] = useState<Station[]>([]);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
   const [rentalAction, setRentalAction] = useState<"rent" | "return" | null>(null);
   const [rentedBike, setRentedBike] = useState<RentedBikeInfo | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredStations = mockStations.filter((station) =>
+  // 대여소 데이터 로드
+  useEffect(() => {
+    const loadStations = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('http://localhost:3000/api/stations');
+        if (response.ok) {
+          const data = await response.json();
+          setStations(data.data || []);
+        }
+      } catch (error) {
+        console.error("Error loading stations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadStations();
+  }, []);
+
+  const filteredStations = stations.filter((station) =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     station.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -143,7 +98,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
     if (rentedBike) {
       setRentalAction("return");
       setTimeout(() => {
-        alert(`자전거를 반납했습니다! 이용 시간: ${Math.floor(elapsedTime / 60)}분 ${elapsedTime % 60}초`);
+        alert(`?�전거�? 반납?�습?�다! ?�용 ?�간: ${Math.floor(elapsedTime / 60)}�?${elapsedTime % 60}�?);
         setRentedBike(null);
         setElapsedTime(0);
         setRentalAction(null);
@@ -151,7 +106,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
     }
   };
 
-  // 대여 시간 타이머
+  // ?�???�간 ?�?�머
   useEffect(() => {
     if (rentedBike) {
       const interval = setInterval(() => {
@@ -178,38 +133,38 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
         onRankingClick={onRankingClick}
       />
 
-      {/* 대여 상태 창 */}
+      {/* ?�???�태 �?*/}
       {rentedBike && (
         <div className="fixed bottom-4 right-4 z-40 w-80">
           <Card className="p-4 shadow-lg border-2 border-[#00A862] bg-white">
             <div className="flex items-center justify-between mb-3">
               <h3 className="flex items-center gap-2">
                 <Bike className="w-5 h-5 text-[#00A862]" />
-                대여 중
+                ?�??�?
               </h3>
             </div>
             <Separator className="mb-3" />
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">자전거 번호</span>
-                <span>{rentedBike.bike.number}번</span>
+                <span className="text-gray-600">?�전�?번호</span>
+                <span>{rentedBike.bike.number}�?/span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">대여 장소</span>
+                <span className="text-gray-600">?�???�소</span>
                 <span className="text-right">{rentedBike.station.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">배터리</span>
+                <span className="text-gray-600">배터�?/span>
                 <span className="flex items-center gap-1">
                   <Battery className="w-4 h-4 text-[#00A862]" />
                   {rentedBike.bike.battery}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">이용 시간</span>
+                <span className="text-gray-600">?�용 ?�간</span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4 text-[#00A862]" />
-                  {Math.floor(elapsedTime / 60)}분 {elapsedTime % 60}초
+                  {Math.floor(elapsedTime / 60)}�?{elapsedTime % 60}�?
                 </span>
               </div>
             </div>
@@ -218,7 +173,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
               className="w-full mt-4 bg-[#00A862] hover:bg-[#008F54]"
               disabled={rentalAction === "return"}
             >
-              {rentalAction === "return" ? "반납 중..." : "반납하기"}
+              {rentalAction === "return" ? "반납 �?.." : "반납?�기"}
             </Button>
           </Card>
         </div>
@@ -226,8 +181,8 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="mb-2">대여소 찾기</h1>
-          <p className="text-gray-600">가까운 대여소를 찾아 자전거를 대여하세요</p>
+          <h1 className="mb-2">?�?�소 찾기</h1>
+          <p className="text-gray-600">가까운 ?�?�소�?찾아 ?�전거�? ?�?�하?�요</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -237,7 +192,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder="대여소 이름 또는 주소 검색"
+                  placeholder="?�?�소 ?�름 ?�는 주소 검??
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -270,7 +225,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                       </div>
                       <p className="text-xs text-gray-500 mb-2">{station.address}</p>
                       <p className="text-sm text-gray-600">
-                        이용 가능: <span className="text-[#00A862]">{station.available}대</span> / {station.total}대
+                        이용 가능 <span className="text-[#00A862]">{station.available}대</span> / {station.total}대
                       </p>
                     </div>
                     <MapPin className="w-5 h-5 text-[#00A862]" />
@@ -306,9 +261,9 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                       <div className="flex items-center gap-4 text-sm">
                         <span className="flex items-center gap-1">
                           <Bike className="w-4 h-4 text-[#00A862]" />
-                          이용 가능: {selectedStation.available}대
+                          ?�용 가?? {selectedStation.available}?�
                         </span>
-                        <span className="text-gray-500">총 {selectedStation.total}대</span>
+                        <span className="text-gray-500">�?{selectedStation.total}?�</span>
                       </div>
                     </div>
                     <Badge className="bg-[#00A862]">{selectedStation.distance}</Badge>
@@ -317,14 +272,14 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                   <Separator className="my-4" />
 
                   <div className="flex items-center justify-between mb-4">
-                    <h3>이용 가능한 자전거</h3>
+                    <h3>?�용 가?�한 ?�전�?/h3>
                     <div className="flex gap-2">
                       <Button
                         onClick={handleRent}
                         className="bg-[#00A862] hover:bg-[#008F54]"
                         disabled={!selectedBike || rentalAction !== null}
                       >
-                        대여하기
+                        ?�?�하�?
                       </Button>
                       <Button
                         onClick={handleReturn}
@@ -332,7 +287,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                         className="border-[#00A862] text-[#00A862] hover:bg-green-50"
                         disabled={rentalAction !== null}
                       >
-                        반납하기
+                        반납?�기
                       </Button>
                     </div>
                   </div>
@@ -360,18 +315,18 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                             <span className="font-medium">#{bike.number}</span>
                           </div>
                           {bike.status === "available" ? (
-                            <Badge className="bg-[#00A862]">이용 가능</Badge>
+                            <Badge className="bg-[#00A862]">?�용 가??/Badge>
                           ) : bike.status === "rented" ? (
-                            <Badge variant="secondary">대여중</Badge>
+                            <Badge variant="secondary">?�?�중</Badge>
                           ) : (
-                            <Badge variant="destructive">정비중</Badge>
+                            <Badge variant="destructive">?�비�?/Badge>
                           )}
                         </div>
 
                         {bike.status === "available" && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">배터리</span>
+                              <span className="text-gray-600">배터�?/span>
                               <span className="flex items-center gap-1">
                                 <Battery
                                   className={`w-4 h-4 ${
@@ -409,9 +364,9 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                     <Card className="p-4 bg-green-50 border-[#00A862]">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="mb-1">선택한 자전거</h3>
+                          <h3 className="mb-1">?�택???�전�?/h3>
                           <p className="text-sm text-gray-600">
-                            자전거 #{selectedBike.number} | 배터리 {selectedBike.battery}%
+                            ?�전�?#{selectedBike.number} | 배터�?{selectedBike.battery}%
                           </p>
                         </div>
                         <CheckCircle2 className="w-8 h-8 text-[#00A862]" />
@@ -422,7 +377,7 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                         size="lg"
                         disabled={rentalAction !== null}
                       >
-                        {rentalAction === "rent" ? "대여 중..." : "대여하기"}
+                        {rentalAction === "rent" ? "?�??�?.." : "?�?�하�?}
                       </Button>
                     </Card>
                   </div>
@@ -431,9 +386,9 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
             ) : (
               <Card className="p-12 text-center">
                 <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="mb-2 text-gray-600">대여소를 선택하세요</h3>
+                <h3 className="mb-2 text-gray-600">?�?�소�??�택?�세??/h3>
                 <p className="text-sm text-gray-500">
-                  왼쪽 목록에서 대여소를 선택하면 이용 가능한 자전거를 확인할 수 있습니다.
+                  ?�쪽 목록?�서 ?�?�소�??�택?�면 ?�용 가?�한 ?�전거�? ?�인?????�습?�다.
                 </p>
               </Card>
             )}

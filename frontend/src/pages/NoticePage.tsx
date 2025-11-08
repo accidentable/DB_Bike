@@ -1,8 +1,8 @@
 import { Calendar, Eye, Pin, Filter, SortDesc } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Header } from "./Header";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Header } from "../components/layout/Header";
 import { useState } from "react";
 import {
   Select,
@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../components/ui/select";
 
 interface NoticePageProps {
   onClose: () => void;
@@ -30,24 +30,24 @@ interface Notice {
   date: string;
   views: number;
   isPinned: boolean;
-  category: "개설" | "폐쇄" | "일반";
+  category: "개설" | "?�쇄" | "?�반";
 }
 
 const notices: Notice[] = [
   {
     id: 1,
-    title: "강남역 4번 출구 대여소 신규 개설 안내",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "강남??4�?출구 ?�?�소 ?�규 개설 ?�내",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-강남역 4번 출구 인근에 새로운 대여소가 개설되었습니다.
+강남??4�?출구 ?�근???�로???�?�소가 개설?�었?�니??
 
-📍 위치: 서울시 강남구 강남대로 지하 400 (강남역 4번 출구 도보 1분)
-🚲 자전거 수: 30대
-⏰ 운영 시간: 24시간
+?�� ?�치: ?�울??강남�?강남?��?지??400 (강남??4�?출구 ?�보 1�?
+?�� ?�전�??? 30?�
+???�영 ?�간: 24?�간
 
-많은 이용 부탁드립니다.
+많�? ?�용 부?�드립니??
 
-감사합니다.`,
+감사?�니??`,
     date: "2025-11-01",
     views: 1234,
     isPinned: true,
@@ -55,35 +55,35 @@ const notices: Notice[] = [
   },
   {
     id: 2,
-    title: "잠실역 7번 출구 대여소 임시 폐쇄 안내",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "?�실??7�?출구 ?�?�소 ?�시 ?�쇄 ?�내",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-공사로 인해 잠실역 7번 출구 대여소가 임시 폐쇄됩니다.
+공사�??�해 ?�실??7�?출구 ?�?�소가 ?�시 ?�쇄?�니??
 
-📍 위치: 서울시 송파구 올림픽로 지하 265
-⏰ 폐쇄 기간: 2025-11-03 ~ 2025-11-30
-💡 대체 대여소: 잠실역 2번 출구 대여소 (도보 5분)
+?�� ?�치: ?�울???�파�??�림?�로 지??265
+???�쇄 기간: 2025-11-03 ~ 2025-11-30
+?�� ?��??�?�소: ?�실??2�?출구 ?�?�소 (?�보 5�?
 
-이용에 불편을 드려 죄송합니다.
+?�용??불편???�려 죄송?�니??
 
-감사합니다.`,
+감사?�니??`,
     date: "2025-10-30",
     views: 892,
     isPinned: true,
-    category: "폐쇄",
+    category: "?�쇄",
   },
   {
     id: 3,
-    title: "홍대입구역 3번 출구 대여소 신규 개설",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "?��??�구??3�?출구 ?�?�소 ?�규 개설",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-홍대입구역 3번 출구 인근에 새로운 대여소가 개설되었습니다.
+?��??�구??3�?출구 ?�근???�로???�?�소가 개설?�었?�니??
 
-📍 위치: 서울시 마포구 양화로 지하 188
-🚲 자전거 수: 25대
-⏰ 운영 시간: 24시간
+?�� ?�치: ?�울??마포�??�화�?지??188
+?�� ?�전�??? 25?�
+???�영 ?�간: 24?�간
 
-많은 이용 부탁드립니다.`,
+많�? ?�용 부?�드립니??`,
     date: "2025-10-28",
     views: 756,
     isPinned: false,
@@ -91,35 +91,35 @@ const notices: Notice[] = [
   },
   {
     id: 4,
-    title: "시청역 12번 출구 대여소 영구 폐쇄 안내",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "?�청??12�?출구 ?�?�소 ?�구 ?�쇄 ?�내",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-시청역 12번 출구 대여소가 주변 개발로 인해 영구 폐쇄됩니다.
+?�청??12�?출구 ?�?�소가 주�? 개발�??�해 ?�구 ?�쇄?�니??
 
-📍 위치: 서울시 중구 세종대로 지하 99
-⏰ 폐쇄 일자: 2025-10-25
-💡 대체 대여소: 
-   - 시청역 4번 출구 대여소 (도보 3분)
-   - 광화문역 5번 출구 대여소 (도보 7분)
+?�� ?�치: ?�울??중구 ?�종?��?지??99
+???�쇄 ?�자: 2025-10-25
+?�� ?��??�?�소: 
+   - ?�청??4�?출구 ?�?�소 (?�보 3�?
+   - 광화문역 5�?출구 ?�?�소 (?�보 7�?
 
-이용에 불편을 드려 죄송합니다.`,
+?�용??불편???�려 죄송?�니??`,
     date: "2025-10-25",
     views: 1567,
     isPinned: false,
-    category: "폐쇄",
+    category: "?�쇄",
   },
   {
     id: 5,
-    title: "신림역 1번 출구 대여소 신규 개설",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "?�림??1�?출구 ?�?�소 ?�규 개설",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-신림역 1번 출구 인근에 새로운 대여소가 개설되었습니다.
+?�림??1�?출구 ?�근???�로???�?�소가 개설?�었?�니??
 
-📍 위치: 서울시 관악구 신림로 지하 330
-🚲 자전거 수: 20대
-⏰ 운영 시간: 24시간
+?�� ?�치: ?�울??관?�구 ?�림�?지??330
+?�� ?�전�??? 20?�
+???�영 ?�간: 24?�간
 
-많은 이용 부탁드립니다.`,
+많�? ?�용 부?�드립니??`,
     date: "2025-10-20",
     views: 543,
     isPinned: false,
@@ -127,37 +127,37 @@ const notices: Notice[] = [
   },
   {
     id: 6,
-    title: "11월 정기 점검으로 인한 일부 대여소 운영 중단",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
+    title: "11???�기 ?��??�로 ?�한 ?��? ?�?�소 ?�영 중단",
+    content: `?�녕?�세?? ?�울?�전�??�릉?�입?�다.
 
-11월 정기 점검으로 인해 일부 대여소가 임시 운영 중단됩니다.
+11???�기 ?��??�로 ?�해 ?��? ?�?�소가 ?�시 ?�영 중단?�니??
 
-⏰ 점검 일자: 2025-11-15 (수) 02:00 ~ 06:00
-📍 대상 대여소: 강남구, 서초구 전체 대여소
+???��? ?�자: 2025-11-15 (?? 02:00 ~ 06:00
+?�� ?�???�?�소: 강남�? ?�초�??�체 ?�?�소
 
-점검 시간에는 대여 및 반납이 불가능합니다.
-이용에 불편을 드려 죄송합니다.
+?��? ?�간?�는 ?�??�?반납??불�??�합?�다.
+?�용??불편???�려 죄송?�니??
 
-감사합니다.`,
+감사?�니??`,
     date: "2025-10-15",
     views: 2103,
     isPinned: false,
-    category: "일반",
+    category: "?�반",
   },
 ];
 
 export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFinderClick, onCommunityClick, onPurchaseClick, onFaqClick, onHomeClick }: NoticePageProps) {
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<Notice["category"] | "전체">("전체");
+  const [selectedCategory, setSelectedCategory] = useState<Notice["category"] | "?�체">("?�체");
   const [sortBy, setSortBy] = useState<"date" | "views">("date");
 
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "개설":
         return "bg-[#00A862] text-white";
-      case "폐쇄":
+      case "?�쇄":
         return "bg-red-500 text-white";
-      case "일반":
+      case "?�반":
         return "bg-blue-500 text-white";
       default:
         return "bg-gray-500 text-white";
@@ -165,7 +165,7 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
   };
 
   const filteredAndSortedNotices = notices
-    .filter(notice => selectedCategory === "전체" ? true : notice.category === selectedCategory)
+    .filter(notice => selectedCategory === "?�체" ? true : notice.category === selectedCategory)
     .sort((a, b) => {
       if (sortBy === "date") {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -189,8 +189,8 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="mb-2">공지사항</h1>
-          <p className="text-gray-600">따릉이의 새로운 소식을 확인하세요</p>
+          <h1 className="mb-2">공�??�항</h1>
+          <p className="text-gray-600">?�릉?�의 ?�로???�식???�인?�세??/p>
         </div>
 
         {/* Category Filter & Sort */}
@@ -200,16 +200,16 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
               <Filter className="w-4 h-4 text-gray-500" />
               <Select
                 value={selectedCategory}
-                onValueChange={(value) => setSelectedCategory(value as Notice["category"] | "전체")}
+                onValueChange={(value) => setSelectedCategory(value as Notice["category"] | "?�체")}
               >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="카테고리 선택" />
+                  <SelectValue placeholder="카테고리 ?�택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="전체">전체</SelectItem>
+                  <SelectItem value="?�체">?�체</SelectItem>
                   <SelectItem value="개설">개설</SelectItem>
-                  <SelectItem value="폐쇄">폐쇄</SelectItem>
-                  <SelectItem value="일반">일반</SelectItem>
+                  <SelectItem value="?�쇄">?�쇄</SelectItem>
+                  <SelectItem value="?�반">?�반</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -221,11 +221,11 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
                 onValueChange={(value) => setSortBy(value as "date" | "views")}
               >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="정렬 기준" />
+                  <SelectValue placeholder="?�렬 기�?" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="date">최신순</SelectItem>
-                  <SelectItem value="views">조회수순</SelectItem>
+                  <SelectItem value="date">최신??/SelectItem>
+                  <SelectItem value="views">조회?�순</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -241,7 +241,7 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
               className="mb-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              목록으로
+              목록?�로
             </Button>
 
             <Card className="p-8">
@@ -297,7 +297,7 @@ export function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFind
                         </Badge>
                         {notice.isPinned && (
                           <Badge variant="outline" className="border-[#00A862] text-[#00A862]">
-                            공지
+                            공�?
                           </Badge>
                         )}
                       </div>

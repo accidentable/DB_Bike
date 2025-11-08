@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Card } from "./ui/card";
-import { Checkbox } from "./ui/checkbox";
-import { Header } from "./Header";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card } from "../components/ui/card";
+import { Checkbox } from "../components/ui/checkbox";
+import { Header } from "../components/layout/Header";
 import { Mail, Lock, User, Phone, Check, AlertCircle } from "lucide-react";
-import { signup, checkEmailAvailability, checkUsernameAvailability } from "../utils/api";
+import { signup } from "../api/client";
 
 interface SignupPageProps {
   onClose: () => void;
@@ -89,12 +89,12 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
     });
     
     if (formData.password !== formData.confirmPassword) {
-      setError("비밀번호가 일치하지 않습니다.");
+      setError("비�?번호가 ?�치?��? ?�습?�다.");
       return;
     }
     
     if (!agreements.terms || !agreements.privacy) {
-      setError("필수 약관에 동의해주세요.");
+      setError("?�수 ?��????�의?�주?�요.");
       return;
     }
     
@@ -110,11 +110,11 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
       });
 
       if (result.success) {
-        alert("회원가입이 완료되었습니다! 로그인해주세요.");
+        alert("?�원가?�이 ?�료?�었?�니?? 로그?�해주세??");
         onSwitchToLogin();
       }
     } catch (err: any) {
-      setError(err.message || "회원가입에 실패했습니다.");
+      setError(err.message || "?�원가?�에 ?�패?�습?�다.");
     } finally {
       setIsLoading(false);
     }
@@ -122,12 +122,12 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
   const validateEmail = async (email: string) => {
     if (!email) {
-      setValidationErrors(prev => ({ ...prev, email: "이메일을 입력해주세요." }));
+      setValidationErrors(prev => ({ ...prev, email: "?�메?�을 ?�력?�주?�요." }));
       return false;
     }
     const result = await checkEmailAvailability(email);
     if (!result.available) {
-      setValidationErrors(prev => ({ ...prev, email: "이미 사용 중인 이메일입니다." }));
+      setValidationErrors(prev => ({ ...prev, email: "?��? ?�용 중인 ?�메?�입?�다." }));
       return false;
     }
     return true;
@@ -135,7 +135,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
   const validateName = (name: string) => {
     if (!name) {
-      setValidationErrors(prev => ({ ...prev, name: "이름을 입력해주세요." }));
+      setValidationErrors(prev => ({ ...prev, name: "?�름???�력?�주?�요." }));
       return false;
     }
     return true;
@@ -143,7 +143,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
   const validatePhone = (phone: string) => {
     if (!phone) {
-      setValidationErrors(prev => ({ ...prev, phone: "휴대폰 번호를 입력해주세요." }));
+      setValidationErrors(prev => ({ ...prev, phone: "?��???번호�??�력?�주?�요." }));
       return false;
     }
     return true;
@@ -151,11 +151,11 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
   const validatePassword = (password: string) => {
     if (!password) {
-      setValidationErrors(prev => ({ ...prev, password: "비밀번호를 입력해주세요." }));
+      setValidationErrors(prev => ({ ...prev, password: "비�?번호�??�력?�주?�요." }));
       return false;
     }
     if (password.length < 8) {
-      setValidationErrors(prev => ({ ...prev, password: "비밀번호는 8자 이상이어야 합니다." }));
+      setValidationErrors(prev => ({ ...prev, password: "비�?번호??8???�상?�어???�니??" }));
       return false;
     }
     return true;
@@ -163,7 +163,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
   const validateConfirmPassword = (confirmPassword: string) => {
     if (!confirmPassword) {
-      setValidationErrors(prev => ({ ...prev, confirmPassword: "비밀번호를 다시 입력해주세요." }));
+      setValidationErrors(prev => ({ ...prev, confirmPassword: "비�?번호�??�시 ?�력?�주?�요." }));
       return false;
     }
     return true;
@@ -209,11 +209,11 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
         <Card className="p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-[#00A862] rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🚲</span>
+              <span className="text-3xl">?��</span>
             </div>
-            <h2 className="mb-2">회원가입</h2>
+            <h2 className="mb-2">?�원가??/h2>
             <p className="text-gray-600 text-sm">
-              따릉이와 함께 건강한 서울 생활을 시작하세요
+              ?�릉?��? ?�께 건강???�울 ?�활???�작?�세??
             </p>
           </div>
 
@@ -226,14 +226,14 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="name">이름</Label>
+              <Label htmlFor="name">?�름</Label>
               <div className="relative mt-1">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="홍길동"
+                  placeholder="?�길??
                   value={formData.name}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
@@ -245,7 +245,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <div>
-              <Label htmlFor="email">이메일</Label>
+              <Label htmlFor="email">?�메??/Label>
               <div className="relative mt-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -264,7 +264,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <div>
-              <Label htmlFor="phone">휴대폰 번호</Label>
+              <Label htmlFor="phone">?��???번호</Label>
               <div className="relative mt-1">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -282,7 +282,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <div>
-              <Label htmlFor="studentId">학번 (선택)</Label>
+              <Label htmlFor="studentId">?�번 (?�택)</Label>
               <div className="relative mt-1">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -298,14 +298,14 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <div>
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password">비�?번호</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="8자 이상 입력하세요"
+                  placeholder="8???�상 ?�력?�세??
                   value={formData.password}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
@@ -318,14 +318,14 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+              <Label htmlFor="confirmPassword">비�?번호 ?�인</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
-                  placeholder="비밀번호를 다시 입력하세요"
+                  placeholder="비�?번호�??�시 ?�력?�세??
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
@@ -346,7 +346,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
                     onCheckedChange={(checked) => handleAllAgreements(checked as boolean)}
                   />
                   <Label htmlFor="all" className="cursor-pointer">
-                    전체 동의
+                    ?�체 ?�의
                   </Label>
                 </div>
 
@@ -358,7 +358,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
                       onCheckedChange={(checked) => handleAgreementChange("terms", checked as boolean)}
                     />
                     <Label htmlFor="terms" className="text-sm cursor-pointer">
-                      이용약관 동의 <span className="text-red-500">(필수)</span>
+                      ?�용?��? ?�의 <span className="text-red-500">(?�수)</span>
                     </Label>
                   </div>
                   <a href="#" className="text-xs text-gray-500 underline">
@@ -374,7 +374,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
                       onCheckedChange={(checked) => handleAgreementChange("privacy", checked as boolean)}
                     />
                     <Label htmlFor="privacy" className="text-sm cursor-pointer">
-                      개인정보 수집 및 이용 동의 <span className="text-red-500">(필수)</span>
+                      개인?�보 ?�집 �??�용 ?�의 <span className="text-red-500">(?�수)</span>
                     </Label>
                   </div>
                   <a href="#" className="text-xs text-gray-500 underline">
@@ -390,7 +390,7 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
                       onCheckedChange={(checked) => handleAgreementChange("marketing", checked as boolean)}
                     />
                     <Label htmlFor="marketing" className="text-sm cursor-pointer">
-                      마케팅 정보 수신 동의 (선택)
+                      마�????�보 ?�신 ?�의 (?�택)
                     </Label>
                   </div>
                   <a href="#" className="text-xs text-gray-500 underline">
@@ -401,17 +401,17 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
             </div>
 
             <Button type="submit" className="w-full bg-[#00A862] hover:bg-[#008F54] mt-6">
-              회원가입
+              ?�원가??
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">이미 계정이 있으신가요? </span>
+            <span className="text-gray-600">?��? 계정???�으?��??? </span>
             <button
               onClick={onSwitchToLogin}
               className="text-[#00A862] hover:underline"
             >
-              로그인
+              로그??
             </button>
           </div>
         </Card>
@@ -420,12 +420,12 @@ export function SignupPage({ onClose, onSwitchToLogin, onStationFinderClick, onN
           <div className="flex items-start gap-2">
             <Check className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-900">
-              <p className="mb-1">회원가입 후 다음 혜택을 받으실 수 있습니다:</p>
+              <p className="mb-1">?�원가?????�음 ?�택??받으?????�습?�다:</p>
               <ul className="text-xs space-y-1 text-blue-800">
-                <li>• 서울시 전역 2,500개 이상 대여소 이용</li>
-                <li>• 모바일 앱에서 QR 스캔으로 간편 대여</li>
-                <li>• 이용 내역 및 결제 관리</li>
-                <li>• 정기권 할인 혜택</li>
+                <li>???�울???�역 2,500�??�상 ?�?�소 ?�용</li>
+                <li>??모바???�에??QR ?�캔?�로 간편 ?�??/li>
+                <li>???�용 ?�역 �?결제 관�?/li>
+                <li>???�기�??�인 ?�택</li>
               </ul>
             </div>
           </div>

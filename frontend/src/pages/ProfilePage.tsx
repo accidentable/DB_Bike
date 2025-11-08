@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { User, Award, MapPin, Calendar, Trophy, Medal, Star, Target, Bike, TrendingUp, Edit, Lock } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Header } from "./Header";
-import { Progress } from "./ui/progress";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { getCurrentUser, updateProfile, changePassword } from "../utils/api";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Header } from "../components/layout/Header";
+import { Progress } from "../components/ui/progress";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { getCurrentUser, updateProfile, changePassword } from "../api/client";
 
 interface ProfilePageProps {
   onClose: () => void;
@@ -36,48 +36,48 @@ interface Achievement {
 const achievements: Achievement[] = [
   {
     id: 1,
-    name: "첫 걸음",
-    description: "첫 따릉이 이용 완료",
-    icon: "🚴",
+    name: "�?걸음",
+    description: "�??�릉???�용 ?�료",
+    icon: "?��",
     earned: true,
   },
   {
     id: 2,
-    name: "출퇴근 마스터",
-    description: "10일 연속 이용",
-    icon: "🏆",
+    name: "출퇴�?마스??,
+    description: "10???�속 ?�용",
+    icon: "?��",
     earned: true,
   },
   {
     id: 3,
-    name: "장거리 라이더",
-    description: "누적 100km 달성",
-    icon: "🎯",
+    name: "?�거�??�이??,
+    description: "?�적 100km ?�성",
+    icon: "?��",
     earned: true,
   },
   {
     id: 4,
-    name: "환경 지킴이",
-    description: "누적 500km 달성",
-    icon: "🌿",
+    name: "?�경 지?�이",
+    description: "?�적 500km ?�성",
+    icon: "?��",
     earned: false,
     progress: 287,
     total: 500,
   },
   {
     id: 5,
-    name: "전국구",
-    description: "50개 이상의 대여소 이용",
-    icon: "🗺️",
+    name: "?�국�?,
+    description: "50�??�상???�?�소 ?�용",
+    icon: "?���?,
     earned: false,
     progress: 32,
     total: 50,
   },
   {
     id: 6,
-    name: "단골 회원",
-    description: "100회 이용 달성",
-    icon: "⭐",
+    name: "?�골 ?�원",
+    description: "100???�용 ?�성",
+    icon: "�?,
     earned: false,
     progress: 67,
     total: 100,
@@ -102,7 +102,7 @@ export function ProfilePage({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 사용자 데이터 상태
+  // ?�용???�이???�태
   const [userData, setUserData] = useState({
     name: "",
     email: "",
@@ -112,25 +112,25 @@ export function ProfilePage({
     totalDistance: 0,
     totalRides: 0,
     rank: 0,
-    currentTicket: "정기권 (30일)",
+    currentTicket: "?�기�?(30??",
     ticketExpiry: "2025-11-28",
   });
 
-  // 수정 폼 데이터
+  // ?�정 ???�이??
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
     studentId: "",
   });
 
-  // 비밀번호 변경 폼
+  // 비�?번호 변�???
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // 사용자 정보 로드
+  // ?�용???�보 로드
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
@@ -143,7 +143,7 @@ export function ProfilePage({
         totalDistance: user.totalDistance || 0,
         totalRides: user.totalRides || 0,
         rank: 142,
-        currentTicket: "정기권 (30일)",
+        currentTicket: "?�기�?(30??",
         ticketExpiry: "2025-11-28",
       });
       setEditForm({
@@ -154,7 +154,7 @@ export function ProfilePage({
     }
   }, []);
 
-  // 정보 수정 핸들러
+  // ?�보 ?�정 ?�들??
   const handleEditProfile = async () => {
     setError("");
     setIsLoading(true);
@@ -168,7 +168,7 @@ export function ProfilePage({
           phone: result.user!.phone,
           studentId: result.user!.studentId,
         }));
-        alert("프로필이 업데이트되었습니다.");
+        alert("?�로?�이 ?�데?�트?�었?�니??");
         setIsEditDialogOpen(false);
         window.dispatchEvent(new Event('loginStatusChanged'));
       }
@@ -179,12 +179,12 @@ export function ProfilePage({
     }
   };
 
-  // 비밀번호 변경 핸들러
+  // 비�?번호 변�??�들??
   const handleChangePassword = async () => {
     setError("");
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError("새 비밀번호가 일치하지 않습니다.");
+      setError("??비�?번호가 ?�치?��? ?�습?�다.");
       return;
     }
 
@@ -193,7 +193,7 @@ export function ProfilePage({
     try {
       const result = await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       if (result.success) {
-        alert("비밀번호가 변경되었습니다.");
+        alert("비�?번호가 변경되?�습?�다.");
         setIsPasswordDialogOpen(false);
         setPasswordForm({
           currentPassword: "",
@@ -210,28 +210,28 @@ export function ProfilePage({
 
   const stats = [
     {
-      label: "누적 거리",
+      label: "?�적 거리",
       value: `${userData.totalDistance}km`,
       icon: <MapPin className="w-5 h-5 text-[#00A862]" />,
-      description: "탄소 배출 절감 약 57.5kg"
+      description: "?�소 배출 ?�감 ??57.5kg"
     },
     {
-      label: "이용 횟수",
-      value: `${userData.totalRides}회`,
+      label: "?�용 ?�수",
+      value: `${userData.totalRides}??,
       icon: <Bike className="w-5 h-5 text-[#00A862]" />,
-      description: "평균 이용 시간 25분"
+      description: "?�균 ?�용 ?�간 25�?
     },
     {
-      label: "전체 랭킹",
-      value: `${userData.rank}위`,
+      label: "?�체 ??��",
+      value: `${userData.rank}??,
       icon: <Trophy className="w-5 h-5 text-[#00A862]" />,
-      description: "상위 5%"
+      description: "?�위 5%"
     },
     {
-      label: "획득 업적",
+      label: "?�득 ?�적",
       value: `${achievements.filter(a => a.earned).length}/${achievements.length}`,
       icon: <Award className="w-5 h-5 text-[#00A862]" />,
-      description: "달성률 50%"
+      description: "?�성�?50%"
     }
   ];
 
@@ -266,7 +266,7 @@ export function ProfilePage({
                     {userData.currentTicket}
                   </Badge>
                   <Badge variant="outline">
-                    가입일: {userData.memberSince}
+                    가?�일: {userData.memberSince}
                   </Badge>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export function ProfilePage({
                   onClick={() => setIsEditDialogOpen(true)}
                 >
                   <Edit className="w-4 h-4 mr-2" />
-                  정보 수정
+                  ?�보 ?�정
                 </Button>
                 <Button
                   variant="outline"
@@ -285,7 +285,7 @@ export function ProfilePage({
                   onClick={onRankingClick}
                 >
                   <Trophy className="w-4 h-4 mr-2" />
-                  랭킹 보기
+                  ??�� 보기
                 </Button>
               </div>
             </div>
@@ -316,7 +316,7 @@ export function ProfilePage({
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            기본 정보
+            기본 ?�보
           </button>
           <button
             onClick={() => setActiveTab("achievements")}
@@ -326,7 +326,7 @@ export function ProfilePage({
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            업적
+            ?�적
           </button>
         </div>
 
@@ -334,39 +334,39 @@ export function ProfilePage({
         {activeTab === "info" ? (
           <div className="max-w-2xl">
             <Card className="p-6">
-              <h2 className="mb-6">기본 정보</h2>
+              <h2 className="mb-6">기본 ?�보</h2>
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4 py-3 border-b">
-                  <span className="text-gray-600">이름</span>
+                  <span className="text-gray-600">?�름</span>
                   <span className="col-span-2">{userData.name}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 py-3 border-b">
-                  <span className="text-gray-600">이메일</span>
+                  <span className="text-gray-600">?�메??/span>
                   <span className="col-span-2">{userData.email}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 py-3 border-b">
-                  <span className="text-gray-600">전화번호</span>
+                  <span className="text-gray-600">?�화번호</span>
                   <span className="col-span-2">{userData.phone}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 py-3 border-b">
-                  <span className="text-gray-600">가입일</span>
+                  <span className="text-gray-600">가?�일</span>
                   <span className="col-span-2">{userData.memberSince}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 py-3 border-b">
-                  <span className="text-gray-600">현재 이용권</span>
+                  <span className="text-gray-600">?�재 ?�용�?/span>
                   <span className="col-span-2">{userData.currentTicket}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4 py-3">
-                  <span className="text-gray-600">이용권 만료일</span>
+                  <span className="text-gray-600">?�용�?만료??/span>
                   <span className="col-span-2">{userData.ticketExpiry}</span>
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t">
                 <Button className="bg-[#00A862] hover:bg-[#008F54] mr-3">
-                  정보 수정
+                  ?�보 ?�정
                 </Button>
                 <Button variant="outline">
-                  비밀번호 변경
+                  비�?번호 변�?
                 </Button>
               </div>
             </Card>
@@ -374,8 +374,8 @@ export function ProfilePage({
         ) : (
           <div>
             <div className="mb-6">
-              <h2 className="mb-2">업적 ({achievements.filter(a => a.earned).length}/{achievements.length})</h2>
-              <p className="text-gray-600">따릉이를 이용하며 다양한 업적을 달성해보세요!</p>
+              <h2 className="mb-2">?�적 ({achievements.filter(a => a.earned).length}/{achievements.length})</h2>
+              <p className="text-gray-600">?�릉?��? ?�용?�며 ?�양???�적???�성?�보?�요!</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {achievements.map((achievement) => (
@@ -393,7 +393,7 @@ export function ProfilePage({
                       {achievement.earned ? (
                         <Badge className="bg-[#00A862]">
                           <Star className="w-3 h-3 mr-1" />
-                          달성 완료
+                          ?�성 ?�료
                         </Badge>
                       ) : achievement.progress !== undefined ? (
                         <div>
@@ -408,7 +408,7 @@ export function ProfilePage({
                         </div>
                       ) : (
                         <Badge variant="outline">
-                          잠김
+                          ?��?
                         </Badge>
                       )}
                     </div>
@@ -419,38 +419,38 @@ export function ProfilePage({
           </div>
         )}
 
-        {/* 기본 정보 탭 */}
+        {/* 기본 ?�보 ??*/}
         {activeTab === "info" && (
           <div className="space-y-6">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3>기본 정보</h3>
+                <h3>기본 ?�보</h3>
                 <Button
                   variant="outline"
                   className="border-[#00A862] text-[#00A862] hover:bg-[#00A862] hover:text-white"
                   onClick={() => setIsPasswordDialogOpen(true)}
                 >
                   <Lock className="w-4 h-4 mr-2" />
-                  비밀번호 변경
+                  비�?번호 변�?
                 </Button>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <span className="text-sm text-gray-600 block mb-1">이름</span>
+                    <span className="text-sm text-gray-600 block mb-1">?�름</span>
                     <p className="text-lg">{userData.name}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600 block mb-1">이메일</span>
+                    <span className="text-sm text-gray-600 block mb-1">?�메??/span>
                     <p className="text-lg">{userData.email}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600 block mb-1">전화번호</span>
-                    <p className="text-lg">{userData.phone || "미등록"}</p>
+                    <span className="text-sm text-gray-600 block mb-1">?�화번호</span>
+                    <p className="text-lg">{userData.phone || "미등�?}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600 block mb-1">학번</span>
-                    <p className="text-lg">{userData.studentId || "미등록"}</p>
+                    <span className="text-sm text-gray-600 block mb-1">?�번</span>
+                    <p className="text-lg">{userData.studentId || "미등�?}</p>
                   </div>
                 </div>
               </div>
@@ -459,11 +459,11 @@ export function ProfilePage({
         )}
       </div>
 
-      {/* 정보 수정 다이얼로그 */}
+      {/* ?�보 ?�정 ?�이?�로�?*/}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>프로필 정보 수정</DialogTitle>
+            <DialogTitle>?�로???�보 ?�정</DialogTitle>
           </DialogHeader>
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
@@ -472,7 +472,7 @@ export function ProfilePage({
           )}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">이름</Label>
+              <Label htmlFor="edit-name">?�름</Label>
               <Input
                 id="edit-name"
                 value={editForm.name}
@@ -480,7 +480,7 @@ export function ProfilePage({
               />
             </div>
             <div>
-              <Label htmlFor="edit-phone">전화번호</Label>
+              <Label htmlFor="edit-phone">?�화번호</Label>
               <Input
                 id="edit-phone"
                 value={editForm.phone}
@@ -488,7 +488,7 @@ export function ProfilePage({
               />
             </div>
             <div>
-              <Label htmlFor="edit-student-id">학번</Label>
+              <Label htmlFor="edit-student-id">?�번</Label>
               <Input
                 id="edit-student-id"
                 value={editForm.studentId}
@@ -501,7 +501,7 @@ export function ProfilePage({
                 className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
                 disabled={isLoading}
               >
-                {isLoading ? "저장 중..." : "저장"}
+                {isLoading ? "?�??�?.." : "?�??}
               </Button>
               <Button
                 variant="outline"
@@ -515,11 +515,11 @@ export function ProfilePage({
         </DialogContent>
       </Dialog>
 
-      {/* 비밀번호 변경 다이얼로그 */}
+      {/* 비�?번호 변�??�이?�로�?*/}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>비밀번호 변경</DialogTitle>
+            <DialogTitle>비�?번호 변�?/DialogTitle>
           </DialogHeader>
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
@@ -528,7 +528,7 @@ export function ProfilePage({
           )}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="current-password">현재 비밀번호</Label>
+              <Label htmlFor="current-password">?�재 비�?번호</Label>
               <Input
                 id="current-password"
                 type="password"
@@ -537,7 +537,7 @@ export function ProfilePage({
               />
             </div>
             <div>
-              <Label htmlFor="new-password">새 비밀번호</Label>
+              <Label htmlFor="new-password">??비�?번호</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -546,7 +546,7 @@ export function ProfilePage({
               />
             </div>
             <div>
-              <Label htmlFor="confirm-password">새 비밀번호 확인</Label>
+              <Label htmlFor="confirm-password">??비�?번호 ?�인</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -560,7 +560,7 @@ export function ProfilePage({
                 className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
                 disabled={isLoading}
               >
-                {isLoading ? "변경 중..." : "변경"}
+                {isLoading ? "변�?�?.." : "변�?}
               </Button>
               <Button
                 variant="outline"

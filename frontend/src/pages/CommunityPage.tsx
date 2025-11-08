@@ -1,19 +1,20 @@
-import { useState } from "react";
-import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Image as ImageIcon } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
-import { Header } from "./Header";
+import { useState, useEffect } from "react";
+import { getPosts } from "../api/client";
+import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X } from "lucide-react";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
+import { Header } from "../components/layout/Header";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../components/ui/select";
 
 interface CommunityPageProps {
   onClose: () => void;
@@ -42,118 +43,8 @@ interface Post {
   attachments?: { name: string; url: string; type: string }[];
 }
 
-const initialPosts: Post[] = [
-  {
-    id: 1,
-    title: "강남역 4번 출구 대여소 신규 개설 안내",
-    content: `안녕하세요, 서울자전거 따릉이입니다.
-
-강남역 4번 출구 인근에 새로운 대여소가 개설되었습니다.
-
-📍 위치: 서울시 강남구 강남대로 지하 400 (강남역 4번 출구 도보 1분)
-🚲 자전거 수: 30대
-⏰ 운영 시간: 24시간
-
-많은 이용 부탁드립니다.
-
-감사합니다.`,
-    author: "관리자",
-    date: "2025-11-05",
-    views: 1234,
-    likes: 89,
-    comments: 15,
-    category: "공지사항",
-    isPinned: true,
-  },
-  {
-    id: 2,
-    title: "11월 따릉이 이벤트 - 100km 챌린지!",
-    content: `11월 한 달 동안 따릉이로 총 100km를 달성하신 분들께 스타벅스 기프티콘을 드립니다!
-
-📅 기간: 2025.11.01 - 2025.11.30
-🎁 경품: 스타벅스 아메리카노 기프티콘
-📊 참여 방법: 앱에서 자동 집계됩니다
-
-많은 참여 부탁드립니다!`,
-    author: "관리자",
-    date: "2025-11-01",
-    views: 892,
-    likes: 145,
-    comments: 32,
-    category: "이벤트",
-    isPinned: true,
-  },
-  {
-    id: 3,
-    title: "출퇴근 따릉이 이용 꿀팁 공유합니다!",
-    content: `출퇴근할 때 따릉이 이용하는데 몇 가지 팁 공유드려요.
-
-1. 아침 출근시간에는 역 근처 대여소가 금방 동나니 조금 떨어진 곳에서 빌리세요
-2. 배터리 70% 이상인 자전거를 고르면 언덕길도 편해요
-3. 반납할 때는 미리 앱에서 자리 확인하고 가세요!
-
-다들 안전하게 이용하시길 바랍니다 :)`,
-    author: "출퇴근라이더",
-    date: "2025-11-02",
-    views: 423,
-    likes: 52,
-    comments: 8,
-    category: "후기",
-  },
-  {
-    id: 4,
-    title: "한강 따릉이 코스 추천해주세요",
-    content: `주말에 한강에서 따릉이 타려고 하는데 좋은 코스 있을까요?
-뚝섬에서 출발하려고 하는데 왕복 2시간 안에 가능한 코스면 좋겠습니다!`,
-    author: "주말라이더",
-    date: "2025-11-01",
-    views: 234,
-    likes: 15,
-    comments: 12,
-    category: "질문",
-  },
-  {
-    id: 5,
-    title: "따릉이 앱 업데이트 후 편해졌네요",
-    content: `최근 앱 업데이트 하고 나서 QR 스캔이 훨씬 빨라진 것 같아요.
-그리고 대여소 실시간 현황도 더 정확해진 느낌!
-개발자분들 고생 많으셨습니다 👍`,
-    author: "앱유저",
-    date: "2025-10-31",
-    views: 567,
-    likes: 89,
-    comments: 23,
-    category: "후기",
-  },
-  {
-    id: 6,
-    title: "신촌 근처 대여소 더 늘려주면 좋겠어요",
-    content: `신촌역 주변에 대여소가 부족한 것 같습니다.
-특히 저녁시간에는 자전거를 찾기가 너무 힘들어요.
-검토 부탁드립니다!`,
-    author: "신촌주민",
-    date: "2025-10-30",
-    views: 312,
-    likes: 34,
-    comments: 7,
-    category: "제안",
-  },
-  {
-    id: 7,
-    title: "야간에 따릉이 타도 안전한가요?",
-    content: `밤늦게 따릉이 이용하려고 하는데 안전한지 궁금합니다.
-전조등은 있는 걸로 아는데 밝기가 어떤가요?`,
-    author: "야간라이더",
-    date: "2025-10-29",
-    views: 189,
-    likes: 8,
-    comments: 15,
-    category: "질문",
-  },
-];
-
 export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationFinderClick, onNoticeClick, onPurchaseClick, onFaqClick, onHomeClick, onProfileClick, onRankingClick }: CommunityPageProps) {
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isWriting, setIsWriting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Post["category"] | "전체">("전체");
@@ -166,7 +57,30 @@ export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationF
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
 
-  // 고정 글은 항상 상단에 표시
+  // 게시글 로드
+  useEffect(() => {
+    loadPosts();
+  }, [selectedCategory, sortBy]);
+
+  const loadPosts = async () => {
+    try {
+      const params: any = {};
+      if (selectedCategory !== "전체") {
+        params.category = selectedCategory;
+      }
+      if (sortBy === "views") params.sortBy = "views";
+      if (sortBy === "likes") params.sortBy = "likes";
+      
+      const result = await getPosts(params);
+      if (result.success && result.data) {
+        setPosts(result.data.posts || []);
+      }
+    } catch (error) {
+      console.error("Error loading posts:", error);
+    }
+  };
+
+  // 고정 글을 먼저 상단에 표시
   const pinnedPosts = posts.filter(post => post.isPinned);
   const normalPosts = posts.filter(post => !post.isPinned);
 
@@ -227,7 +141,7 @@ export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationF
     setAttachedFiles([]);
     setFilePreviewUrls([]);
     setIsWriting(false);
-    alert("게시글이 작성되었습니다!");
+    alert("게시글이 작성되었습니다");
   };
 
   const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,8 +192,8 @@ export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationF
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="mb-2">커뮤니티</h1>
-            <p className="text-gray-600">따릉이 이용자들과 소통하세요</p>
+            <h1 className="text-3xl font-bold mb-2">커뮤니티</h1>
+            <p className="text-gray-600">따릉이 사용자들과 소통하세요</p>
           </div>
           {!isWriting && !selectedPost && (
             <Button
@@ -339,7 +253,7 @@ export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationF
           // Write Post View
           <div className="max-w-4xl mx-auto">
             <Card className="p-6">
-              <h2 className="mb-6">게시글 작성</h2>
+              <h2 className="text-2xl font-bold mb-6">게시글 작성</h2>
               
               <div className="space-y-4">
                 <div>
@@ -357,7 +271,7 @@ export function CommunityPage({ onClose, onLoginClick, onSignupClick, onStationF
                     <option value="후기">후기</option>
                     <option value="제안">제안</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">* 공지사항과 이벤트는 관리자만 작성할 수 있습니다.</p>
+                  <p className="text-xs text-gray-500 mt-1">* 공지사항과 이벤트는 관리자가 작성할 수 있습니다.</p>
                 </div>
 
                 <div>

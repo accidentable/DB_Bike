@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Check, ThumbsUp, MessageCircle, Star } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
-import { Header } from "./Header";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Textarea } from "../components/ui/textarea";
+import { Header } from "../components/layout/Header";
 
 interface PurchasePageProps {
   onClose: () => void;
@@ -14,6 +14,8 @@ interface PurchasePageProps {
   onCommunityClick: () => void;
   onFaqClick: () => void;
   onHomeClick: () => void;
+  onProfileClick: () => void;
+  onRankingClick: () => void;
 }
 
 interface Review {
@@ -39,14 +41,14 @@ interface Plan {
 
 const initialPlans: Plan[] = [
   {
-    name: "1시간권",
-    price: "1,000원",
-    duration: "1시간",
+    name: "1?�간�?,
+    price: "1,000??,
+    duration: "1?�간",
     features: [
-      "1시간 이용 가능",
-      "추가 시간당 1,000원",
-      "모든 대여소 이용 가능",
-      "24시간 이용 가능",
+      "1?�간 ?�용 가??,
+      "추�? ?�간??1,000??,
+      "모든 ?�?�소 ?�용 가??,
+      "24?�간 ?�용 가??,
     ],
     popular: false,
     likes: 245,
@@ -57,30 +59,30 @@ const initialPlans: Plan[] = [
         author: "김철수",
         date: "2025.10.28",
         rating: 4,
-        content: "짧은 거리 이동할 때 딱 좋아요! 가격도 저렴하고 편리합니다.",
+        content: "짧�? 거리 ?�동??????좋아?? 가격도 ?�?�하�??�리?�니??",
         likes: 12,
         liked: false,
       },
       {
         id: 2,
-        author: "이영희",
+        author: "?�영??,
         date: "2025.10.25",
         rating: 5,
-        content: "가끔 이용하는데 1시간이면 충분해서 이용권 자주 구매합니다.",
+        content: "가???�용?�는??1?�간?�면 충분?�서 ?�용�??�주 구매?�니??",
         likes: 8,
         liked: false,
       },
     ],
   },
   {
-    name: "1일권",
-    price: "2,000원",
-    duration: "24시간",
+    name: "1?�권",
+    price: "2,000??,
+    duration: "24?�간",
     features: [
-      "24시간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "당일 자정까지 유효",
+      "24?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "?�일 ?�정까�? ?�효",
     ],
     popular: true,
     likes: 892,
@@ -88,42 +90,42 @@ const initialPlans: Plan[] = [
     reviews: [
       {
         id: 1,
-        author: "박민수",
+        author: "박�???,
         date: "2025.10.30",
         rating: 5,
-        content: "하루 종일 여러 곳 돌아다닐 때 최고예요. 가성비 끝판왕!",
+        content: "?�루 종일 ?�러 �??�아?�닐 ??최고?�요. 가?�비 ?�판??",
         likes: 45,
         liked: false,
       },
       {
         id: 2,
-        author: "정수진",
+        author: "?�수�?,
         date: "2025.10.29",
         rating: 5,
-        content: "주말에 서울 구경할 때 사용했는데 너무 좋았어요. 추천합니다!",
+        content: "주말???�울 구경?????�용?�는???�무 좋았?�요. 추천?�니??",
         likes: 32,
         liked: false,
       },
       {
         id: 3,
-        author: "최동욱",
+        author: "최동??,
         date: "2025.10.27",
         rating: 4,
-        content: "가격 대비 만족도가 높습니다. 2시간마다 반납하면 되니까 불편함도 없어요.",
+        content: "가�??��?만족?��? ?�습?�다. 2?�간마다 반납?�면 ?�니�?불편?�도 ?�어??",
         likes: 18,
         liked: false,
       },
     ],
   },
   {
-    name: "정기권",
-    price: "5,000원",
-    duration: "30일",
+    name: "?�기�?,
+    price: "5,000??,
+    duration: "30??,
     features: [
-      "30일간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "365일 24시간 이용",
+      "30?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "365??24?�간 ?�용",
     ],
     popular: false,
     likes: 1523,
@@ -131,42 +133,42 @@ const initialPlans: Plan[] = [
     reviews: [
       {
         id: 1,
-        author: "강지훈",
+        author: "강�???,
         date: "2025.10.31",
         rating: 5,
-        content: "출퇴근용으로 완벽합니다. 한 달에 5천원이면 정말 저렴해요!",
+        content: "출퇴근용?�로 ?�벽?�니?? ???�에 5천원?�면 ?�말 ?�?�해??",
         likes: 67,
         liked: false,
       },
       {
         id: 2,
-        author: "윤서아",
+        author: "?�서??,
         date: "2025.10.28",
         rating: 5,
-        content: "매일 이용하는데 정기권이 제일 경제적이에요. 강추!",
+        content: "매일 ?�용?�는???�기권이 ?�일 경제?�이?�요. 강추!",
         likes: 54,
         liked: false,
       },
       {
         id: 3,
-        author: "임태윤",
+        author: "?�태??,
         date: "2025.10.26",
         rating: 4,
-        content: "자주 이용한다면 정기권이 답입니다. 한달 내내 부담 없이 타요.",
+        content: "?�주 ?�용?�다�??�기권이 ?�입?�다. ?�달 ?�내 부???�이 ?�??",
         likes: 29,
         liked: false,
       },
     ],
   },
   {
-    name: "연간권",
-    price: "30,000원",
-    duration: "365일",
+    name: "?�간�?,
+    price: "30,000??,
+    duration: "365??,
     features: [
-      "1년간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "가장 경제적인 선택",
+      "1?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "가??경제?�인 ?�택",
     ],
     popular: false,
     likes: 2341,
@@ -174,37 +176,37 @@ const initialPlans: Plan[] = [
     reviews: [
       {
         id: 1,
-        author: "송민호",
+        author: "?��???,
         date: "2025.10.30",
         rating: 5,
-        content: "1년 동안 쓰니까 한 달에 2,500원 꼴이에요. 완전 혜자!",
+        content: "1???�안 ?�니�????�에 2,500??꼴이?�요. ?�전 ?�자!",
         likes: 89,
         liked: false,
       },
       {
         id: 2,
-        author: "한지민",
+        author: "?��?�?,
         date: "2025.10.27",
         rating: 5,
-        content: "매일 출퇴근에 이용하는데 연간권이 제일 합리적이에요. 최고입니다!",
+        content: "매일 출퇴근에 ?�용?�는???�간권이 ?�일 ?�리?�이?�요. 최고?�니??",
         likes: 76,
         liked: false,
       },
       {
         id: 3,
-        author: "오성민",
+        author: "?�성�?,
         date: "2025.10.24",
         rating: 5,
-        content: "작년에 이어 올해도 연간권 끊었어요. 자주 타면 이게 제일 이득!",
+        content: "?�년???�어 ?�해???�간�??�었?�요. ?�주 ?��??�게 ?�일 ?�득!",
         likes: 62,
         liked: false,
       },
       {
         id: 4,
-        author: "백현우",
+        author: "백현??,
         date: "2025.10.22",
         rating: 4,
-        content: "일주일에 3번 이상만 타도 본전 뽑는 것 같아요. 좋습니다.",
+        content: "?�주?�에 3�??�상�??�??본전 뽑는 �?같아?? 좋습?�다.",
         likes: 41,
         liked: false,
       },
@@ -259,7 +261,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
 
     const newReview: Review = {
       id: Date.now(),
-      author: "사용자" + Math.floor(Math.random() * 1000),
+      author: "?�용?? + Math.floor(Math.random() * 1000),
       date: new Date().toLocaleDateString("ko-KR").replace(/\. /g, ".").slice(0, -1),
       rating: reviewRating,
       content: reviewContent,
@@ -298,9 +300,9 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="mb-2">이용권 구매</h1>
+          <h1 className="mb-2">?�용�?구매</h1>
           <p className="text-gray-600">
-            합리적인 가격으로 편리하게 이용하세요
+            ?�리?�인 가격으�??�리?�게 ?�용?�세??
           </p>
         </div>
 
@@ -316,7 +318,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00A862] text-white px-4 py-1 rounded-full text-sm">
-                  인기
+                  ?�기
                 </div>
               )}
               <div className="text-center mb-6">
@@ -339,7 +341,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                     : "bg-gray-900 hover:bg-gray-800"
                 }`}
               >
-                구매하기
+                구매?�기
               </Button>
 
               {/* Like Button */}
@@ -375,7 +377,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
         {selectedPlan !== null && (
           <Card className="p-6 mb-12">
             <div className="flex items-center justify-between mb-6">
-              <h3>{plans[selectedPlan].name} 후기</h3>
+              <h3>{plans[selectedPlan].name} ?�기</h3>
               <Button
                 onClick={() =>
                   setShowReviewForm(
@@ -385,7 +387,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                 className="bg-[#00A862] hover:bg-[#008F54]"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                후기 작성
+                ?�기 ?�성
               </Button>
             </div>
 
@@ -393,7 +395,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
             {showReviewForm === selectedPlan && (
               <Card className="p-4 mb-6 bg-gray-50">
                 <div className="mb-4">
-                  <label className="block text-sm mb-2">평점</label>
+                  <label className="block text-sm mb-2">?�점</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((rating) => (
                       <button
@@ -413,7 +415,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                   </div>
                 </div>
                 <Textarea
-                  placeholder="이용권에 대한 후기를 작성해주세요"
+                  placeholder="?�용권에 ?�???�기�??�성?�주?�요"
                   value={reviewContent}
                   onChange={(e) => setReviewContent(e.target.value)}
                   className="mb-4"
@@ -434,7 +436,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                     onClick={() => handleSubmitReview(selectedPlan)}
                     className="bg-[#00A862] hover:bg-[#008F54]"
                   >
-                    등록
+                    ?�록
                   </Button>
                 </div>
               </Card>
@@ -487,13 +489,13 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
         )}
 
         <Card className="p-8 bg-blue-50 border-blue-200">
-          <h3 className="mb-4">💡 알아두세요</h3>
+          <h3 className="mb-4">?�� ?�아?�세??/h3>
           <ul className="space-y-2 text-sm text-gray-700">
-            <li>• 1회 이용시간 초과 시 추가 요금이 부과됩니다 (5분당 200원)</li>
-            <li>• 대여 후 2시간 이내 다른 대여소에 반납하시면 추가 요금이 없습니다</li>
-            <li>• 정기권, 연간권은 1회 이용 후 2시간 이내 반납 시 무료로 재대여 가능합니다</li>
-            <li>• 자전거 훼손 및 분실 시 별도 배상 책임이 있습니다</li>
-            <li>• 모든 요금제는 서울시 전역 2,500개 이상의 대여소에서 이용 가능합니다</li>
+            <li>??1???�용?�간 초과 ??추�? ?�금??부과됩?�다 (5분당 200??</li>
+            <li>???�????2?�간 ?�내 ?�른 ?�?�소??반납?�시�?추�? ?�금???�습?�다</li>
+            <li>???�기�? ?�간권�? 1???�용 ??2?�간 ?�내 반납 ??무료�??��???가?�합?�다</li>
+            <li>???�전�??�손 �?분실 ??별도 배상 책임???�습?�다</li>
+            <li>??모든 ?�금?�는 ?�울???�역 2,500�??�상???�?�소?�서 ?�용 가?�합?�다</li>
           </ul>
         </Card>
       </div>

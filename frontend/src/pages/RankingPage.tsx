@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trophy, Medal, TrendingUp, MapPin, Bike, Calendar } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Header } from "./Header";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Header } from "../components/layout/Header";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../components/ui/select";
 
 interface RankingPageProps {
   onClose: () => void;
@@ -33,20 +33,6 @@ interface RankingUser {
   isCurrentUser?: boolean;
 }
 
-const rankingData: RankingUser[] = [
-  { rank: 1, name: "박라이더", distance: 1247.8, rides: 342, badge: "🥇" },
-  { rank: 2, name: "이환경", distance: 1156.2, rides: 298, badge: "🥈" },
-  { rank: 3, name: "최건강", distance: 1089.5, rides: 276, badge: "🥉" },
-  { rank: 4, name: "정열정", distance: 987.3, rides: 251 },
-  { rank: 5, name: "강에코", distance: 945.6, rides: 234 },
-  { rank: 6, name: "윤자전거", distance: 892.4, rides: 219 },
-  { rank: 7, name: "임페달", distance: 856.9, rides: 207 },
-  { rank: 8, name: "한출퇴근", distance: 823.1, rides: 198 },
-  { rank: 9, name: "송바람", distance: 791.5, rides: 186 },
-  { rank: 10, name: "오달리기", distance: 765.8, rides: 174 },
-  { rank: 142, name: "김따릉", distance: 287.5, rides: 67, isCurrentUser: true },
-];
-
 export function RankingPage({
   onClose,
   onLoginClick,
@@ -61,14 +47,36 @@ export function RankingPage({
 }: RankingPageProps) {
   const [rankingType, setRankingType] = useState<"distance" | "rides">("distance");
   const [period, setPeriod] = useState<"전체" | "이번달" | "이번주">("전체");
+  const [rankingData, setRankingData] = useState<RankingUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 랭킹 데이터 로드
+  useEffect(() => {
+    loadRanking();
+  }, [rankingType, period]);
+
+  const loadRanking = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/rankings?type=${rankingType}&period=${period}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRankingData(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading ranking:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const currentUser = rankingData.find(u => u.isCurrentUser);
   const topRankers = rankingData.filter(u => !u.isCurrentUser);
 
   const getRankDisplay = (rank: number) => {
-    if (rank === 1) return "🥇";
-    if (rank === 2) return "🥈";
-    if (rank === 3) return "🥉";
+    if (rank === 1) return "?��";
+    if (rank === 2) return "?��";
+    if (rank === 3) return "?��";
     return rank;
   };
 
@@ -89,8 +97,8 @@ export function RankingPage({
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="mb-2">랭킹</h1>
-          <p className="text-gray-600">따릉이 이용자들과 함께 경쟁해보세요!</p>
+          <h1 className="mb-2">??��</h1>
+          <p className="text-gray-600">?�릉???�용?�들�??�께 경쟁?�보?�요!</p>
         </div>
 
         {/* Filters */}
@@ -100,25 +108,25 @@ export function RankingPage({
             onValueChange={(value) => setRankingType(value as "distance" | "rides")}
           >
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="랭킹 타입" />
+              <SelectValue placeholder="??�� ?�?? />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="distance">누적 거리</SelectItem>
-              <SelectItem value="rides">이용 횟수</SelectItem>
+              <SelectItem value="distance">?�적 거리</SelectItem>
+              <SelectItem value="rides">?�용 ?�수</SelectItem>
             </SelectContent>
           </Select>
 
           <Select
             value={period}
-            onValueChange={(value) => setPeriod(value as "전체" | "이번달" | "이번주")}
+            onValueChange={(value) => setPeriod(value as "?�체" | "?�번?? | "?�번�?)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="기간" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="전체">전체 기간</SelectItem>
-              <SelectItem value="이번달">이번 달</SelectItem>
-              <SelectItem value="이번주">이번 주</SelectItem>
+              <SelectItem value="?�체">?�체 기간</SelectItem>
+              <SelectItem value="?�번??>?�번 ??/SelectItem>
+              <SelectItem value="?�번�?>?�번 �?/SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -126,7 +134,7 @@ export function RankingPage({
         {/* Top 3 Podium */}
         <div className="mb-8">
           <Card className="p-8 bg-gradient-to-br from-[#00A862]/10 to-white">
-            <h2 className="mb-6 text-center">🏆 TOP 3 🏆</h2>
+            <h2 className="mb-6 text-center">?�� TOP 3 ?��</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {topRankers.slice(0, 3).map((user) => (
                 <div
@@ -148,7 +156,7 @@ export function RankingPage({
                     </div>
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                       <Bike className="w-4 h-4" />
-                      <span>{user.rides}회</span>
+                      <span>{user.rides}??/span>
                     </div>
                   </div>
                 </div>
@@ -164,10 +172,10 @@ export function RankingPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="text-2xl font-bold text-[#00A862]">
-                    {currentUser.rank}위
+                    {currentUser.rank}??
                   </div>
                   <div>
-                    <h3 className="mb-1">{currentUser.name} (나)</h3>
+                    <h3 className="mb-1">{currentUser.name} (??</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
@@ -175,13 +183,13 @@ export function RankingPage({
                       </span>
                       <span className="flex items-center gap-1">
                         <Bike className="w-4 h-4" />
-                        {currentUser.rides}회
+                        {currentUser.rides}??
                       </span>
                     </div>
                   </div>
                 </div>
                 <Badge className="bg-[#00A862]">
-                  상위 5%
+                  ?�위 5%
                 </Badge>
               </div>
             </Card>
@@ -190,7 +198,7 @@ export function RankingPage({
 
         {/* Full Ranking List */}
         <Card className="p-6">
-          <h2 className="mb-4">전체 랭킹</h2>
+          <h2 className="mb-4">?�체 ??��</h2>
           <div className="space-y-2">
             {topRankers.map((user) => (
               <div
@@ -218,7 +226,7 @@ export function RankingPage({
                       </span>
                       <span className="flex items-center gap-1">
                         <Bike className="w-3 h-3" />
-                        {user.rides}회
+                        {user.rides}??
                       </span>
                     </div>
                   </div>

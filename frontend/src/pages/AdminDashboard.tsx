@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
 import { Users, Bike, TrendingUp, Activity, Edit, Trash2, Search, X, Ticket, Calendar, DollarSign } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Header } from "./Header";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { projectId } from "../utils/supabase/info";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Header } from "../components/layout/Header";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
+// API 기본 URL
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// 차트 색상
+const COLORS = [
+  "#60A5FA", "#FBBF24", "#F59E0B", "#FB923C", "#A78BFA", 
+  "#34D399", "#14B8A6", "#EC4899", "#F472B6", "#A855F7",
+  "#8B5CF6", "#6366F1", "#3B82F6", "#0EA5E9", "#06B6D4"
+];
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -24,64 +33,6 @@ interface AdminDashboardProps {
   onProfileClick: () => void;
   onRankingClick: () => void;
 }
-
-// 서울 지역구 데이터 (TOP 15)
-const districtData = [
-  { name: "강남구", value: 87, percent: 18 },
-  { name: "노원구", value: 58, percent: 12 },
-  { name: "송파구", value: 34, percent: 11 },
-  { name: "관악구", value: 33, percent: 11 },
-  { name: "마포구", value: 22, percent: 7 },
-  { name: "광진구", value: 18, percent: 6 },
-  { name: "금천구", value: 17, percent: 5 },
-  { name: "동작구", value: 15, percent: 5 },
-  { name: "은평구", value: 13, percent: 4 },
-  { name: "구로구", value: 13, percent: 4 },
-  { name: "성북구", value: 12, percent: 4 },
-  { name: "서대문구", value: 11, percent: 4 },
-  { name: "강동구", value: 10, percent: 3 },
-  { name: "도봉구", value: 9, percent: 3 },
-  { name: "영등포구", value: 8, percent: 3 },
-];
-
-// 서울 따릉이 대여율 데이터
-const rentalRateData = [
-  { id: 1, name: "양재역 자전거길", percent: 85, color: "#60A5FA" },
-  { id: 2, name: "여의도 한강공원", percent: 67, color: "#34D399" },
-  { id: 3, name: "잠원한강공원", percent: 76, color: "#FBBF24" },
-  { id: 4, name: "반포한강공원", percent: 72, color: "#A78BFA" },
-  { id: 5, name: "뚝섬한강공원", percent: 66, color: "#F472B6" },
-  { id: 6, name: "광나루한강공원", percent: 67, color: "#FB923C" },
-  { id: 7, name: "시민의숲 진입로", percent: 52, color: "#14B8A6" },
-  { id: 8, name: "북한산 자전로길", percent: 49, color: "#A855F7" },
-  { id: 9, name: "행복한길 이어주길", percent: 47, color: "#F59E0B" },
-];
-
-// 대여소 정보 데이터
-const stationInfoData = [
-  { id: 1, name: "광야 레지스센터", bikes: "농블로장159", available: 20, rented: 9 },
-  { id: 2, name: "광신교환", bikes: "관나레로236길", available: 16, rented: 18 },
-  { id: 3, name: "광행동 주세대", bikes: "관나레로356길", available: 14, rented: 5 },
-  { id: 4, name: "교차로 대화동 도로스통", bikes: "광덕빛 청라동로(2+11명)", available: 8, rented: 1 },
-  { id: 5, name: "우영복물 광", bikes: "관나레로 582", available: 15, rented: 3 },
-  { id: 6, name: "세종대학교(집체실)", bikes: "농플로 209", available: 10, rented: 12 },
-  { id: 7, name: "관숙대학교 일반", bikes: "광폭로 120", available: 25, rented: 16 },
-];
-
-// 사용자 활동 로그 데이터
-const activityLogsData = [
-  { time: "2025-10-28 14:30:22", user: "박서준", action: "시스템 로그인", status: "success" },
-  { time: "2025-10-28 14:28:15", user: "정해인", action: "프로필 정보 업데이트", status: "success" },
-  { time: "2025-10-28 14:25:10", user: "박도훈", action: "로그인 시도 실패", status: "error" },
-  { time: "2025-10-28 14:20:05", user: "최유진", action: "보고서 다운로드", status: "info" },
-  { time: "2025-10-28 14:15:30", user: "김도훈", action: "비밀번호 변경 업데", status: "warning" },
-];
-
-const COLORS = [
-  "#60A5FA", "#FBBF24", "#F59E0B", "#FB923C", "#A78BFA", 
-  "#34D399", "#14B8A6", "#EC4899", "#F472B6", "#A855F7",
-  "#8B5CF6", "#6366F1", "#3B82F6", "#0EA5E9", "#06B6D4"
-];
 
 export function AdminDashboard({
   onClose,
@@ -99,6 +50,10 @@ export function AdminDashboard({
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
+  const [districtData, setDistrictData] = useState<any[]>([]);
+  const [rentalRateData, setRentalRateData] = useState<any[]>([]);
+  const [stationInfoData, setStationInfoData] = useState<any[]>([]);
+  const [activityLogsData, setActivityLogsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -129,7 +84,7 @@ export function AdminDashboard({
 
       // 통계 로드
       const statsRes = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/stats`,
+        `${API_BASE_URL}/admin/stats`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -143,7 +98,7 @@ export function AdminDashboard({
 
       // 사용자 목록 로드
       const usersRes = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/users`,
+        `${API_BASE_URL}/admin/users`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -157,7 +112,7 @@ export function AdminDashboard({
 
       // 대여 이력 로드
       const rentalsRes = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/rentals`,
+        `${API_BASE_URL}/admin/rentals`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -168,6 +123,63 @@ export function AdminDashboard({
         const data = await rentalsRes.json();
         setRentals(data.rentals);
       }
+
+      // 지역구별 데이터 로드
+      const districtRes = await fetch(
+        `${API_BASE_URL}/admin/district-stats`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      if (districtRes.ok) {
+        const data = await districtRes.json();
+        setDistrictData(data.districts || []);
+      }
+
+      // 대여율 데이터 로드
+      const rentalRateRes = await fetch(
+        `${API_BASE_URL}/admin/rental-rates`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      if (rentalRateRes.ok) {
+        const data = await rentalRateRes.json();
+        setRentalRateData(data.rates || []);
+      }
+
+      // 대여소 정보 로드
+      const stationsRes = await fetch(
+        `${API_BASE_URL}/admin/station-info`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      if (stationsRes.ok) {
+        const data = await stationsRes.json();
+        setStationInfoData(data.stations || []);
+      }
+
+      // 활동 로그 로드
+      const logsRes = await fetch(
+        `${API_BASE_URL}/admin/activity-logs`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      if (logsRes.ok) {
+        const data = await logsRes.json();
+        setActivityLogsData(data.logs || []);
+      }
+
     } catch (error) {
       console.error("Error loading admin data:", error);
     } finally {
@@ -204,7 +216,7 @@ export function AdminDashboard({
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/users/${selectedUser.email}`,
+        `${API_BASE_URL}/admin/users/${selectedUser.email}`,
         {
           method: 'PUT',
           headers: {
@@ -216,7 +228,7 @@ export function AdminDashboard({
       );
 
       if (response.ok) {
-        alert("사용자 정보가 업데이트되었습니다.");
+        alert("사용자 정보가 업데이트되었습니다");
         setIsEditDialogOpen(false);
         loadData();
       } else {
@@ -245,7 +257,7 @@ export function AdminDashboard({
       };
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/users/${selectedUser.email}`,
+        `${API_BASE_URL}/admin/users/${selectedUser.email}`,
         {
           method: 'PUT',
           headers: {
@@ -257,7 +269,7 @@ export function AdminDashboard({
       );
 
       if (response.ok) {
-        alert("이용권이 업데이트되었습니다.");
+        alert("이용권이 업데이트되었습니다");
         setIsTicketDialogOpen(false);
         loadData();
       } else {
@@ -276,7 +288,7 @@ export function AdminDashboard({
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-442de064/admin/users/${email}`,
+        `${API_BASE_URL}/admin/users/${email}`,
         {
           method: 'DELETE',
           headers: {
@@ -286,7 +298,7 @@ export function AdminDashboard({
       );
 
       if (response.ok) {
-        alert("사용자가 삭제되었습니다.");
+        alert("사용자를 삭제했습니다");
         loadData();
       } else {
         const error = await response.json();
@@ -322,11 +334,11 @@ export function AdminDashboard({
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="mb-2">관리자 대시보드</h1>
+            <h1 className="text-3xl font-bold mb-2">관리자 대시보드</h1>
             <p className="text-gray-600">시스템 전체를 관리하고 모니터링합니다</p>
           </div>
           <Button onClick={loadData} disabled={isLoading}>
-            {isLoading ? "새로고침 중..." : "새로고침"}
+            {isLoading ? "새로고침 중.." : "새로고침"}
           </Button>
         </div>
 
@@ -338,7 +350,7 @@ export function AdminDashboard({
                 <Users className="w-8 h-8 text-[#00A862]" />
                 <span className="text-sm text-gray-600">전체 사용자</span>
               </div>
-              <p className="text-3xl">{stats.totalUsers}명</p>
+              <p className="text-3xl font-bold">{stats.totalUsers}명</p>
             </Card>
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -346,16 +358,16 @@ export function AdminDashboard({
                 <Bike className="w-8 h-8 text-[#00A862]" />
                 <span className="text-sm text-gray-600">전체 대여</span>
               </div>
-              <p className="text-3xl">{stats.totalRentals}회</p>
+              <p className="text-3xl font-bold">{stats.totalRentals}회</p>
               <p className="text-sm text-gray-600 mt-1">오늘: {stats.todayRentals}회</p>
             </Card>
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-center gap-3 mb-3">
                 <Activity className="w-8 h-8 text-[#00A862]" />
-                <span className="text-sm text-gray-600">현재 대여 중</span>
+                <span className="text-sm text-gray-600">현재 대여중</span>
               </div>
-              <p className="text-3xl">{stats.activeRentals}건</p>
+              <p className="text-3xl font-bold">{stats.activeRentals}건</p>
             </Card>
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -363,7 +375,7 @@ export function AdminDashboard({
                 <TrendingUp className="w-8 h-8 text-[#00A862]" />
                 <span className="text-sm text-gray-600">누적 거리</span>
               </div>
-              <p className="text-3xl">{stats.totalDistance}km</p>
+              <p className="text-3xl font-bold">{stats.totalDistance}km</p>
             </Card>
           </div>
         )}
@@ -372,16 +384,16 @@ export function AdminDashboard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* 서울 따릉이 대여소 수 */}
           <Card className="p-6">
-            <h3 className="mb-2">서울 따릉이 대여소 수</h3>
+            <h3 className="text-xl font-semibold mb-2">서울 따릉이 대여소 수</h3>
             <div className="flex items-center justify-center h-48">
-              <p className="text-6xl text-pink-500">560</p>
+              <p className="text-6xl font-bold text-pink-500">560</p>
             </div>
           </Card>
 
           {/* 지역구별 대여소 현황 파이차트 */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3>지역구별 대여소 현황(TOP15)</h3>
+              <h3 className="text-xl font-semibold">지역구별 대여소 현황(TOP15)</h3>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -428,7 +440,7 @@ export function AdminDashboard({
 
           {/* 서울 따릉이 대여율 막대 그래프 */}
           <Card className="p-6 lg:col-span-2">
-            <h3 className="mb-4">서울 따릉이 대여율</h3>
+            <h3 className="text-xl font-semibold mb-4">서울 따릉이 대여율</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={rentalRateData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
@@ -463,15 +475,15 @@ export function AdminDashboard({
 
           {/* 대여소 정보 */}
           <Card className="p-6 lg:col-span-2">
-            <h3 className="mb-4">대여소 정보</h3>
+            <h3 className="text-xl font-semibold mb-4">대여소 정보</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-800 text-white">
                   <tr>
-                    <th className="px-4 py-3 text-left">대여소명 ▼</th>
-                    <th className="px-4 py-3 text-left">주소 ▼</th>
-                    <th className="px-4 py-3 text-right">대여가능 ▼</th>
-                    <th className="px-4 py-3 text-right">대여중 ▼</th>
+                    <th className="px-4 py-3 text-left">대여소명</th>
+                    <th className="px-4 py-3 text-left">주소 수</th>
+                    <th className="px-4 py-3 text-right">대여가능 수</th>
+                    <th className="px-4 py-3 text-right">대여중 수</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y bg-gray-700 text-white">
@@ -524,10 +536,10 @@ export function AdminDashboard({
                           'bg-blue-500'
                         }
                       >
-                        {log.status === 'success' ? '● Success' :
-                         log.status === 'error' ? '● Error' :
-                         log.status === 'warning' ? '● Warning' :
-                         '● Info'}
+                        {log.status === 'success' ? '✓ Success' :
+                         log.status === 'error' ? '✕ Error' :
+                         log.status === 'warning' ? '⚠ Warning' :
+                         'ℹ Info'}
                       </Badge>
                     </td>
                   </tr>
@@ -551,7 +563,7 @@ export function AdminDashboard({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
-                    placeholder="이름, 이메일, 학번으로 검색..."
+                    placeholder="이름, 이메일, 학번으로 검색.."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -563,14 +575,14 @@ export function AdminDashboard({
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm">이름</th>
-                      <th className="px-4 py-3 text-left text-sm">이메일</th>
-                      <th className="px-4 py-3 text-left text-sm">학번</th>
-                      <th className="px-4 py-3 text-left text-sm">가입일</th>
-                      <th className="px-4 py-3 text-left text-sm">이용 횟수</th>
-                      <th className="px-4 py-3 text-left text-sm">이용권</th>
-                      <th className="px-4 py-3 text-left text-sm">권한</th>
-                      <th className="px-4 py-3 text-center text-sm">관리</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">이름</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">이메일</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">학번</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">가입일</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">이용 횟수</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">이용권</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">권한</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold">관리</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -643,13 +655,13 @@ export function AdminDashboard({
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm">사용자</th>
-                      <th className="px-4 py-3 text-left text-sm">자전거</th>
-                      <th className="px-4 py-3 text-left text-sm">대여소</th>
-                      <th className="px-4 py-3 text-left text-sm">대여 시간</th>
-                      <th className="px-4 py-3 text-left text-sm">반납 시간</th>
-                      <th className="px-4 py-3 text-left text-sm">거리</th>
-                      <th className="px-4 py-3 text-left text-sm">상태</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">사용자</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">자전거</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">대여소</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">대여 시간</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">반납 시간</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">거리</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">상태</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -706,7 +718,7 @@ export function AdminDashboard({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>이메일 (수정 불가)</Label>
+              <Label>이메일(수정 불가)</Label>
               <Input value={selectedUser?.email || ""} disabled />
             </div>
             <div>

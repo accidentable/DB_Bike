@@ -1,53 +1,53 @@
 import { Check } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 
 const plans = [
   {
-    name: "1시간권",
-    price: "1,000원",
-    duration: "1시간",
+    name: "1?�간�?,
+    price: "1,000??,
+    duration: "1?�간",
     features: [
-      "1시간 이용 가능",
-      "추가 시간당 1,000원",
-      "모든 대여소 이용 가능",
-      "24시간 이용 가능",
+      "1?�간 ?�용 가??,
+      "추�? ?�간??1,000??,
+      "모든 ?�?�소 ?�용 가??,
+      "24?�간 ?�용 가??,
     ],
     popular: false,
   },
   {
-    name: "1일권",
-    price: "2,000원",
-    duration: "24시간",
+    name: "1?�권",
+    price: "2,000??,
+    duration: "24?�간",
     features: [
-      "24시간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "당일 자정까지 유효",
+      "24?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "?�일 ?�정까�? ?�효",
     ],
     popular: true,
   },
   {
-    name: "정기권",
-    price: "5,000원",
-    duration: "30일",
+    name: "?�기�?,
+    price: "5,000??,
+    duration: "30??,
     features: [
-      "30일간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "365일 24시간 이용",
+      "30?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "365??24?�간 ?�용",
     ],
     popular: false,
   },
   {
-    name: "연간권",
-    price: "30,000원",
-    duration: "365일",
+    name: "?�간�?,
+    price: "30,000??,
+    duration: "365??,
     features: [
-      "1년간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "가장 경제적인 선택",
+      "1?�간 무제???�용",
+      "1???�용?�간 2?�간까�?",
+      "모든 ?�?�소 ?�용 가??,
+      "가??경제?�인 ?�택",
     ],
     popular: false,
   },
@@ -58,9 +58,9 @@ export function Pricing() {
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="mb-4">이용요금</h2>
+          <h2 className="mb-4">?�용?�금</h2>
           <p className="text-gray-600">
-            합리적인 가격으로 편리하게 이용하세요
+            ?�리?�인 가격으�??�리?�게 ?�용?�세??
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export function Pricing() {
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00A862] text-white px-4 py-1 rounded-full text-sm">
-                  인기
+                  ?�기
                 </div>
               )}
               <div className="text-center mb-6">
@@ -99,20 +99,20 @@ export function Pricing() {
                     : "bg-gray-900 hover:bg-gray-800"
                 }`}
               >
-                구매하기
+                구매?�기
               </Button>
             </Card>
           ))}
         </div>
 
         <Card className="p-8 bg-blue-50 border-blue-200">
-          <h3 className="mb-4">💡 알아두세요</h3>
+          <h3 className="mb-4">?�� ?�아?�세??/h3>
           <ul className="space-y-2 text-sm text-gray-700">
-            <li>• 1회 이용시간 초과 시 추가 요금이 부과됩니다 (5분당 200원)</li>
-            <li>• 대여 후 2시간 이내 다른 대여소에 반납하시면 추가 요금이 없습니다</li>
-            <li>• 정기권, 연간권은 1회 이용 후 2시간 이내 반납 시 무료로 재대여 가능합니다</li>
-            <li>• 자전거 훼손 및 분실 시 별도 배상 책임이 있습니다</li>
-            <li>• 모든 요금제는 서울시 전역 2,500개 이상의 대여소에서 이용 가능합니다</li>
+            <li>??1???�용?�간 초과 ??추�? ?�금??부과됩?�다 (5분당 200??</li>
+            <li>???�????2?�간 ?�내 ?�른 ?�?�소??반납?�시�?추�? ?�금???�습?�다</li>
+            <li>???�기�? ?�간권�? 1???�용 ??2?�간 ?�내 반납 ??무료�??��???가?�합?�다</li>
+            <li>???�전�??�손 �?분실 ??별도 배상 책임???�습?�다</li>
+            <li>??모든 ?�금?�는 ?�울???�역 2,500�??�상???�?�소?�서 ?�용 가?�합?�다</li>
           </ul>
         </Card>
       </div>

@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { Header } from "./components/Header";
+import { Header } from "./components/layout/Header";
 import { Hero } from "./components/Hero";
 import { StationMap } from "./components/StationMap";
 import { HowToUse } from "./components/HowToUse";
-import { Footer } from "./components/Footer";
-import { LoginPage } from "./components/LoginPage";
-import { SignupPage } from "./components/SignupPage";
-import { StationFinderPage } from "./components/StationFinderPage";
-import { CommunityPage } from "./components/CommunityPage";
-import { PurchasePage } from "./components/PurchasePage";
-import { FAQPage } from "./components/FAQPage";
-import { ProfilePage } from "./components/ProfilePage";
-import { RankingPage } from "./components/RankingPage";
-import { ChatbotWidget } from "./components/ChatbotWidget";
-import { AdminDashboard } from "./components/AdminDashboard";
-import { getCurrentUser } from "./utils/api";
+import { Footer } from "./components/layout/Footer";
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
+import { CommunityPage } from "./pages/CommunityPage";
+import { PurchasePage } from "./pages/PurchasePage";
+import { FAQPage } from "./pages/FAQPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { RankingPage } from "./pages/RankingPage";
+import { ChatbotWidget } from "./components/common/ChatbotWidget";
+import { AdminDashboard } from "./pages/AdminDashboard";
+import { StationFinderPage } from "./pages/StationFinderPage";
+import { getCurrentUser } from "./api/client";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<"home" | "login" | "signup" | "stationfinder" | "community" | "purchase" | "faq" | "profile" | "ranking" | "admin">("home");
