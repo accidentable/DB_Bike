@@ -61,6 +61,7 @@ const authService = {
     return { 
       token,  // 클라이언트가 이후 요청에 사용할 인증 토큰
       user: { 
+        member_id: user.member_id, // 사용자 ID (추가!)
         email: user.email,      // 사용자 이메일
         username: user.username, // 사용자명
         role: user.role          // 사용자 역할

@@ -2,10 +2,10 @@
 // (API 연동 및 mock data 제거 완료)
 
 import { useState, useEffect } from "react";
-import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X } from "lucide-react";
+import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Trash2, Edit } from "lucide-react";
 
 // 1. (수정) API 경로 및 Context 경로 수정
-import { getPosts, createPost, getPost, type Post } from "../api/postApi";
+import { getPosts, createPost, getPost, updatePost, deletePost, type Post } from "../api/postApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
 
@@ -44,12 +44,19 @@ export default function CommunityPage() {
 
   // --- UI 상태 ---
   const [isWriting, setIsWriting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [sortBy, setSortBy] = useState<"latest" | "views" | "likes">("latest"); // (수정) date -> latest
   const [newPost, setNewPost] = useState({
     title: "",
     content: "",
     category: "자유", // 기본 카테고리
+  });
+  const [editPost, setEditPost] = useState({
+    post_id: 0,
+    title: "",
+    content: "",
+    category: "자유",
   });
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
@@ -85,12 +92,97 @@ export default function CommunityPage() {
         // (수정) 상세 API 호출 (조회수 증가 로직 포함)
         const response = await getPost(postId);
         if (response.success && response.data) {
+            console.log('게시글 상세 정보:', response.data);
+            console.log('현재 로그인 사용자:', user);
             setSelectedPost(response.data);
             fetchPosts(); // 목록 페이지의 조회수 갱신을 위해 재호출 (옵션)
         }
     } catch (err) {
         setError("게시글 상세 정보를 불러오는데 실패했습니다.");
     }
+  };
+
+  // 수정 버튼 클릭 - 수정 모드로 전환
+  const handleEditClick = () => {
+    if (!selectedPost) return;
+    
+    setEditPost({
+      post_id: selectedPost.post_id,
+      title: selectedPost.title,
+      content: selectedPost.content,
+      category: selectedPost.category,
+    });
+    setIsEditing(true);
+  };
+
+  // 수정 제출
+  const handleSubmitEdit = async () => {
+    if (!editPost.title.trim() || !editPost.content.trim()) {
+      alert("제목과 내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const response = await updatePost(editPost.post_id, {
+        title: editPost.title,
+        content: editPost.content,
+        category: editPost.category,
+      });
+
+      if (response.success) {
+        alert("게시글이 수정되었습니다.");
+        setIsEditing(false);
+        // 수정된 글 다시 불러오기
+        const updatedResponse = await getPost(editPost.post_id);
+        if (updatedResponse.success && updatedResponse.data) {
+          setSelectedPost(updatedResponse.data);
+        }
+        fetchPosts(); // 목록 새로고침
+      } else {
+        alert(response.message || "게시글 수정에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("게시글 수정 중 오류:", err);
+      alert("게시글 수정 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 삭제 버튼 클릭
+  const handleDelete = async () => {
+    if (!selectedPost) return;
+    
+    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      const response = await deletePost(selectedPost.post_id);
+      
+      if (response.success) {
+        alert("게시글이 삭제되었습니다.");
+        setSelectedPost(null);
+        fetchPosts(); // 목록 새로고침
+      } else {
+        alert(response.message || "게시글 삭제에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("게시글 삭제 중 오류:", err);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 본인 글인지 확인하는 함수
+  const isAuthor = (post: Post | null): boolean => {
+    if (!post || !user) {
+      console.log('isAuthor: post 또는 user가 없음', { post, user });
+      return false;
+    }
+    console.log('isAuthor 체크:', {
+      post_member_id: post.member_id,
+      user_member_id: user.member_id,
+      isMatch: post.member_id === user.member_id
+    });
+    return post.member_id === user.member_id;
   };
 
   const handleSubmitPost = async () => {
@@ -378,71 +470,162 @@ export default function CommunityPage() {
         ) : selectedPost ? (
           // Post Detail View
           <div className="max-w-4xl mx-auto">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedPost(null)}
-              className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              목록으로
-            </Button>
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedPost(null);
+                  setIsEditing(false);
+                }}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                목록으로
+              </Button>
 
-            <Card className="p-8">
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  {selectedPost.is_pinned && (
-                    <Pin className="w-5 h-5 text-[#00A862]" />
-                  )}
-                  <Badge className={getCategoryColor(selectedPost.category)}>
-                    {selectedPost.category}
-                  </Badge>
-                  {selectedPost.is_pinned && (
-                    <Badge variant="outline" className="border-[#00A862] text-[#00A862]">
-                      고정
-                    </Badge>
-                  )}
+              {/* 작성자 본인에게만 수정/삭제 버튼 표시 */}
+              {isAuthor(selectedPost) && !isEditing && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleEditClick}
+                    className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    삭제
+                  </Button>
                 </div>
-                <h2 className="mb-4">{selectedPost.title}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span>{selectedPost.username}</span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {selectedPost.created_at.split('T')[0]} {/* 날짜 형식 수정 */}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Eye className="w-4 h-4" />
-                    조회 {selectedPost.views}
-                  </span>
-                  <span className="flex items-center gap-1">
+              )}
+            </div>
+
+            {isEditing ? (
+              // 수정 모드
+              <Card className="p-8">
+                <h2 className="mb-6">게시글 수정</h2>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-category">카테고리</Label>
+                    <Select
+                      value={editPost.category}
+                      onValueChange={(value) => setEditPost({ ...editPost, category: value })}
+                    >
+                      <SelectTrigger id="edit-category">
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="자유">자유</SelectItem>
+                        <SelectItem value="질문">질문</SelectItem>
+                        <SelectItem value="정보">정보</SelectItem>
+                        <SelectItem value="후기">후기</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-title">제목</Label>
+                    <Input
+                      id="edit-title"
+                      value={editPost.title}
+                      onChange={(e) => setEditPost({ ...editPost, title: e.target.value })}
+                      placeholder="제목을 입력하세요"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-content">내용</Label>
+                    <Textarea
+                      id="edit-content"
+                      value={editPost.content}
+                      onChange={(e) => setEditPost({ ...editPost, content: e.target.value })}
+                      placeholder="내용을 입력하세요"
+                      className="min-h-[300px]"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSubmitEdit}
+                      className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      수정 완료
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      취소
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              // 상세 보기 모드
+              <Card className="p-8">
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    {selectedPost.is_pinned && (
+                      <Pin className="w-5 h-5 text-[#00A862]" />
+                    )}
+                    <Badge className={getCategoryColor(selectedPost.category)}>
+                      {selectedPost.category}
+                    </Badge>
+                    {selectedPost.is_pinned && (
+                      <Badge variant="outline" className="border-[#00A862] text-[#00A862]">
+                        고정
+                      </Badge>
+                    )}
+                  </div>
+                  <h2 className="mb-4">{selectedPost.title}</h2>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>{selectedPost.username}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {selectedPost.created_at.split('T')[0]}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Eye className="w-4 h-4" />
+                      조회 {selectedPost.views}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <ThumbsUp className="w-4 h-4" />
+                      좋아요 {selectedPost.likes}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="w-4 h-4" />
+                      댓글 {selectedPost.comments_count}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 mb-6">
+                  <div className="prose max-w-none">
+                    <pre className="whitespace-pre-wrap font-sans text-gray-700">
+                      {selectedPost.content}
+                    </pre>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 flex items-center gap-4">
+                  <Button variant="outline" className="flex items-center gap-2">
                     <ThumbsUp className="w-4 h-4" />
                     좋아요 {selectedPost.likes}
-                  </span>
-                  <span className="flex items-center gap-1">
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4" />
-                    댓글 {selectedPost.comments_count} {/* comments_count로 변경 */}
-                  </span>
+                    댓글 {selectedPost.comments_count}
+                  </Button>
                 </div>
-              </div>
-
-              <div className="border-t pt-6 mb-6">
-                <div className="prose max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-gray-700">
-                    {selectedPost.content}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="border-t pt-6 flex items-center gap-4">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <ThumbsUp className="w-4 h-4" />
-                  좋아요 {selectedPost.likes}
-                </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  댓글 {selectedPost.comments_count}
-                </Button>
-              </div>
-            </Card>
+              </Card>
+            )}
           </div>
         ) : (
           // Post List View

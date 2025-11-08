@@ -1,11 +1,11 @@
 // src/contexts/AuthContext.tsx
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 // 1. Context에 저장할 데이터 타입 정의
 interface AuthContextType {
   token: string | null;
-  user: { email: string, username: string, role: string } | null;
+  user: { member_id: number, email: string, username: string, role: string } | null;
   isLoggedIn: boolean;
   login: (token: string, user: any) => void;
   logout: () => void;
