@@ -1,19 +1,17 @@
 /**
  * src/api/post.routes.js
- * °Ô½Ã±Û °ü·Ã API ¶ó¿ìÅÍ
- * 
- * ¿ªÇÒ: HTTP ¿äÃ»À» ¹Þ¾Æ¼­ ¼­ºñ½º °èÃþ¿¡ ÀÛ¾÷À» ¿äÃ»ÇÏ°í, ÀÀ´äÀ» ¹ÝÈ¯ÇÕ´Ï´Ù.
- * - Å¬¶óÀÌ¾ðÆ®·ÎºÎÅÍ ¹ÞÀº ¿äÃ» µ¥ÀÌÅÍ °ËÁõ
- * - postService¸¦ È£ÃâÇÏ¿© ºñÁî´Ï½º ·ÎÁ÷ ½ÇÇà
- * - ÀûÀýÇÑ HTTP »óÅÂ ÄÚµå¿Í ÇÔ²² ÀÀ´ä ¹ÝÈ¯
- * 
- * ¿£µåÆ÷ÀÎÆ®:
- *   POST   /api/posts          - °Ô½Ã±Û ÀÛ¼º
- *   GET    /api/posts          - °Ô½Ã±Û ¸ñ·Ï Á¶È¸
- *   GET    /api/posts/:id      - °Ô½Ã±Û »ó¼¼ Á¶È¸
- *   PUT    /api/posts/:id      - °Ô½Ã±Û ¼öÁ¤
- *   DELETE /api/posts/:id      - °Ô½Ã±Û »èÁ¦
- *   PATCH  /api/posts/:id/pin  - °Ô½Ã±Û °íÁ¤/°íÁ¤ ÇØÁ¦ (°ü¸®ÀÚ)
+ * ê²Œì‹œê¸€ ê´€ë ¨ API ë¼ìš°í„°
+ * * ì—­í• : HTTP ìš”ì²­ì„ ë°›ì•„ì„œ ì„œë¹„ìŠ¤ ê³„ì¸µì— ìž‘ì—…ì„ ìš”ì²­í•˜ê³ , ì‘ë‹µì„ ë°˜í™˜í•©ë‹ˆë‹¤.
+ * - í´ë¼ì´ì–¸íŠ¸ë¡œë¶€í„° ë°›ì€ ìš”ì²­ ë°ì´í„° ê²€ì¦
+ * - postServiceë¥¼ í˜¸ì¶œí•˜ì—¬ ë¹„ì¦ˆë‹ˆìŠ¤ ë¡œì§ ì‹¤í–‰
+ * - ì ì ˆí•œ HTTP ìƒíƒœ ì½”ë“œì™€ í•¨ê»˜ ì‘ë‹µ ë°˜í™˜
+ * * ì—”ë“œí¬ì¸íŠ¸:
+ * POST   /api/posts          - ê²Œì‹œê¸€ ìž‘ì„±
+ * GET    /api/posts          - ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ
+ * GET    /api/posts/:id      - ê²Œì‹œê¸€ ìƒì„¸ ì¡°íšŒ
+ * PUT    /api/posts/:id      - ê²Œì‹œê¸€ ìˆ˜ì •
+ * DELETE /api/posts/:id      - ê²Œì‹œê¸€ ì‚­ì œ
+ * PATCH  /api/posts/:id/pin  - ê²Œì‹œê¸€ ê³ ì •/ê³ ì • í•´ì œ (ê´€ë¦¬ìž)
  */
 
 const express = require('express');
@@ -23,59 +21,56 @@ const { verifyToken, isAdmin } = require('../middleware/auth.middleware');
 
 /**
  * POST /api/posts
- * °Ô½Ã±Û ÀÛ¼º
- * 
- * ¿äÃ» º»¹® (req.body):
- *   - title: string (ÇÊ¼ö) - °Ô½Ã±Û Á¦¸ñ
- *   - content: string (ÇÊ¼ö) - °Ô½Ã±Û ³»¿ë
- *   - category: string (ÇÊ¼ö) - °Ô½Ã±Û Ä«Å×°í¸® (notice, event, review µî)
- *   - is_pinned: boolean (¼±ÅÃ) - °íÁ¤ ¿©ºÎ (°ü¸®ÀÚ¸¸ °¡´É)
- * 
- * ¼º°ø ÀÀ´ä (201):
- *   {
- *     success: true,
- *     data: { °Ô½Ã±Û Á¤º¸ }
- *   }
- * 
- * ½ÇÆÐ ÀÀ´ä (400/403):
- *   {
- *     success: false,
- *     message: string
- *   }
+ * ê²Œì‹œê¸€ ìž‘ì„±
+ * * ìš”ì²­ ë³¸ë¬¸ (req.body):
+ * - title: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ì œëª©
+ * - content: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ë‚´ìš©
+ * - category: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ì¹´í…Œê³ ë¦¬ (notice, event, review ë“±)
+ * - is_pinned: boolean (ì„ íƒ) - ê³ ì • ì—¬ë¶€ (ê´€ë¦¬ìžë§Œ ê°€ëŠ¥)
+ * * ì„±ê³µ ì‘ë‹µ (201):
+ * {
+ * success: true,
+ * data: { ê²Œì‹œê¸€ ì •ë³´ }
+ * }
+ * * ì‹¤íŒ¨ ì‘ë‹µ (400/403):
+ * {
+ * success: false,
+ * message: string
+ * }
  */
 router.post('/', verifyToken, async (req, res) => {
   try {
-    // 1. ¿äÃ» º»¹®¿¡¼­ °Ô½Ã±Û Á¤º¸ ÃßÃâ
+    // 1. ìš”ì²­ ë³¸ë¬¸ì—ì„œ ê²Œì‹œê¸€ ì •ë³´ ì¶”ì¶œ
     const { title, content, category, is_pinned } = req.body;
     
-    // 2. ÇÊ¼ö ÀÔ·Â°ª °ËÁõ
+    // 2. í•„ìˆ˜ ìž…ë ¥ê°’ ê²€ì¦
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
-        message: 'Á¦¸ñ, ³»¿ë, Ä«Å×°í¸®¸¦ ¸ðµÎ ÀÔ·ÂÇØÁÖ¼¼¿ä.'
+        message: 'ì œëª©, ë‚´ìš©, ì¹´í…Œê³ ë¦¬ë¥¼ ëª¨ë‘ ìž…ë ¥í•´ì£¼ì„¸ìš”.'
       });
     }
 
-    // 3. ¼­ºñ½º °èÃþÀÇ createPost ÇÔ¼ö È£Ãâ
-    // verifyToken ¹Ìµé¿þ¾î¸¦ ÅëÇØ req.user¿¡ »ç¿ëÀÚ Á¤º¸°¡ ¼³Á¤µÊ
+    // 3. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ createPost í•¨ìˆ˜ í˜¸ì¶œ
+    // verifyToken ë¯¸ë“¤ì›¨ì–´ë¥¼ í†µí•´ req.userì— ì‚¬ìš©ìž ì •ë³´ê°€ ì„¤ì •ë¨
     const newPost = await postService.createPost(
-      req.user.memberId,  // ÀÛ¼ºÀÚ ID
+      req.user.memberId,  // ìž‘ì„±ìž ID
       title,
       content,
       category,
-      is_pinned || false,  // ±âº»°ª: false
-      req.user.role        // »ç¿ëÀÚ ¿ªÇÒ (±ÇÇÑ È®ÀÎ¿ë)
+      is_pinned || false,  // ê¸°ë³¸ê°’: false
+      req.user.role        // ì‚¬ìš©ìž ì—­í•  (ê¶Œí•œ í™•ì¸ìš©)
     );
 
-    // 4. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (201 Created)
+    // 4. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (201 Created)
     res.status(201).json({
       success: true,
       data: newPost
     });
 
   } catch (error) {
-    // 5. ¿¡·¯ Ã³¸®
-    const statusCode = error.message.includes('±ÇÇÑ') ? 403 : 400;
+    // 5. ì—ëŸ¬ ì²˜ë¦¬
+    const statusCode = error.message.includes('ê¶Œí•œ') ? 403 : 400;
     res.status(statusCode).json({
       success: false,
       message: error.message
@@ -85,32 +80,30 @@ router.post('/', verifyToken, async (req, res) => {
 
 /**
  * GET /api/posts
- * °Ô½Ã±Û ¸ñ·Ï Á¶È¸
- * 
- * Äõ¸® ÆÄ¶ó¹ÌÅÍ:
- *   - category: string (¼±ÅÃ) - Ä«Å×°í¸® ÇÊÅÍ
- *   - sort_by: string (¼±ÅÃ) - Á¤·Ä ±âÁØ ('latest', 'views', 'likes')
- *   - page: number (¼±ÅÃ) - ÆäÀÌÁö ¹øÈ£ (±âº»°ª: 1)
- *   - limit: number (¼±ÅÃ) - ÆäÀÌÁö´ç Ç×¸ñ ¼ö (±âº»°ª: 10)
- *   - search: string (¼±ÅÃ) - °Ë»ö¾î (Á¦¸ñ/³»¿ë °Ë»ö)
- * 
- * ¼º°ø ÀÀ´ä (200):
- *   {
- *     success: true,
- *     data: {
- *       posts: Array,      // °Ô½Ã±Û ¹è¿­
- *       pagination: {
- *         total: number,   // ÀüÃ¼ °Ô½Ã±Û ¼ö
- *         page: number,     // ÇöÀç ÆäÀÌÁö
- *         limit: number,    // ÆäÀÌÁö´ç Ç×¸ñ ¼ö
- *         totalPages: number // ÀüÃ¼ ÆäÀÌÁö ¼ö
- *       }
- *     }
- *   }
+ * ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ
+ * * ì¿¼ë¦¬ íŒŒë¼ë¯¸í„°:
+ * - category: string (ì„ íƒ) - ì¹´í…Œê³ ë¦¬ í•„í„°
+ * - sort_by: string (ì„ íƒ) - ì •ë ¬ ê¸°ì¤€ ('latest', 'views', 'likes')
+ * - page: number (ì„ íƒ) - íŽ˜ì´ì§€ ë²ˆí˜¸ (ê¸°ë³¸ê°’: 1)
+ * - limit: number (ì„ íƒ) - íŽ˜ì´ì§€ë‹¹ í•­ëª© ìˆ˜ (ê¸°ë³¸ê°’: 10)
+ * - search: string (ì„ íƒ) - ê²€ìƒ‰ì–´ (ì œëª©/ë‚´ìš© ê²€ìƒ‰)
+ * * ì„±ê³µ ì‘ë‹µ (200):
+ * {
+ * success: true,
+ * data: {
+ * posts: Array,      // ê²Œì‹œê¸€ ë°°ì—´
+ * pagination: {
+ * total: number,   // ì „ì²´ ê²Œì‹œê¸€ ìˆ˜
+ * page: number,     // í˜„ìž¬ íŽ˜ì´ì§€
+ * limit: number,    // íŽ˜ì´ì§€ë‹¹ í•­ëª© ìˆ˜
+ * totalPages: number // ì „ì²´ íŽ˜ì´ì§€ ìˆ˜
+ * }
+ * }
+ * }
  */
 router.get('/', async (req, res) => {
   try {
-    // 1. Äõ¸® ÆÄ¶ó¹ÌÅÍ ÃßÃâ
+    // 1. ì¿¼ë¦¬ íŒŒë¼ë¯¸í„° ì¶”ì¶œ
     const {
       category,
       sort_by = 'latest',
@@ -119,7 +112,7 @@ router.get('/', async (req, res) => {
       search
     } = req.query;
 
-    // 2. ¼­ºñ½º °èÃþÀÇ getPosts ÇÔ¼ö È£Ãâ
+    // 2. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ getPosts í•¨ìˆ˜ í˜¸ì¶œ
     const result = await postService.getPosts({
       category,
       sortBy: sort_by,
@@ -128,65 +121,62 @@ router.get('/', async (req, res) => {
       searchQuery: search
     });
 
-    // 3. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (200 OK)
+    // 3. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (200 OK)
     res.status(200).json({
       success: true,
       data: result
     });
 
   } catch (error) {
-    // 4. ¿¡·¯ Ã³¸®
+    // 4. ì—ëŸ¬ ì²˜ë¦¬
     res.status(500).json({
       success: false,
-      message: error.message || '°Ô½Ã±Û ¸ñ·ÏÀ» ºÒ·¯¿À´Â Áß ¿À·ù°¡ ¹ß»ýÇß½À´Ï´Ù.'
+      message: error.message || 'ê²Œì‹œê¸€ ëª©ë¡ì„ ë¶ˆëŸ¬ì˜¤ëŠ” ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤.'
     });
   }
 });
 
 /**
  * GET /api/posts/:id
- * °Ô½Ã±Û »ó¼¼ Á¶È¸
- * 
- * °æ·Î ÆÄ¶ó¹ÌÅÍ:
- *   - id: number (ÇÊ¼ö) - °Ô½Ã±Û ID
- * 
- * ¼º°ø ÀÀ´ä (200):
- *   {
- *     success: true,
- *     data: { °Ô½Ã±Û »ó¼¼ Á¤º¸ }
- *   }
- * 
- * ½ÇÆÐ ÀÀ´ä (404):
- *   {
- *     success: false,
- *     message: string
- *   }
+ * ê²Œì‹œê¸€ ìƒì„¸ ì¡°íšŒ
+ * * ê²½ë¡œ íŒŒë¼ë¯¸í„°:
+ * - id: number (í•„ìˆ˜) - ê²Œì‹œê¸€ ID
+ * * ì„±ê³µ ì‘ë‹µ (200):
+ * {
+ * success: true,
+ * data: { ê²Œì‹œê¸€ ìƒì„¸ ì •ë³´ }
+ * }
+ * * ì‹¤íŒ¨ ì‘ë‹µ (404):
+ * {
+ * success: false,
+ * message: string
+ * }
  */
 router.get('/:id', async (req, res) => {
   try {
-    // 1. °æ·Î ÆÄ¶ó¹ÌÅÍ¿¡¼­ °Ô½Ã±Û ID ÃßÃâ
+    // 1. ê²½ë¡œ íŒŒë¼ë¯¸í„°ì—ì„œ ê²Œì‹œê¸€ ID ì¶”ì¶œ
     const postId = parseInt(req.params.id);
 
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '¿Ã¹Ù¸¥ °Ô½Ã±Û ID°¡ ¾Æ´Õ´Ï´Ù.'
+        message: 'ì˜¬ë°”ë¥¸ ê²Œì‹œê¸€ IDê°€ ì•„ë‹™ë‹ˆë‹¤.'
       });
     }
 
-    // 2. ¼­ºñ½º °èÃþÀÇ getPostById ÇÔ¼ö È£Ãâ
-    // ³»ºÎÀûÀ¸·Î Á¶È¸¼ö Áõ°¡ Ã³¸®
+    // 2. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ getPostById í•¨ìˆ˜ í˜¸ì¶œ
+    // ë‚´ë¶€ì ìœ¼ë¡œ ì¡°íšŒìˆ˜ ì¦ê°€ ì²˜ë¦¬
     const post = await postService.getPostById(postId);
 
-    // 3. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (200 OK)
+    // 3. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (200 OK)
     res.status(200).json({
       success: true,
       data: post
     });
 
   } catch (error) {
-    // 4. ¿¡·¯ Ã³¸®
-    const statusCode = error.message.includes('Ã£À» ¼ö ¾ø½À´Ï´Ù') ? 404 : 500;
+    // 4. ì—ëŸ¬ ì²˜ë¦¬
+    const statusCode = error.message.includes('ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤') ? 404 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message
@@ -196,74 +186,70 @@ router.get('/:id', async (req, res) => {
 
 /**
  * PUT /api/posts/:id
- * °Ô½Ã±Û ¼öÁ¤
- * 
- * °æ·Î ÆÄ¶ó¹ÌÅÍ:
- *   - id: number (ÇÊ¼ö) - °Ô½Ã±Û ID
- * 
- * ¿äÃ» º»¹® (req.body):
- *   - title: string (ÇÊ¼ö) - °Ô½Ã±Û Á¦¸ñ
- *   - content: string (ÇÊ¼ö) - °Ô½Ã±Û ³»¿ë
- *   - category: string (ÇÊ¼ö) - °Ô½Ã±Û Ä«Å×°í¸®
- * 
- * ¼º°ø ÀÀ´ä (200):
- *   {
- *     success: true,
- *     data: { ¼öÁ¤µÈ °Ô½Ã±Û Á¤º¸ }
- *   }
- * 
- * ½ÇÆÐ ÀÀ´ä (400/403/404):
- *   {
- *     success: false,
- *     message: string
- *   }
+ * ê²Œì‹œê¸€ ìˆ˜ì •
+ * * ê²½ë¡œ íŒŒë¼ë¯¸í„°:
+ * - id: number (í•„ìˆ˜) - ê²Œì‹œê¸€ ID
+ * * ìš”ì²­ ë³¸ë¬¸ (req.body):
+ * - title: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ì œëª©
+ * - content: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ë‚´ìš©
+ * - category: string (í•„ìˆ˜) - ê²Œì‹œê¸€ ì¹´í…Œê³ ë¦¬
+ * * ì„±ê³µ ì‘ë‹µ (200):
+ * {
+ * success: true,
+ * data: { ìˆ˜ì •ëœ ê²Œì‹œê¸€ ì •ë³´ }
+ * }
+ * * ì‹¤íŒ¨ ì‘ë‹µ (400/403/404):
+ * {
+ * success: false,
+ * message: string
+ * }
  */
 router.put('/:id', verifyToken, async (req, res) => {
   try {
-    // 1. °æ·Î ÆÄ¶ó¹ÌÅÍ¿¡¼­ °Ô½Ã±Û ID ÃßÃâ
+    // 1. ê²½ë¡œ íŒŒë¼ë¯¸í„°ì—ì„œ ê²Œì‹œê¸€ ID ì¶”ì¶œ
     const postId = parseInt(req.params.id);
 
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '¿Ã¹Ù¸¥ °Ô½Ã±Û ID°¡ ¾Æ´Õ´Ï´Ù.'
+        message: 'ì˜¬ë°”ë¥¸ ê²Œì‹œê¸€ IDê°€ ì•„ë‹™ë‹ˆë‹¤.'
       });
     }
 
-    // 2. ¿äÃ» º»¹®¿¡¼­ ¼öÁ¤ Á¤º¸ ÃßÃâ
+    // 2. ìš”ì²­ ë³¸ë¬¸ì—ì„œ ìˆ˜ì • ì •ë³´ ì¶”ì¶œ
     const { title, content, category } = req.body;
 
-    // 3. ÇÊ¼ö ÀÔ·Â°ª °ËÁõ
+    // 3. í•„ìˆ˜ ìž…ë ¥ê°’ ê²€ì¦
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
-        message: 'Á¦¸ñ, ³»¿ë, Ä«Å×°í¸®¸¦ ¸ðµÎ ÀÔ·ÂÇØÁÖ¼¼¿ä.'
+        message: 'ì œëª©, ë‚´ìš©, ì¹´í…Œê³ ë¦¬ë¥¼ ëª¨ë‘ ìž…ë ¥í•´ì£¼ì„¸ìš”.'
       });
     }
 
-    // 4. ¼­ºñ½º °èÃþÀÇ updatePost ÇÔ¼ö È£Ãâ
-    // ÀÛ¼ºÀÚ ¶Ç´Â °ü¸®ÀÚ¸¸ ¼öÁ¤ °¡´É
+    // 4. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ updatePost í•¨ìˆ˜ í˜¸ì¶œ
+    // ìž‘ì„±ìž ë˜ëŠ” ê´€ë¦¬ìžë§Œ ìˆ˜ì • ê°€ëŠ¥
     const updatedPost = await postService.updatePost(
       postId,
-      req.user.memberId,  // ¿äÃ»ÇÑ »ç¿ëÀÚ ID
+      req.user.memberId,  // ìš”ì²­í•œ ì‚¬ìš©ìž ID
       title,
       content,
       category,
-      req.user.role       // »ç¿ëÀÚ ¿ªÇÒ
+      req.user.role       // ì‚¬ìš©ìž ì—­í• 
     );
 
-    // 5. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (200 OK)
+    // 5. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (200 OK)
     res.status(200).json({
       success: true,
       data: updatedPost
     });
 
   } catch (error) {
-    // 6. ¿¡·¯ Ã³¸®
+    // 6. ì—ëŸ¬ ì²˜ë¦¬
     let statusCode = 500;
-    if (error.message.includes('Ã£À» ¼ö ¾ø½À´Ï´Ù')) statusCode = 404;
-    else if (error.message.includes('±ÇÇÑ')) statusCode = 403;
-    else if (error.message.includes('ÀÔ·Â')) statusCode = 400;
+    if (error.message.includes('ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤')) statusCode = 404;
+    else if (error.message.includes('ê¶Œí•œ')) statusCode = 403;
+    else if (error.message.includes('ìž…ë ¥')) statusCode = 400;
 
     res.status(statusCode).json({
       success: false,
@@ -274,54 +260,51 @@ router.put('/:id', verifyToken, async (req, res) => {
 
 /**
  * DELETE /api/posts/:id
- * °Ô½Ã±Û »èÁ¦
- * 
- * °æ·Î ÆÄ¶ó¹ÌÅÍ:
- *   - id: number (ÇÊ¼ö) - °Ô½Ã±Û ID
- * 
- * ¼º°ø ÀÀ´ä (200):
- *   {
- *     success: true,
- *     message: '°Ô½Ã±ÛÀÌ »èÁ¦µÇ¾ú½À´Ï´Ù.'
- *   }
- * 
- * ½ÇÆÐ ÀÀ´ä (403/404):
- *   {
- *     success: false,
- *     message: string
- *   }
+ * ê²Œì‹œê¸€ ì‚­ì œ
+ * * ê²½ë¡œ íŒŒë¼ë¯¸í„°:
+ * - id: number (í•„ìˆ˜) - ê²Œì‹œê¸€ ID
+ * * ì„±ê³µ ì‘ë‹µ (200):
+ * {
+ * success: true,
+ * message: 'ê²Œì‹œê¸€ì´ ì‚­ì œë˜ì—ˆìŠµë‹ˆë‹¤.'
+ * }
+ * * ì‹¤íŒ¨ ì‘ë‹µ (403/404):
+ * {
+ * success: false,
+ * message: string
+ * }
  */
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    // 1. °æ·Î ÆÄ¶ó¹ÌÅÍ¿¡¼­ °Ô½Ã±Û ID ÃßÃâ
+    // 1. ê²½ë¡œ íŒŒë¼ë¯¸í„°ì—ì„œ ê²Œì‹œê¸€ ID ì¶”ì¶œ
     const postId = parseInt(req.params.id);
 
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '¿Ã¹Ù¸¥ °Ô½Ã±Û ID°¡ ¾Æ´Õ´Ï´Ù.'
+        message: 'ì˜¬ë°”ë¥¸ ê²Œì‹œê¸€ IDê°€ ì•„ë‹™ë‹ˆë‹¤.'
       });
     }
 
-    // 2. ¼­ºñ½º °èÃþÀÇ deletePost ÇÔ¼ö È£Ãâ
-    // ÀÛ¼ºÀÚ ¶Ç´Â °ü¸®ÀÚ¸¸ »èÁ¦ °¡´É
+    // 2. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ deletePost í•¨ìˆ˜ í˜¸ì¶œ
+    // ìž‘ì„±ìž ë˜ëŠ” ê´€ë¦¬ìžë§Œ ì‚­ì œ ê°€ëŠ¥
     await postService.deletePost(
       postId,
-      req.user.memberId,  // ¿äÃ»ÇÑ »ç¿ëÀÚ ID
-      req.user.role       // »ç¿ëÀÚ ¿ªÇÒ
+      req.user.memberId,  // ìš”ì²­í•œ ì‚¬ìš©ìž ID
+      req.user.role       // ì‚¬ìš©ìž ì—­í• 
     );
 
-    // 3. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (200 OK)
+    // 3. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (200 OK)
     res.status(200).json({
       success: true,
-      message: '°Ô½Ã±ÛÀÌ »èÁ¦µÇ¾ú½À´Ï´Ù.'
+      message: 'ê²Œì‹œê¸€ì´ ì‚­ì œë˜ì—ˆìŠµë‹ˆë‹¤.'
     });
 
   } catch (error) {
-    // 4. ¿¡·¯ Ã³¸®
+    // 4. ì—ëŸ¬ ì²˜ë¦¬
     let statusCode = 500;
-    if (error.message.includes('Ã£À» ¼ö ¾ø½À´Ï´Ù')) statusCode = 404;
-    else if (error.message.includes('±ÇÇÑ')) statusCode = 403;
+    if (error.message.includes('ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤')) statusCode = 404;
+    else if (error.message.includes('ê¶Œí•œ')) statusCode = 403;
 
     res.status(statusCode).json({
       success: false,
@@ -332,67 +315,63 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
 /**
  * PATCH /api/posts/:id/pin
- * °Ô½Ã±Û °íÁ¤/°íÁ¤ ÇØÁ¦ (°ü¸®ÀÚ Àü¿ë)
- * 
- * °æ·Î ÆÄ¶ó¹ÌÅÍ:
- *   - id: number (ÇÊ¼ö) - °Ô½Ã±Û ID
- * 
- * ¿äÃ» º»¹® (req.body):
- *   - is_pinned: boolean (ÇÊ¼ö) - °íÁ¤ ¿©ºÎ
- * 
- * ¼º°ø ÀÀ´ä (200):
- *   {
- *     success: true,
- *     data: { ¾÷µ¥ÀÌÆ®µÈ °Ô½Ã±Û Á¤º¸ }
- *   }
- * 
- * ½ÇÆÐ ÀÀ´ä (403/404):
- *   {
- *     success: false,
- *     message: string
- *   }
+ * ê²Œì‹œê¸€ ê³ ì •/ê³ ì • í•´ì œ (ê´€ë¦¬ìž ì „ìš©)
+ * * ê²½ë¡œ íŒŒë¼ë¯¸í„°:
+ * - id: number (í•„ìˆ˜) - ê²Œì‹œê¸€ ID
+ * * ìš”ì²­ ë³¸ë¬¸ (req.body):
+ * - is_pinned: boolean (í•„ìˆ˜) - ê³ ì • ì—¬ë¶€
+ * * ì„±ê³µ ì‘ë‹µ (200):
+ * {
+ * success: true,
+ * data: { ì—…ë°ì´íŠ¸ëœ ê²Œì‹œê¸€ ì •ë³´ }
+ * }
+ * * ì‹¤íŒ¨ ì‘ë‹µ (403/404):
+ * {
+ * success: false,
+ * message: string
+ * }
  */
 router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
   try {
-    // 1. °æ·Î ÆÄ¶ó¹ÌÅÍ¿¡¼­ °Ô½Ã±Û ID ÃßÃâ
+    // 1. ê²½ë¡œ íŒŒë¼ë¯¸í„°ì—ì„œ ê²Œì‹œê¸€ ID ì¶”ì¶œ
     const postId = parseInt(req.params.id);
 
     if (isNaN(postId)) {
       return res.status(400).json({
         success: false,
-        message: '¿Ã¹Ù¸¥ °Ô½Ã±Û ID°¡ ¾Æ´Õ´Ï´Ù.'
+        message: 'ì˜¬ë°”ë¥¸ ê²Œì‹œê¸€ IDê°€ ì•„ë‹™ë‹ˆë‹¤.'
       });
     }
 
-    // 2. ¿äÃ» º»¹®¿¡¼­ °íÁ¤ ¿©ºÎ ÃßÃâ
+    // 2. ìš”ì²­ ë³¸ë¬¸ì—ì„œ ê³ ì • ì—¬ë¶€ ì¶”ì¶œ
     const { is_pinned } = req.body;
 
     if (typeof is_pinned !== 'boolean') {
       return res.status(400).json({
         success: false,
-        message: 'is_pinned´Â boolean °ªÀÌ¾î¾ß ÇÕ´Ï´Ù.'
+        message: 'is_pinnedëŠ” boolean ê°’ì´ì–´ì•¼ í•©ë‹ˆë‹¤.'
       });
     }
 
-    // 3. ¼­ºñ½º °èÃþÀÇ togglePinned ÇÔ¼ö È£Ãâ
-    // °ü¸®ÀÚ¸¸ °¡´É (isAdmin ¹Ìµé¿þ¾î·Î ÀÌ¹Ì °ËÁõµÊ)
+    // 3. ì„œë¹„ìŠ¤ ê³„ì¸µì˜ togglePinned í•¨ìˆ˜ í˜¸ì¶œ
+    // ê´€ë¦¬ìžë§Œ ê°€ëŠ¥ (isAdmin ë¯¸ë“¤ì›¨ì–´ë¡œ ì´ë¯¸ ê²€ì¦ë¨)
     const updatedPost = await postService.togglePinned(
       postId,
       is_pinned,
       req.user.role
     );
 
-    // 4. ¼º°ø ÀÀ´ä ¹ÝÈ¯ (200 OK)
+    // 4. ì„±ê³µ ì‘ë‹µ ë°˜í™˜ (200 OK)
     res.status(200).json({
       success: true,
       data: updatedPost
     });
 
   } catch (error) {
-    // 5. ¿¡·¯ Ã³¸®
+    // 5. ì—ëŸ¬ ì²˜ë¦¬
     let statusCode = 500;
-    if (error.message.includes('Ã£À» ¼ö ¾ø½À´Ï´Ù')) statusCode = 404;
-    else if (error.message.includes('°ü¸®ÀÚ')) statusCode = 403;
+    if (error.message.includes('ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤')) statusCode = 404;
+    else if (error.message.includes('ê´€ë¦¬ìž')) statusCode = 403;
 
     res.status(statusCode).json({
       success: false,
@@ -401,6 +380,5 @@ router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// ¶ó¿ìÅÍ¸¦ ¸ðµâ·Î ³»º¸³»±â (app.js¿¡¼­ »ç¿ë)
+// ë¼ìš°í„°ë¥¼ ëª¨ë“ˆë¡œ ë‚´ë³´ë‚´ê¸° (app.jsì—ì„œ ì‚¬ìš©)
 module.exports = router;
-
