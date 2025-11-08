@@ -1,49 +1,46 @@
 /**
  * src/services/post.service.js
- * °Ô½Ã±Û °ü·Ã ºñÁî´Ï½º ·ÎÁ÷ ¼­ºñ½º
- * 
- * ¿ªÇÒ: ½ÇÁ¦ ºñÁî´Ï½º ·ÎÁ÷À» Ã³¸®ÇÕ´Ï´Ù.
- * - °Ô½Ã±Û »ı¼º/¼öÁ¤/»èÁ¦
- * - °Ô½Ã±Û ¸ñ·Ï Á¶È¸ (ÇÊÅÍ¸µ, Á¤·Ä, ÆäÀÌÁö³×ÀÌ¼Ç)
- * - °Ô½Ã±Û »ó¼¼ Á¶È¸ (Á¶È¸¼ö Áõ°¡)
- * - ±ÇÇÑ °ËÁõ
- * 
- * ÀÇÁ¸¼º:
- *   - postRepository: µ¥ÀÌÅÍº£ÀÌ½º Á¢±ÙÀ» À§ÇÑ Repository
+ * ê²Œì‹œê¸€ ê´€ë ¨ ë¹„ì¦ˆë‹ˆìŠ¤ ë¡œì§ ì„œë¹„ìŠ¤
+ * * ì—­í• : ì‹¤ì œ ë¹„ì¦ˆë‹ˆìŠ¤ ë¡œì§ì„ ì²˜ë¦¬í•©ë‹ˆë‹¤.
+ * - ê²Œì‹œê¸€ ìƒì„±/ìˆ˜ì •/ì‚­ì œ
+ * - ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ (í•„í„°ë§, ì •ë ¬, í˜ì´ì§€ë„¤ì´ì…˜)
+ * - ê²Œì‹œê¸€ ìƒì„¸ ì¡°íšŒ (ì¡°íšŒìˆ˜ ì¦ê°€)
+ * - ê¶Œí•œ ê²€ì¦
+ * * ì˜ì¡´ì„±:
+ * - postRepository: ë°ì´í„°ë² ì´ìŠ¤ ì ‘ê·¼ì„ ìœ„í•œ Repository
  */
 
 const postRepository = require('../repositories/post.repository');
 
 const postService = {
   /**
-   * °Ô½Ã±Û »ı¼º
-   * 
-   * @param {number} memberId - ÀÛ¼ºÀÚ ID
-   * @param {string} title - Á¦¸ñ
-   * @param {string} content - ³»¿ë
-   * @param {string} category - Ä«Å×°í¸®
-   * @param {boolean} isPinned - °íÁ¤ ¿©ºÎ (°ü¸®ÀÚ¸¸ ¼³Á¤ °¡´É)
-   * @param {string} userRole - »ç¿ëÀÚ ¿ªÇÒ (±ÇÇÑ È®ÀÎ¿ë)
-   * @returns {Promise<Object>} - »ı¼ºµÈ °Ô½Ã±Û Á¤º¸
+   * ê²Œì‹œê¸€ ìƒì„±
+   * * @param {number} memberId - ì‘ì„±ì ID
+   * @param {string} title - ì œëª©
+   * @param {string} content - ë‚´ìš©
+   * @param {string} category - ì¹´í…Œê³ ë¦¬
+   * @param {boolean} isPinned - ê³ ì • ì—¬ë¶€ (ê´€ë¦¬ìë§Œ ì„¤ì • ê°€ëŠ¥)
+   * @param {string} userRole - ì‚¬ìš©ì ì—­í•  (ê¶Œí•œ í™•ì¸ìš©)
+   * @returns {Promise<Object>} - ìƒì„±ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   createPost: async (memberId, title, content, category, isPinned = false, userRole = 'user') => {
-    // ±ÇÇÑ °ËÁõ: ÀÏ¹İ »ç¿ëÀÚ´Â °íÁ¤ °Ô½Ã±ÛÀ» »ı¼ºÇÒ ¼ö ¾øÀ½
+    // ê¶Œí•œ ê²€ì¦: ì¼ë°˜ ì‚¬ìš©ìëŠ” ê³ ì • ê²Œì‹œê¸€ì„ ìƒì„±í•  ìˆ˜ ì—†ìŒ
     if (isPinned && userRole !== 'admin') {
-      throw new Error('Only administrators can create pinned posts.');
+      throw new Error('ê³ ì • ê²Œì‹œê¸€ì€ ê´€ë¦¬ìë§Œ ìƒì„±í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.');
     }
 
-    // ÀÔ·Â°ª °ËÁõ
+    // ì…ë ¥ê°’ ê²€ì¦
     if (!title || !title.trim()) {
-      throw new Error('Title is required.');
+      throw new Error('ì œëª©ì„ ì…ë ¥í•´ì£¼ì„¸ìš”.');
     }
     if (!content || !content.trim()) {
-      throw new Error('Content is required.');
+      throw new Error('ë‚´ìš©ì„ ì…ë ¥í•´ì£¼ì„¸ìš”.');
     }
     if (!category) {
-      throw new Error('Category is required.');
+      throw new Error('ì¹´í…Œê³ ë¦¬ë¥¼ ì„ íƒí•´ì£¼ì„¸ìš”.');
     }
 
-    // Repository¸¦ ÅëÇØ °Ô½Ã±Û »ı¼º
+    // Repositoryë¥¼ í†µí•´ ê²Œì‹œê¸€ ìƒì„±
     const newPost = await postRepository.createPost(
       memberId,
       title.trim(),
@@ -56,21 +53,20 @@ const postService = {
   },
 
   /**
-   * °Ô½Ã±Û ¸ñ·Ï Á¶È¸
-   * 
-   * @param {Object} options - Á¶È¸ ¿É¼Ç
-   *   - category: string (¼±ÅÃ) - Ä«Å×°í¸® ÇÊÅÍ
-   *   - sortBy: string (¼±ÅÃ) - Á¤·Ä ±âÁØ
-   *   - page: number (¼±ÅÃ) - ÆäÀÌÁö ¹øÈ£
-   *   - limit: number (¼±ÅÃ) - ÆäÀÌÁö´ç Ç×¸ñ ¼ö
-   *   - searchQuery: string (¼±ÅÃ) - °Ë»ö¾î
-   * @returns {Promise<Object>} - °Ô½Ã±Û ¸ñ·Ï°ú ¸ŞÅ¸ Á¤º¸
+   * ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ
+   * * @param {Object} options - ì¡°íšŒ ì˜µì…˜
+   * - category: string (ì„ íƒ) - ì¹´í…Œê³ ë¦¬ í•„í„°
+   * - sortBy: string (ì„ íƒ) - ì •ë ¬ ê¸°ì¤€
+   * - page: number (ì„ íƒ) - í˜ì´ì§€ ë²ˆí˜¸
+   * - limit: number (ì„ íƒ) - í˜ì´ì§€ë‹¹ í•­ëª© ìˆ˜
+   * - searchQuery: string (ì„ íƒ) - ê²€ìƒ‰ì–´
+   * @returns {Promise<Object>} - ê²Œì‹œê¸€ ëª©ë¡ê³¼ ë©”íƒ€ ì •ë³´
    */
   getPosts: async (options = {}) => {
-    // Repository¸¦ ÅëÇØ °Ô½Ã±Û ¸ñ·Ï Á¶È¸
+    // Repositoryë¥¼ í†µí•´ ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ
     const result = await postRepository.findAll(options);
 
-    // ÀÀ´ä µ¥ÀÌÅÍ °¡°ø
+    // ì‘ë‹µ ë°ì´í„° ê°€ê³µ
     return {
       posts: result.posts,
       pagination: {
@@ -83,64 +79,62 @@ const postService = {
   },
 
   /**
-   * °Ô½Ã±Û »ó¼¼ Á¶È¸
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @returns {Promise<Object>} - °Ô½Ã±Û »ó¼¼ Á¤º¸
+   * ê²Œì‹œê¸€ ìƒì„¸ ì¡°íšŒ
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @returns {Promise<Object>} - ê²Œì‹œê¸€ ìƒì„¸ ì •ë³´
    */
   getPostById: async (postId) => {
-    // °Ô½Ã±Û Á¶È¸
+    // ê²Œì‹œê¸€ ì¡°íšŒ
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('Post not found.');
+      throw new Error('ê²Œì‹œê¸€ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // Á¶È¸¼ö Áõ°¡ (ºñµ¿±â·Î Ã³¸®ÇÏ¿© ÀÀ´ä ¼Óµµ Çâ»ó)
+    // ì¡°íšŒìˆ˜ ì¦ê°€ (ë¹„ë™ê¸°ë¡œ ì²˜ë¦¬í•˜ì—¬ ì‘ë‹µ ì†ë„ í–¥ìƒ)
     postRepository.incrementViews(postId).catch(err => {
       console.error('Error incrementing views:', err);
-      // Á¶È¸¼ö Áõ°¡ ½ÇÆĞÇØµµ °Ô½Ã±ÛÀº ¹İÈ¯
+      // ì¡°íšŒìˆ˜ ì¦ê°€ ì‹¤íŒ¨í•´ë„ ê²Œì‹œê¸€ì€ ë°˜í™˜
     });
 
     return post;
   },
 
   /**
-   * °Ô½Ã±Û ¼öÁ¤
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @param {number} memberId - ¿äÃ»ÇÑ »ç¿ëÀÚ ID
-   * @param {string} title - Á¦¸ñ
-   * @param {string} content - ³»¿ë
-   * @param {string} category - Ä«Å×°í¸®
-   * @param {string} userRole - »ç¿ëÀÚ ¿ªÇÒ
-   * @returns {Promise<Object>} - ¼öÁ¤µÈ °Ô½Ã±Û Á¤º¸
+   * ê²Œì‹œê¸€ ìˆ˜ì •
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @param {number} memberId - ìš”ì²­í•œ ì‚¬ìš©ì ID
+   * @param {string} title - ì œëª©
+   * @param {string} content - ë‚´ìš©
+   * @param {string} category - ì¹´í…Œê³ ë¦¬
+   * @param {string} userRole - ì‚¬ìš©ì ì—­í• 
+   * @returns {Promise<Object>} - ìˆ˜ì •ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   updatePost: async (postId, memberId, title, content, category, userRole = 'user') => {
-    // °Ô½Ã±Û Á¶È¸
+    // ê²Œì‹œê¸€ ì¡°íšŒ
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('Post not found.');
+      throw new Error('ê²Œì‹œê¸€ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // ±ÇÇÑ °ËÁõ: ÀÛ¼ºÀÚ ¶Ç´Â °ü¸®ÀÚ¸¸ ¼öÁ¤ °¡´É
+    // ê¶Œí•œ ê²€ì¦: ì‘ì„±ì ë˜ëŠ” ê´€ë¦¬ìë§Œ ìˆ˜ì • ê°€ëŠ¥
     if (post.member_id !== memberId && userRole !== 'admin') {
-      throw new Error('You do not have permission to edit this post.');
+      throw new Error('ê²Œì‹œê¸€ì„ ìˆ˜ì •í•  ê¶Œí•œì´ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // ÀÔ·Â°ª °ËÁõ
+    // ì…ë ¥ê°’ ê²€ì¦
     if (!title || !title.trim()) {
-      throw new Error('Title is required.');
+      throw new Error('ì œëª©ì„ ì…ë ¥í•´ì£¼ì„¸ìš”.');
     }
     if (!content || !content.trim()) {
-      throw new Error('Content is required.');
+      throw new Error('ë‚´ìš©ì„ ì…ë ¥í•´ì£¼ì„¸ìš”.');
     }
     if (!category) {
-      throw new Error('Category is required.');
+      throw new Error('ì¹´í…Œê³ ë¦¬ë¥¼ ì„ íƒí•´ì£¼ì„¸ìš”.');
     }
 
-    // Repository¸¦ ÅëÇØ °Ô½Ã±Û ¼öÁ¤
+    // Repositoryë¥¼ í†µí•´ ê²Œì‹œê¸€ ìˆ˜ì •
     const updatedPost = await postRepository.updatePost(
       postId,
       title.trim(),
@@ -152,52 +146,50 @@ const postService = {
   },
 
   /**
-   * °Ô½Ã±Û »èÁ¦
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @param {number} memberId - ¿äÃ»ÇÑ »ç¿ëÀÚ ID
-   * @param {string} userRole - »ç¿ëÀÚ ¿ªÇÒ
+   * ê²Œì‹œê¸€ ì‚­ì œ
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @param {number} memberId - ìš”ì²­í•œ ì‚¬ìš©ì ID
+   * @param {string} userRole - ì‚¬ìš©ì ì—­í• 
    * @returns {Promise<void>}
    */
   deletePost: async (postId, memberId, userRole = 'user') => {
-    // °Ô½Ã±Û Á¶È¸
+    // ê²Œì‹œê¸€ ì¡°íšŒ
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('Post not found.');
+      throw new Error('ê²Œì‹œê¸€ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // ±ÇÇÑ °ËÁõ: ÀÛ¼ºÀÚ ¶Ç´Â °ü¸®ÀÚ¸¸ »èÁ¦ °¡´É
+    // ê¶Œí•œ ê²€ì¦: ì‘ì„±ì ë˜ëŠ” ê´€ë¦¬ìë§Œ ì‚­ì œ ê°€ëŠ¥
     if (post.member_id !== memberId && userRole !== 'admin') {
-      throw new Error('You do not have permission to delete this post.');
+      throw new Error('ê²Œì‹œê¸€ì„ ì‚­ì œí•  ê¶Œí•œì´ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // Repository¸¦ ÅëÇØ °Ô½Ã±Û »èÁ¦
+    // Repositoryë¥¼ í†µí•´ ê²Œì‹œê¸€ ì‚­ì œ
     await postRepository.deletePost(postId);
   },
 
   /**
-   * °Ô½Ã±Û °íÁ¤/°íÁ¤ ÇØÁ¦ (°ü¸®ÀÚ Àü¿ë)
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @param {boolean} isPinned - °íÁ¤ ¿©ºÎ
-   * @param {string} userRole - »ç¿ëÀÚ ¿ªÇÒ
-   * @returns {Promise<Object>} - ¾÷µ¥ÀÌÆ®µÈ °Ô½Ã±Û Á¤º¸
+   * ê²Œì‹œê¸€ ê³ ì •/ê³ ì • í•´ì œ (ê´€ë¦¬ì ì „ìš©)
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @param {boolean} isPinned - ê³ ì • ì—¬ë¶€
+   * @param {string} userRole - ì‚¬ìš©ì ì—­í• 
+   * @returns {Promise<Object>} - ì—…ë°ì´íŠ¸ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   togglePinned: async (postId, isPinned, userRole = 'user') => {
-    // ±ÇÇÑ °ËÁõ: °ü¸®ÀÚ¸¸ °¡´É
+    // ê¶Œí•œ ê²€ì¦: ê´€ë¦¬ìë§Œ ê°€ëŠ¥
     if (userRole !== 'admin') {
-      throw new Error('Only administrators can pin posts.');
+      throw new Error('ê´€ë¦¬ìë§Œ ê²Œì‹œê¸€ì„ ê³ ì •í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.');
     }
 
-    // °Ô½Ã±Û Á¶È¸
+    // ê²Œì‹œê¸€ ì¡°íšŒ
     const post = await postRepository.findById(postId);
 
     if (!post) {
-      throw new Error('Post not found.');
+      throw new Error('ê²Œì‹œê¸€ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
     }
 
-    // Repository¸¦ ÅëÇØ °íÁ¤ »óÅÂ ¾÷µ¥ÀÌÆ®
+    // Repositoryë¥¼ í†µí•´ ê³ ì • ìƒíƒœ ì—…ë°ì´íŠ¸
     const updatedPost = await postRepository.updatePinnedStatus(postId, isPinned);
 
     return updatedPost;
@@ -205,4 +197,3 @@ const postService = {
 };
 
 module.exports = postService;
-

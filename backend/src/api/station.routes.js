@@ -1,8 +1,46 @@
+// src/api/station.routes.js
+// (ìˆ˜ì •) 'verifyToken' ë¯¸ë“¤ì›¨ì–´ë¥¼ ì œê±°í•˜ì—¬ ê³µê°œ APIë¡œ ë³€ê²½
+
 const express = require('express');
 const router = express.Router();
+const stationService = require('../services/station.service');
+// ë¡œê·¸ì¸ ì•ˆí•´ë„ ëŒ€ì—¬ì†Œ ì°¾ê¸° ê°€ëŠ¥í•¨
+// const { verifyToken } = require('../middleware/auth.middleware'); // <-- ì´ ì¤„ ì œê±°
 
-// ¿©±â¿¡ ´ë¿©¼Ò °ü·Ã API ¿£µåÆ÷ÀÎÆ®¸¦ Á¤ÀÇÇÕ´Ï´Ù.
-// ÇöÀç´Â ºó ¶ó¿ìÅÍ·Î µÎ¾î ¼­¹ö ½ÃÀÛ ¿À·ù¸¦ ÇØ°áÇÕ´Ï´Ù.
+/**
+ * GET /api/stations
+ * (ê³µê°œ) ëŒ€ì—¬ì†Œ ëª©ë¡ì„ ì¡°íšŒí•©ë‹ˆë‹¤.
+ * ì¿¼ë¦¬ íŒŒë¼ë¯¸í„°: ?query=ê°•ë‚¨&lat=37.123&lon=127.123
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { query, lat, lon } = req.query;
+    
+    const searchParams = {
+      query: query,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon)
+    };
+
+    const stations = await stationService.getStations(searchParams);
+    res.status(200).json({ success: true, data: stations });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/stations/:id/bikes
+ * (ê³µê°œ) íŠ¹ì • ëŒ€ì—¬ì†Œì˜ ëŒ€ì—¬ ê°€ëŠ¥í•œ ìì „ê±° ëª©ë¡ì„ ì¡°íšŒí•©ë‹ˆë‹¤.
+ */
+router.get('/:stationId/bikes', async (req, res) => { 
+  try {
+    const { stationId } = req.params;
+    const bikes = await stationService.getAvailableBikes(stationId);
+    res.status(200).json({ success: true, data: bikes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 module.exports = router;
-

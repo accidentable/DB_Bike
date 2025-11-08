@@ -1,128 +1,128 @@
 /**
  * src/repositories/member.repository.js
- * È¸¿ø(Member) µ¥ÀÌÅÍº£ÀÌ½º Á¢±Ù °èÃþ (Repository/DAO)
+ * íšŒì›(Member) ë°ì´í„°ë² ì´ìŠ¤ ì ‘ê·¼ ê³„ì¸µ (Repository/DAO)
  * 
- * ¿ªÇÒ: µ¥ÀÌÅÍº£ÀÌ½º¿Í Á÷Á¢ Åë½ÅÇÏ´Â °èÃþÀÔ.
- * - SQL Äõ¸® ½ÇÇà
- * - µ¥ÀÌÅÍº£ÀÌ½º °á°ú¸¦ JavaScript °´Ã¼·Î º¯È¯
- * - ¿¡·¯ Ã³¸® ¹× ·Î±ë
+ * ì—­í• : ë°ì´í„°ë² ì´ìŠ¤ì™€ ì§ì ‘ í†µì‹ í•˜ëŠ” ê³„ì¸µìž…ë‹ˆë‹¤.
+ * - SQL ì¿¼ë¦¬ ì‹¤í–‰
+ * - ë°ì´í„°ë² ì´ìŠ¤ ê²°ê³¼ë¥¼ JavaScript ê°ì²´ë¡œ ë³€í™˜
+ * - ì—ëŸ¬ ì²˜ë¦¬ ë° ë¡œê¹…
  * 
- * ¾ÆÅ°ÅØÃ³:
- *   - °èÃþÇü ¾ÆÅ°ÅØÃ³ÀÇ Repository ÆÐÅÏÀ» µûÈì.
- *   - Service °èÃþ¿¡¼­ ÀÌ Repository¸¦ È£Ãâ.
- *   - µ¥ÀÌÅÍº£ÀÌ½º ±¸Çö ¼¼ºÎ»çÇ×À» Service °èÃþÀ¸·ÎºÎÅÍ ¼û±è.
+ * ì•„í‚¤í…ì²˜:
+ *   - ê³„ì¸µí˜• ì•„í‚¤í…ì²˜ì˜ Repository íŒ¨í„´ì„ ë”°ë¦…ë‹ˆë‹¤.
+ *   - Service ê³„ì¸µì—ì„œ ì´ Repositoryë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
+ *   - ë°ì´í„°ë² ì´ìŠ¤ êµ¬í˜„ ì„¸ë¶€ì‚¬í•­ì„ Service ê³„ì¸µìœ¼ë¡œë¶€í„° ìˆ¨ê¹ë‹ˆë‹¤.
  * 
- * ÀÇÁ¸¼º:
- *   - db.config: PostgreSQL ¿¬°á Ç® (Pool °´Ã¼)
+ * ì˜ì¡´ì„±:
+ *   - db.config: PostgreSQL ì—°ê²° í’€ (Pool ê°ì²´)
  */
 
-const pool = require('../config/db.config'); // PostgreSQL ¿¬°á Ç® °¡Á®¿À±â
+const pool = require('../config/db.config'); // PostgreSQL ì—°ê²° í’€ ê°€ì ¸ì˜¤ê¸°
 
 const memberRepository = {
   /**
-   * ÀÌ¸ÞÀÏ·Î »ç¿ëÀÚ Á¶È¸
+   * ì´ë©”ì¼ë¡œ ì‚¬ìš©ìž ì¡°íšŒ
    * 
-   * @param {string} email - Á¶È¸ÇÒ »ç¿ëÀÚÀÇ ÀÌ¸ÞÀÏ ÁÖ¼Ò
-   * @returns {Promise<Object|undefined>} - »ç¿ëÀÚ Á¤º¸ °´Ã¼ ¶Ç´Â undefined
+   * @param {string} email - ì¡°íšŒí•  ì‚¬ìš©ìžì˜ ì´ë©”ì¼ ì£¼ì†Œ
+   * @returns {Promise<Object|undefined>} - ì‚¬ìš©ìž ì •ë³´ ê°ì²´ ë˜ëŠ” undefined
    * 
-   * »ç¿ë ½Ã³ª¸®¿À:
-   *   - ·Î±×ÀÎ ½Ã ÀÌ¸ÞÀÏ·Î »ç¿ëÀÚ È®ÀÎ
-   *   - È¸¿ø°¡ÀÔ ½Ã ÀÌ¸ÞÀÏ Áßº¹ È®ÀÎ
+   * ì‚¬ìš© ì‹œë‚˜ë¦¬ì˜¤:
+   *   - ë¡œê·¸ì¸ ì‹œ ì´ë©”ì¼ë¡œ ì‚¬ìš©ìž í™•ì¸
+   *   - íšŒì›ê°€ìž… ì‹œ ì´ë©”ì¼ ì¤‘ë³µ í™•ì¸
    * 
-   * SQL Äõ¸®:
+   * SQL ì¿¼ë¦¬:
    *   SELECT * FROM members WHERE email = $1
-   *   - $1Àº PostgreSQLÀÇ ÆÄ¶ó¹ÌÅÍÈ­µÈ Äõ¸® (SQL ÀÎÁ§¼Ç ¹æÁö)
+   *   - $1ì€ PostgreSQLì˜ íŒŒë¼ë¯¸í„°í™”ëœ ì¿¼ë¦¬ (SQL ì¸ì ì…˜ ë°©ì§€)
    */
 
   findByEmail: async (email) => {
     try {
-      // SQL Äõ¸® ÀÛ¼º
-      // $1Àº ÆÄ¶ó¹ÌÅÍÈ­µÈ Äõ¸®·Î, SQL ÀÎÁ§¼Ç °ø°ÝÀ» ¹æÁöÇÕ´Ï´Ù.
+      // SQL ì¿¼ë¦¬ ìž‘ì„±
+      // $1ì€ íŒŒë¼ë¯¸í„°í™”ëœ ì¿¼ë¦¬ë¡œ, SQL ì¸ì ì…˜ ê³µê²©ì„ ë°©ì§€í•©ë‹ˆë‹¤.
       const query = 'SELECT * FROM members WHERE email = $1';
       
-      // pool.query¸¦ »ç¿ëÇÏ¿© Äõ¸® ½ÇÇà
-      // Ã¹ ¹øÂ° ÀÎÀÚ: SQL Äõ¸® ¹®ÀÚ¿­
-      // µÎ ¹øÂ° ÀÎÀÚ: Äõ¸® ÆÄ¶ó¹ÌÅÍ ¹è¿­ [$1, $2, ...]
+      // pool.queryë¥¼ ì‚¬ìš©í•˜ì—¬ ì¿¼ë¦¬ ì‹¤í–‰
+      // ì²« ë²ˆì§¸ ì¸ìž: SQL ì¿¼ë¦¬ ë¬¸ìžì—´
+      // ë‘ ë²ˆì§¸ ì¸ìž: ì¿¼ë¦¬ íŒŒë¼ë¯¸í„° ë°°ì—´ [$1, $2, ...]
       const { rows } = await pool.query(query, [email]);
       
-      // rows´Â °á°ú ¹è¿­ÀÔ´Ï´Ù.
-      // ÀÌ¸ÞÀÏÀº UNIQUE Á¦¾àÁ¶°ÇÀÌ ÀÖÀ¸¹Ç·Î 0°³ ¶Ç´Â 1°³ÀÇ °á°ú¸¸ ¹ÝÈ¯µË´Ï´Ù.
-      // rows[0]Àº Ã¹ ¹øÂ° °á°ú °´Ã¼ÀÌ°Å³ª, °á°ú°¡ ¾øÀ¸¸é undefinedÀÔ´Ï´Ù.
+      // rowsëŠ” ê²°ê³¼ ë°°ì—´ìž…ë‹ˆë‹¤.
+      // ì´ë©”ì¼ì€ UNIQUE ì œì•½ì¡°ê±´ì´ ìžˆìœ¼ë¯€ë¡œ 0ê°œ ë˜ëŠ” 1ê°œì˜ ê²°ê³¼ë§Œ ë°˜í™˜ë©ë‹ˆë‹¤.
+      // rows[0]ì€ ì²« ë²ˆì§¸ ê²°ê³¼ ê°ì²´ì´ê±°ë‚˜, ê²°ê³¼ê°€ ì—†ìœ¼ë©´ undefinedìž…ë‹ˆë‹¤.
       return rows[0];
       
     } catch (error) {
-      // ¿¡·¯ ¹ß»ý ½Ã ÄÜ¼Ö¿¡ ·Î±× Ãâ·Â
-      // ½ÇÁ¦ ¿î¿µ È¯°æ¿¡¼­´Â ´õ Á¤±³ÇÑ ·Î±ë ½Ã½ºÅÛÀ» »ç¿ëÇÏ´Â °ÍÀÌ ÁÁ½À´Ï´Ù.
+      // ì—ëŸ¬ ë°œìƒ ì‹œ ì½˜ì†”ì— ë¡œê·¸ ì¶œë ¥
+      // ì‹¤ì œ ìš´ì˜ í™˜ê²½ì—ì„œëŠ” ë” ì •êµí•œ ë¡œê¹… ì‹œìŠ¤í…œì„ ì‚¬ìš©í•˜ëŠ” ê²ƒì´ ì¢‹ìŠµë‹ˆë‹¤.
       console.error('Error finding user by email:', error);
       
-      // ¿¡·¯¸¦ ´Ù½Ã throwÇÏ¿© Service °èÃþ¿¡¼­ Ã³¸®ÇÒ ¼ö ÀÖµµ·Ï ÇÕ´Ï´Ù.
+      // ì—ëŸ¬ë¥¼ ë‹¤ì‹œ throwí•˜ì—¬ Service ê³„ì¸µì—ì„œ ì²˜ë¦¬í•  ìˆ˜ ìžˆë„ë¡ í•©ë‹ˆë‹¤.
       throw error;
     }
   },
 
   /**
-   * »õ »ç¿ëÀÚ »ý¼º (È¸¿ø°¡ÀÔ)
+   * ìƒˆ ì‚¬ìš©ìž ìƒì„± (íšŒì›ê°€ìž…)
    * 
-   * @param {string} username - »ç¿ëÀÚ¸í (UNIQUE Á¦¾àÁ¶°Ç)
-   * @param {string} email - ÀÌ¸ÞÀÏ ÁÖ¼Ò (UNIQUE Á¦¾àÁ¶°Ç)
-   * @param {string} hashedPassword - bcrypt·Î ¾ÏÈ£È­µÈ ºñ¹Ð¹øÈ£
-   * @returns {Promise<Object>} - »ý¼ºµÈ »ç¿ëÀÚ Á¤º¸ (ºñ¹Ð¹øÈ£ Á¦¿Ü)
+   * @param {string} username - ì‚¬ìš©ìžëª… (UNIQUE ì œì•½ì¡°ê±´)
+   * @param {string} email - ì´ë©”ì¼ ì£¼ì†Œ (UNIQUE ì œì•½ì¡°ê±´)
+   * @param {string} hashedPassword - bcryptë¡œ ì•”í˜¸í™”ëœ ë¹„ë°€ë²ˆí˜¸
+   * @returns {Promise<Object>} - ìƒì„±ëœ ì‚¬ìš©ìž ì •ë³´ (ë¹„ë°€ë²ˆí˜¸ ì œì™¸)
    *   
-   * »ç¿ë ½Ã³ª¸®¿À:
-   *   - È¸¿ø°¡ÀÔ ½Ã »õ »ç¿ëÀÚ »ý¼º
+   * ì‚¬ìš© ì‹œë‚˜ë¦¬ì˜¤:
+   *   - íšŒì›ê°€ìž… ì‹œ ìƒˆ ì‚¬ìš©ìž ìƒì„±
    * 
-   * SQL Äõ¸®:
+   * SQL ì¿¼ë¦¬:
    *   INSERT INTO members (username, email, password, role)
    *   VALUES ($1, $2, $3, 'user')
    *   RETURNING member_id, email, username, role;
    *   
-   *   - RETURNING ÀýÀ» »ç¿ëÇÏ¿© INSERT ÈÄ »ý¼ºµÈ ·¹ÄÚµåÀÇ Æ¯Á¤ ÄÃ·³¸¸ ¹ÝÈ¯
-   *   - ºñ¹Ð¹øÈ£´Â º¸¾È»ó ¹ÝÈ¯ÇÏÁö ¾ÊÀ½
-   *   - roleÀº ±âº»°ª 'user'·Î ¼³Á¤
+   *   - RETURNING ì ˆì„ ì‚¬ìš©í•˜ì—¬ INSERT í›„ ìƒì„±ëœ ë ˆì½”ë“œì˜ íŠ¹ì • ì»¬ëŸ¼ë§Œ ë°˜í™˜
+   *   - ë¹„ë°€ë²ˆí˜¸ëŠ” ë³´ì•ˆìƒ ë°˜í™˜í•˜ì§€ ì•ŠìŒ
+   *   - roleì€ ê¸°ë³¸ê°’ 'user'ë¡œ ì„¤ì •
    */
   createUser: async (username, email, hashedPassword) => {
     try {
-      // SQL Äõ¸® ÀÛ¼º
-      // INSERT ¹®À» »ç¿ëÇÏ¿© »õ ·¹ÄÚµå¸¦ »ðÀÔ.
-      // RETURNING ÀýÀ» »ç¿ëÇÏ¿© »ðÀÔµÈ ·¹ÄÚµåÀÇ Æ¯Á¤ ÄÃ·³¸¸ ¹ÝÈ¯.
+      // SQL ì¿¼ë¦¬ ìž‘ì„±
+      // INSERT ë¬¸ì„ ì‚¬ìš©í•˜ì—¬ ìƒˆ ë ˆì½”ë“œë¥¼ ì‚½ìž…í•©ë‹ˆë‹¤.
+      // RETURNING ì ˆì„ ì‚¬ìš©í•˜ì—¬ ì‚½ìž…ëœ ë ˆì½”ë“œì˜ íŠ¹ì • ì»¬ëŸ¼ë§Œ ë°˜í™˜í•©ë‹ˆë‹¤.
       const query = `
         INSERT INTO members (username, email, password, role)
         VALUES ($1, $2, $3, 'user')
         RETURNING member_id, email, username, role;
       `;
       
-      // Äõ¸® ÆÄ¶ó¹ÌÅÍ ¹è¿­
-      // ¼ø¼­´ë·Î $1, $2, $3¿¡ ¹ÙÀÎµù.
+      // ì¿¼ë¦¬ íŒŒë¼ë¯¸í„° ë°°ì—´
+      // ìˆœì„œëŒ€ë¡œ $1, $2, $3ì— ë°”ì¸ë”©í•©ë‹ˆë‹¤.
       const values = [username, email, hashedPassword];
       
-      // Äõ¸® ½ÇÇà
+      // ì¿¼ë¦¬ ì‹¤í–‰
       const { rows } = await pool.query(query, values);
       
-      // RETURNING Àý·Î ÀÎÇØ »ðÀÔµÈ ·¹ÄÚµåÀÇ Á¤º¸°¡ ¹ÝÈ¯.
-      // rows[0]¿¡´Â member_id, email, username, roleÀÌ Æ÷ÇÔ.
-      // password´Â º¸¾È»ó ¹ÝÈ¯ÇÏÁö ¾Ê´Â´Ù.
+      // RETURNING ì ˆë¡œ ì¸í•´ ì‚½ìž…ëœ ë ˆì½”ë“œì˜ ì •ë³´ê°€ ë°˜í™˜ë©ë‹ˆë‹¤.
+      // rows[0]ì—ëŠ” member_id, email, username, roleì´ í¬í•¨ë©ë‹ˆë‹¤.
+      // passwordëŠ” ë³´ì•ˆìƒ ë°˜í™˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
       return rows[0];
       
     } catch (error) {
-      // ¿¡·¯ ¹ß»ý ½Ã ·Î±× Ãâ·Â
-      // °¡´ÉÇÑ ¿¡·¯:
-      //   - UNIQUE Á¦¾àÁ¶°Ç À§¹Ý (username ¶Ç´Â email Áßº¹)
-      //   - µ¥ÀÌÅÍº£ÀÌ½º ¿¬°á ¿À·ù
-      //   - ±âÅ¸ SQL ¿À·ù
+      // ì—ëŸ¬ ë°œìƒ ì‹œ ë¡œê·¸ ì¶œë ¥
+      // ê°€ëŠ¥í•œ ì—ëŸ¬:
+      //   - UNIQUE ì œì•½ì¡°ê±´ ìœ„ë°˜ (username ë˜ëŠ” email ì¤‘ë³µ)
+      //   - ë°ì´í„°ë² ì´ìŠ¤ ì—°ê²° ì˜¤ë¥˜
+      //   - ê¸°íƒ€ SQL ì˜¤ë¥˜
       console.error('Error creating user:', error);
       
-      // ¿¡·¯¸¦ ´Ù½Ã throwÇÏ¿© Service °èÃþ¿¡¼­ Ã³¸®ÇÒ ¼ö ÀÖµµ·Ï ÇÕ´Ï´Ù.
+      // ì—ëŸ¬ë¥¼ ë‹¤ì‹œ throwí•˜ì—¬ Service ê³„ì¸µì—ì„œ ì²˜ë¦¬í•  ìˆ˜ ìžˆë„ë¡ í•©ë‹ˆë‹¤.
       throw error;
     }
   },
 
-  // ÇâÈÄ Ãß°¡µÉ ¼ö ÀÖ´Â ÇÔ¼öµé:
-  // - updateUser: »ç¿ëÀÚ Á¤º¸ ¼öÁ¤
-  // - updatePassword: ºñ¹Ð¹øÈ£ º¯°æ
-  // - deleteUser: »ç¿ëÀÚ »èÁ¦
-  // - findById: ID·Î »ç¿ëÀÚ Á¶È¸
-  // - findAll: ¸ðµç »ç¿ëÀÚ Á¶È¸ (°ü¸®ÀÚ¿ë)
+  // í–¥í›„ ì¶”ê°€ë  ìˆ˜ ìžˆëŠ” í•¨ìˆ˜ë“¤:
+  // - updateUser: ì‚¬ìš©ìž ì •ë³´ ìˆ˜ì •
+  // - updatePassword: ë¹„ë°€ë²ˆí˜¸ ë³€ê²½
+  // - deleteUser: ì‚¬ìš©ìž ì‚­ì œ
+  // - findById: IDë¡œ ì‚¬ìš©ìž ì¡°íšŒ
+  // - findAll: ëª¨ë“  ì‚¬ìš©ìž ì¡°íšŒ (ê´€ë¦¬ìžìš©)
 };
 
-// Repository °´Ã¼¸¦ ¸ðµâ·Î ³»º¸³»±â (services¿¡¼­ »ç¿ë)
+// Repository ê°ì²´ë¥¼ ëª¨ë“ˆë¡œ ë‚´ë³´ë‚´ê¸° (servicesì—ì„œ ì‚¬ìš©)
 module.exports = memberRepository;

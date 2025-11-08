@@ -1,9 +1,9 @@
 /**
  * 
- * ÀÇÁ¸¼º:
- *   - memberRepository: µ¥ÀÌÅÍº£ÀÌ½º Á¢±ÙÀ» À§ÇÑ Repository
- *   - bcrypt: ºñ¹Ğ¹øÈ£ ¾ÏÈ£È­/°ËÁõ ¶óÀÌºê·¯¸®
- *   - jsonwebtoken: JWT ÅäÅ« »ı¼º/°ËÁõ ¶óÀÌºê·¯¸®
+ * ì˜ì¡´ì„±:
+ *   - memberRepository: ë°ì´í„°ë² ì´ìŠ¤ ì ‘ê·¼ì„ ìœ„í•œ Repository
+ *   - bcrypt: ë¹„ë°€ë²ˆí˜¸ ì•”í˜¸í™”/ê²€ì¦ ë¼ì´ë¸ŒëŸ¬ë¦¬
+ *   - jsonwebtoken: JWT í† í° ìƒì„±/ê²€ì¦ ë¼ì´ë¸ŒëŸ¬ë¦¬
  */
 
 const memberRepository = require('../repositories/member.repository');
@@ -13,101 +13,101 @@ require('dotenv').config();
 
 const authService = {
   /**
-   * ·Î±×ÀÎ ºñÁî´Ï½º ·ÎÁ÷
+   * ë¡œê·¸ì¸ ë¹„ì¦ˆë‹ˆìŠ¤ ë¡œì§
    * 
-   * @param {string} email - »ç¿ëÀÚ ÀÌ¸ŞÀÏ ÁÖ¼Ò
-   * @param {string} password - »ç¿ëÀÚ°¡ ÀÔ·ÂÇÑ Æò¹® ºñ¹Ğ¹øÈ£
-   * @returns {Promise<Object>} - ÅäÅ«°ú »ç¿ëÀÚ Á¤º¸¸¦ Æ÷ÇÔÇÑ °´Ã¼
+   * @param {string} email - ì‚¬ìš©ì ì´ë©”ì¼ ì£¼ì†Œ
+   * @param {string} password - ì‚¬ìš©ìê°€ ì…ë ¥í•œ í‰ë¬¸ ë¹„ë°€ë²ˆí˜¸
+   * @returns {Promise<Object>} - í† í°ê³¼ ì‚¬ìš©ì ì •ë³´ë¥¼ í¬í•¨í•œ ê°ì²´
    *   {
-   *     token: string,        // JWT ÀÎÁõ ÅäÅ«
+   *     token: string,        // JWT ì¸ì¦ í† í°
    *     user: {
-   *       email: string,       // »ç¿ëÀÚ ÀÌ¸ŞÀÏ
-   *       username: string,    // »ç¿ëÀÚ¸í
-   *       role: string        // »ç¿ëÀÚ ¿ªÇÒ
+   *       email: string,       // ì‚¬ìš©ì ì´ë©”ì¼
+   *       username: string,    // ì‚¬ìš©ìëª…
+   *       role: string        // ì‚¬ìš©ì ì—­í• 
    *     }
    *   }
-   * @throws {Error} - »ç¿ëÀÚ¸¦ Ã£À» ¼ö ¾ø°Å³ª ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾ÊÀ» ¶§
+   * @throws {Error} - ì‚¬ìš©ìë¥¼ ì°¾ì„ ìˆ˜ ì—†ê±°ë‚˜ ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•Šì„ ë•Œ
    * 
    */
   login: async (email, password) => {
  
-    // 1´Ü°è: ÀÌ¸ŞÀÏ·Î »ç¿ëÀÚ Á¶È¸
+    // 1ë‹¨ê³„: ì´ë©”ì¼ë¡œ ì‚¬ìš©ì ì¡°íšŒ
     const user = await memberRepository.findByEmail(email);
     
     if (!user) {
       throw new Error('User not found.');
     }
 
-    // 2´Ü°è: ºñ¹Ğ¹øÈ£ °ËÁõ
+    // 2ë‹¨ê³„: ë¹„ë°€ë²ˆí˜¸ ê²€ì¦
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
-    // ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾ÊÀ¸¸é ¿¡·¯ ¹ß»ı
+    // ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•Šìœ¼ë©´ ì—ëŸ¬ ë°œìƒ
     if (!isPasswordValid) {
       throw new Error('Invalid password.');
     }
 
-    // 3´Ü°è: JWT ÅäÅ« »ı¼º
+    // 3ë‹¨ê³„: JWT í† í° ìƒì„±
     const token = jwt.sign(
       { 
-        memberId: user.member_id,  // »ç¿ëÀÚ °íÀ¯ ID
-        email: user.email,          // »ç¿ëÀÚ ÀÌ¸ŞÀÏ
-        role: user.role             // »ç¿ëÀÚ ¿ªÇÒ (user/admin)
+        memberId: user.member_id,  // ì‚¬ìš©ì ê³ ìœ  ID
+        email: user.email,          // ì‚¬ìš©ì ì´ë©”ì¼
+        role: user.role             // ì‚¬ìš©ì ì—­í•  (user/admin)
       },
-      process.env.JWT_SECRET_KEY,   // .env ÆÄÀÏÀÇ ½ÃÅ©¸´ Å°
-      { expiresIn: '1h' }           // ÅäÅ« À¯È¿±â°£: 1½Ã°£
+      process.env.JWT_SECRET_KEY,   // .env íŒŒì¼ì˜ ì‹œí¬ë¦¿ í‚¤
+      { expiresIn: '1h' }           // í† í° ìœ íš¨ê¸°ê°„: 1ì‹œê°„
     );
 
-    // 4´Ü°è: °á°ú ¹İÈ¯
+    // 4ë‹¨ê³„: ê²°ê³¼ ë°˜í™˜
     return { 
-      token,  // Å¬¶óÀÌ¾ğÆ®°¡ ÀÌÈÄ ¿äÃ»¿¡ »ç¿ëÇÒ ÀÎÁõ ÅäÅ«
+      token,  // í´ë¼ì´ì–¸íŠ¸ê°€ ì´í›„ ìš”ì²­ì— ì‚¬ìš©í•  ì¸ì¦ í† í°
       user: { 
-        email: user.email,      // »ç¿ëÀÚ ÀÌ¸ŞÀÏ
-        username: user.username, // »ç¿ëÀÚ¸í
-        role: user.role          // »ç¿ëÀÚ ¿ªÇÒ
+        email: user.email,      // ì‚¬ìš©ì ì´ë©”ì¼
+        username: user.username, // ì‚¬ìš©ìëª…
+        role: user.role          // ì‚¬ìš©ì ì—­í• 
       } 
     };
   },
 
   /**
-   * È¸¿ø°¡ÀÔ ºñÁî´Ï½º ·ÎÁ÷
+   * íšŒì›ê°€ì… ë¹„ì¦ˆë‹ˆìŠ¤ ë¡œì§
    * 
-   * @param {string} username - »ç¿ëÀÚ¸í (°íÀ¯°ª)
-   * @param {string} email - ÀÌ¸ŞÀÏ ÁÖ¼Ò (°íÀ¯°ª)
-   * @param {string} password - Æò¹® ºñ¹Ğ¹øÈ£ (ÃÖ¼Ò 6ÀÚ ÀÌ»ó)
-   * @returns {Promise<Object>} - »ı¼ºµÈ »ç¿ëÀÚ Á¤º¸
+   * @param {string} username - ì‚¬ìš©ìëª… (ê³ ìœ ê°’)
+   * @param {string} email - ì´ë©”ì¼ ì£¼ì†Œ (ê³ ìœ ê°’)
+   * @param {string} password - í‰ë¬¸ ë¹„ë°€ë²ˆí˜¸ (ìµœì†Œ 6ì ì´ìƒ)
+   * @returns {Promise<Object>} - ìƒì„±ëœ ì‚¬ìš©ì ì •ë³´
    *   {
-   *     member_id: number,    // »ı¼ºµÈ »ç¿ëÀÚ ID
-   *     email: string,        // »ç¿ëÀÚ ÀÌ¸ŞÀÏ
-   *     username: string,     // »ç¿ëÀÚ¸í
-   *     role: string         // ±âº»°ª: 'user'
+   *     member_id: number,    // ìƒì„±ëœ ì‚¬ìš©ì ID
+   *     email: string,        // ì‚¬ìš©ì ì´ë©”ì¼
+   *     username: string,     // ì‚¬ìš©ìëª…
+   *     role: string         // ê¸°ë³¸ê°’: 'user'
    *   }
-   * @throws {Error} - ÀÌ¸ŞÀÏÀÌ ÀÌ¹Ì »ç¿ë ÁßÀÏ ¶§
+   * @throws {Error} - ì´ë©”ì¼ì´ ì´ë¯¸ ì‚¬ìš© ì¤‘ì¼ ë•Œ
    */
   signup: async (username, email, password) => {
  
-    // 1´Ü°è: ÀÌ¸ŞÀÏ Áßº¹ È®ÀÎ
+    // 1ë‹¨ê³„: ì´ë©”ì¼ ì¤‘ë³µ í™•ì¸
     const existingUser = await memberRepository.findByEmail(email);
     
-    // ÀÌ¹Ì »ç¿ë ÁßÀÎ ÀÌ¸ŞÀÏÀÌ¸é ¿¡·¯ ¹ß»ı
+    // ì´ë¯¸ ì‚¬ìš© ì¤‘ì¸ ì´ë©”ì¼ì´ë©´ ì—ëŸ¬ ë°œìƒ
     if (existingUser) {
       throw new Error('Email already in use.');
     }
 
-    // 2´Ü°è: ºñ¹Ğ¹øÈ£ ¾ÏÈ£È­
+    // 2ë‹¨ê³„: ë¹„ë°€ë²ˆí˜¸ ì•”í˜¸í™”
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3´Ü°è: Repository¸¦ ÅëÇØ »ç¿ëÀÚ »ı¼º
-    // roleÀº ±âº»°ª 'user'·Î ¼³Á¤
+    // 3ë‹¨ê³„: Repositoryë¥¼ í†µí•´ ì‚¬ìš©ì ìƒì„±
+    // roleì€ ê¸°ë³¸ê°’ 'user'ë¡œ ì„¤ì •
     const newUser = await memberRepository.createUser(
-      username,        // »ç¿ëÀÚ¸í
-      email,           // ÀÌ¸ŞÀÏ
-      hashedPassword   // ¾ÏÈ£È­µÈ ºñ¹Ğ¹øÈ£
+      username,        // ì‚¬ìš©ìëª…
+      email,           // ì´ë©”ì¼
+      hashedPassword   // ì•”í˜¸í™”ëœ ë¹„ë°€ë²ˆí˜¸
     );
     
-    // 4´Ü°è: »ı¼ºµÈ »ç¿ëÀÚ Á¤º¸ ¹İÈ¯
+    // 4ë‹¨ê³„: ìƒì„±ëœ ì‚¬ìš©ì ì •ë³´ ë°˜í™˜
     return newUser;
   },
 };
 
-// ¼­ºñ½º °´Ã¼¸¦ ¸ğµâ·Î ³»º¸³»±â (routes¿¡¼­ »ç¿ë)
+// ì„œë¹„ìŠ¤ ê°ì²´ë¥¼ ëª¨ë“ˆë¡œ ë‚´ë³´ë‚´ê¸° (routesì—ì„œ ì‚¬ìš©)
 module.exports = authService;

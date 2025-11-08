@@ -1,30 +1,20 @@
-# /ddareungi-backend/docker-compose.yml
-
-version: '3.8' # 도커 컴포즈 버전
+# docker-compose.yml
 
 services:
-  # 1. PostgreSQL 데이터베이스 서비스
   db:
-    image: postgres:15    # 15 버전의 PostgreSQL 이미지를 사용
-    container_name: ddareungi_db # 도커에서 보일 컨테이너 이름
-    restart: always       # 도커가 꺼지면 자동으로 다시 시작
-    
+    image: postgres:15
+    container_name: ddareungi_db
+    restart: always
     environment:
-      # .env 파일에서 변수를 읽어와 DB의 유저, 비번, 이름을 설정
+      # 하드코딩 대신 .env 변수를 읽도록 수정
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-      
     ports:
-      # 내 PC(Host)의 5432 포트와 도커(Container)의 5432 포트를 연결
       - "5432:5432" 
-      
     volumes:
-      # 1. DB 데이터를 내 PC에 저장 (컨테이너가 삭제돼도 데이터 보존)
       - postgres_data:/var/lib/postgresql/data
-      # 2. 처음 실행될 때 테이블 생성용 SQL 파일을 자동으로 실행
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-# 1번에서 사용한 'postgres_data' 볼륨을 정의
 volumes:
   postgres_data:

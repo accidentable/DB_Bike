@@ -1,28 +1,25 @@
 /**
  * src/repositories/post.repository.js
- * °Ô½Ã±Û(Post) µ¥ÀÌÅÍº£ÀÌ½º Á¢±Ù °èÃş (Repository/DAO)
- * 
- * ¿ªÇÒ: µ¥ÀÌÅÍº£ÀÌ½º¿Í Á÷Á¢ Åë½ÅÇÏ´Â °èÃşÀÔ´Ï´Ù.
- * - SQL Äõ¸® ½ÇÇà
- * - µ¥ÀÌÅÍº£ÀÌ½º °á°ú¸¦ JavaScript °´Ã¼·Î º¯È¯
- * - ¿¡·¯ Ã³¸® ¹× ·Î±ë
- * 
- * ÀÇÁ¸¼º:
- *   - db.config: PostgreSQL ¿¬°á Ç® (Pool °´Ã¼)
+ * ê²Œì‹œê¸€(Post) ë°ì´í„°ë² ì´ìŠ¤ ì ‘ê·¼ ê³„ì¸µ (Repository/DAO)
+ * * ì—­í• : ë°ì´í„°ë² ì´ìŠ¤ì™€ ì§ì ‘ í†µì‹ í•˜ëŠ” ê³„ì¸µì…ë‹ˆë‹¤.
+ * - SQL ì¿¼ë¦¬ ì‹¤í–‰
+ * - ë°ì´í„°ë² ì´ìŠ¤ ê²°ê³¼ë¥¼ JavaScript ê°ì²´ë¡œ ë³€í™˜
+ * - ì—ëŸ¬ ì²˜ë¦¬ ë° ë¡œê¹…
+ * * ì˜ì¡´ì„±:
+ * - db.config: PostgreSQL ì—°ê²° í’€ (Pool ê°ì²´)
  */
 
 const pool = require('../config/db.config');
 
 const postRepository = {
   /**
-   * »õ °Ô½Ã±Û »ı¼º
-   * 
-   * @param {number} memberId - ÀÛ¼ºÀÚ ID
-   * @param {string} title - °Ô½Ã±Û Á¦¸ñ
-   * @param {string} content - °Ô½Ã±Û ³»¿ë
-   * @param {string} category - °Ô½Ã±Û Ä«Å×°í¸® (notice, event, review µî)
-   * @param {boolean} isPinned - °íÁ¤ ¿©ºÎ (±âº»°ª: false)
-   * @returns {Promise<Object>} - »ı¼ºµÈ °Ô½Ã±Û Á¤º¸
+   * ìƒˆ ê²Œì‹œê¸€ ìƒì„±
+   * * @param {number} memberId - ì‘ì„±ì ID
+   * @param {string} title - ê²Œì‹œê¸€ ì œëª©
+   * @param {string} content - ê²Œì‹œê¸€ ë‚´ìš©
+   * @param {string} category - ê²Œì‹œê¸€ ì¹´í…Œê³ ë¦¬ (notice, event, review ë“±)
+   * @param {boolean} isPinned - ê³ ì • ì—¬ë¶€ (ê¸°ë³¸ê°’: false)
+   * @returns {Promise<Object>} - ìƒì„±ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   createPost: async (memberId, title, content, category, isPinned = false) => {
     try {
@@ -41,21 +38,20 @@ const postRepository = {
   },
 
   /**
-   * °Ô½Ã±Û ¸ñ·Ï Á¶È¸ (ÇÊÅÍ¸µ, Á¤·Ä, ÆäÀÌÁö³×ÀÌ¼Ç)
-   * 
-   * @param {Object} options - Á¶È¸ ¿É¼Ç
-   *   - category: string (¼±ÅÃ) - Ä«Å×°í¸® ÇÊÅÍ
-   *   - sortBy: string (¼±ÅÃ) - Á¤·Ä ±âÁØ ('latest', 'views', 'likes')
-   *   - page: number (¼±ÅÃ) - ÆäÀÌÁö ¹øÈ£ (±âº»°ª: 1)
-   *   - limit: number (¼±ÅÃ) - ÆäÀÌÁö´ç Ç×¸ñ ¼ö (±âº»°ª: 10)
-   *   - searchQuery: string (¼±ÅÃ) - °Ë»ö¾î (Á¦¸ñ/³»¿ë °Ë»ö)
-   * @returns {Promise<Object>} - °Ô½Ã±Û ¸ñ·Ï°ú ÃÑ °³¼ö
-   *   {
-   *     posts: Array,  // °Ô½Ã±Û ¹è¿­
-   *     total: number, // ÀüÃ¼ °Ô½Ã±Û ¼ö
-   *     page: number,  // ÇöÀç ÆäÀÌÁö
-   *     limit: number  // ÆäÀÌÁö´ç Ç×¸ñ ¼ö
-   *   }
+   * ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ (í•„í„°ë§, ì •ë ¬, í˜ì´ì§€ë„¤ì´ì…˜)
+   * * @param {Object} options - ì¡°íšŒ ì˜µì…˜
+   * - category: string (ì„ íƒ) - ì¹´í…Œê³ ë¦¬ í•„í„°
+   * - sortBy: string (ì„ íƒ) - ì •ë ¬ ê¸°ì¤€ ('latest', 'views', 'likes')
+   * - page: number (ì„ íƒ) - í˜ì´ì§€ ë²ˆí˜¸ (ê¸°ë³¸ê°’: 1)
+   * - limit: number (ì„ íƒ) - í˜ì´ì§€ë‹¹ í•­ëª© ìˆ˜ (ê¸°ë³¸ê°’: 10)
+   * - searchQuery: string (ì„ íƒ) - ê²€ìƒ‰ì–´ (ì œëª©/ë‚´ìš© ê²€ìƒ‰)
+   * @returns {Promise<Object>} - ê²Œì‹œê¸€ ëª©ë¡ê³¼ ì´ ê°œìˆ˜
+   * {
+   * posts: Array,  // ê²Œì‹œê¸€ ë°°ì—´
+   * total: number, // ì „ì²´ ê²Œì‹œê¸€ ìˆ˜
+   * page: number,  // í˜„ì¬ í˜ì´ì§€
+   * limit: number  // í˜ì´ì§€ë‹¹ í•­ëª© ìˆ˜
+   * }
    */
   findAll: async (options = {}) => {
     try {
@@ -67,19 +63,19 @@ const postRepository = {
         searchQuery
       } = options;
 
-      // WHERE Á¶°Ç ±¸¼º
+      // WHERE ì¡°ê±´ êµ¬ì„±
       const whereConditions = [];
       const queryParams = [];
       let paramIndex = 1;
 
-      // Ä«Å×°í¸® ÇÊÅÍ
+      // ì¹´í…Œê³ ë¦¬ í•„í„°
       if (category) {
         whereConditions.push(`p.category = $${paramIndex}`);
         queryParams.push(category);
         paramIndex++;
       }
 
-      // °Ë»ö¾î ÇÊÅÍ (Á¦¸ñ ¶Ç´Â ³»¿ë¿¡¼­ °Ë»ö)
+      // ê²€ìƒ‰ì–´ í•„í„° (ì œëª© ë˜ëŠ” ë‚´ìš©ì—ì„œ ê²€ìƒ‰)
       if (searchQuery) {
         whereConditions.push(`(p.title ILIKE $${paramIndex} OR p.content ILIKE $${paramIndex})`);
         queryParams.push(`%${searchQuery}%`);
@@ -90,7 +86,7 @@ const postRepository = {
         ? `WHERE ${whereConditions.join(' AND ')}`
         : '';
 
-      // Á¤·Ä ±âÁØ ¼³Á¤
+      // ì •ë ¬ ê¸°ì¤€ ì„¤ì •
       let orderBy;
       switch (sortBy) {
         case 'views':
@@ -105,7 +101,7 @@ const postRepository = {
           break;
       }
 
-      // ÀüÃ¼ °³¼ö Á¶È¸
+      // ì „ì²´ ê°œìˆ˜ ì¡°íšŒ
       const countQuery = `
         SELECT COUNT(*) as total
         FROM posts p
@@ -114,7 +110,7 @@ const postRepository = {
       const countResult = await pool.query(countQuery, queryParams);
       const total = parseInt(countResult.rows[0].total);
 
-      // °Ô½Ã±Û ¸ñ·Ï Á¶È¸ (ÀÛ¼ºÀÚ Á¤º¸ Æ÷ÇÔ)
+      // ê²Œì‹œê¸€ ëª©ë¡ ì¡°íšŒ (ì‘ì„±ì ì •ë³´ í¬í•¨)
       const offset = (page - 1) * limit;
       const query = `
         SELECT 
@@ -154,10 +150,9 @@ const postRepository = {
   },
 
   /**
-   * °Ô½Ã±Û ID·Î »ó¼¼ Á¶È¸
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @returns {Promise<Object|undefined>} - °Ô½Ã±Û Á¤º¸ ¶Ç´Â undefined
+   * ê²Œì‹œê¸€ IDë¡œ ìƒì„¸ ì¡°íšŒ
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @returns {Promise<Object|undefined>} - ê²Œì‹œê¸€ ì •ë³´ ë˜ëŠ” undefined
    */
   findById: async (postId) => {
     try {
@@ -189,9 +184,8 @@ const postRepository = {
   },
 
   /**
-   * Á¶È¸¼ö Áõ°¡
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
+   * ì¡°íšŒìˆ˜ ì¦ê°€
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
    * @returns {Promise<void>}
    */
   incrementViews: async (postId) => {
@@ -209,13 +203,12 @@ const postRepository = {
   },
 
   /**
-   * °Ô½Ã±Û ¼öÁ¤
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @param {string} title - Á¦¸ñ
-   * @param {string} content - ³»¿ë
-   * @param {string} category - Ä«Å×°í¸®
-   * @returns {Promise<Object>} - ¼öÁ¤µÈ °Ô½Ã±Û Á¤º¸
+   * ê²Œì‹œê¸€ ìˆ˜ì •
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @param {string} title - ì œëª©
+   * @param {string} content - ë‚´ìš©
+   * @param {string} category - ì¹´í…Œê³ ë¦¬
+   * @returns {Promise<Object>} - ìˆ˜ì •ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   updatePost: async (postId, title, content, category) => {
     try {
@@ -234,9 +227,8 @@ const postRepository = {
   },
 
   /**
-   * °Ô½Ã±Û »èÁ¦
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
+   * ê²Œì‹œê¸€ ì‚­ì œ
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
    * @returns {Promise<void>}
    */
   deletePost: async (postId) => {
@@ -250,11 +242,10 @@ const postRepository = {
   },
 
   /**
-   * °Ô½Ã±Û °íÁ¤/°íÁ¤ ÇØÁ¦ (°ü¸®ÀÚ Àü¿ë)
-   * 
-   * @param {number} postId - °Ô½Ã±Û ID
-   * @param {boolean} isPinned - °íÁ¤ ¿©ºÎ
-   * @returns {Promise<Object>} - ¾÷µ¥ÀÌÆ®µÈ °Ô½Ã±Û Á¤º¸
+   * ê²Œì‹œê¸€ ê³ ì •/ê³ ì • í•´ì œ (ê´€ë¦¬ì ì „ìš©)
+   * * @param {number} postId - ê²Œì‹œê¸€ ID
+   * @param {boolean} isPinned - ê³ ì • ì—¬ë¶€
+   * @returns {Promise<Object>} - ì—…ë°ì´íŠ¸ëœ ê²Œì‹œê¸€ ì •ë³´
    */
   updatePinnedStatus: async (postId, isPinned) => {
     try {
@@ -274,4 +265,3 @@ const postRepository = {
 };
 
 module.exports = postRepository;
-

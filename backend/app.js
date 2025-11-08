@@ -1,5 +1,5 @@
 // app.js
-//  Express ¾Û ¼³Á¤, ¹Ìµé¿ş¾î/¶ó¿ìÅÍ ·Îµå
+// Express ì•± ì„¤ì •, ë¯¸ë“¤ì›¨ì–´/ë¼ìš°í„° ë¡œë“œ
 
 const express = require('express');
 const cors = require('cors');
@@ -7,55 +7,44 @@ require('dotenv').config();
 
 const app = express();
 
-// ¸ğµç JSON ÀÀ´äÀ» UTF-8·Î ÀÎÄÚµùÇÏµµ·Ï ¼³Á¤
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  next();
-});
+// --- 1. ì „ì—­ ë¯¸ë“¤ì›¨ì–´ ì„¤ì • ---
+app.use(cors()); // CORS í—ˆìš©
+app.use(express.json()); // Request Bodyì˜ JSON íŒŒì‹±
+app.use(express.urlencoded({ extended: true })); // URL-encoded íŒŒì‹±
 
-app.use(express.json({ charset: 'utf-8' })); 
-app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
-
-// --- 1. Àü¿ª ¹Ìµé¿ş¾î ¼³Á¤ ---
-app.use(cors()); // CORS Çã¿ë
-app.use(express.json({ charset: 'utf-8' })); // Request BodyÀÇ JSON ÆÄ½Ì (UTF-8)
-app.use(express.urlencoded({ extended: true, charset: 'utf-8' })); // URL-encoded ÆÄ½Ì (UTF-8)
-
-// --- 2. ¶ó¿ìÅÍ ºÒ·¯¿À±â ---
+// --- 2. ë¼ìš°í„° ë¶ˆëŸ¬ì˜¤ê¸° ---
 const authRoutes = require('./src/api/auth.routes');
-const postRoutes = require('./src/api/post.routes');
+const postRoutes = require('./src/api/post.routes'); // post.routesë„ ì¶”ê°€ëœ ê²ƒì„ í™•ì¸
 const rentalRoutes = require('./src/api/rental.routes');
 const stationRoutes = require('./src/api/station.routes');
 const adminRoutes = require('./src/api/admin.routes');
-// ... (ticket.routes.js, support.routes.js µî) ...
+// ... (ticket.routes.js, support.routes.js ë“±) ...
 
-// --- 3. ¹Ìµé¿ş¾î ºÒ·¯¿À±â ---
+// --- 3. ë¯¸ë“¤ì›¨ì–´ ë¶ˆëŸ¬ì˜¤ê¸° ---
 const { verifyToken, isAdmin } = require('./src/middleware/auth.middleware');
 
-// --- 4. API ¿£µåÆ÷ÀÎÆ® ¸ÅÇÎ ---
-// /api/auth °æ·Î´Â ÅäÅ« °ËÁõÀÌ ÇÊ¿ä ¾ø´Â °ø°³ °æ·Î
+// --- 4. API ì—”ë“œí¬ì¸íŠ¸ ë§¤í•‘ ---
+// /api/auth ê²½ë¡œëŠ” í† í° ê²€ì¦ì´ í•„ìš” ì—†ëŠ” ê³µê°œ ê²½ë¡œ
 app.use('/api/auth', authRoutes);
 
-// /api/posts °æ·Î´Â °Ô½Ã±Û °ü·Ã (¸ñ·Ï/»ó¼¼´Â °ø°³, ÀÛ¼º/¼öÁ¤/»èÁ¦´Â ÀÎÁõ ÇÊ¿ä)
-app.use('/api/posts', postRoutes);
-
-// /api/rentals, /api/stations °æ·Î´Â ·Î±×ÀÎÀÌ ÇÊ¿ä
-// (¿¹½Ã)
+// /api/rentals ê²½ë¡œëŠ” ë¡œê·¸ì¸ì´ í•„ìš”
 app.use('/api/rentals', verifyToken, rentalRoutes);
-app.use('/api/stations', verifyToken, stationRoutes);
 
-// /api/admin °æ·Î´Â °ü¸®ÀÚ ±ÇÇÑ(isAdmin)ÀÌ ÇÊ¿ä
+// (ìˆ˜ì •) /api/stations ê²½ë¡œëŠ” ê³µê°œ APIë¡œ ë³€ê²½ (ì´ì „ ëŒ€í™” ë‚´ìš© ë°˜ì˜)
+app.use('/api/stations', stationRoutes);
+
+// (ì‹ ê·œ) /api/posts (ì»¤ë®¤ë‹ˆí‹°) ê²½ë¡œëŠ” ë¡œê·¸ì¸ì´ í•„ìš”
+app.use('/api/posts', verifyToken, postRoutes);
+
+// /api/admin ê²½ë¡œëŠ” ê´€ë¦¬ì ê¶Œí•œ(isAdmin)ê¹Œì§€ í•„ìš”
 app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
 
 
-// --- 5. ¼­¹ö »óÅÂ È®ÀÎ ---
+// --- 5. ì„œë²„ í—¬ìŠ¤ ì²´í¬ ---
 app.get('/', (req, res) => {
+  // í•œê¸€ ì‘ë‹µì„ ìœ„í•´ Content-Type ì„¤ì •
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send('Ddareungi Backend Server is running!');
-});
-app.get('/ping', (req, res) => {
-  res.json({ message: 'pong from Ddareungi server' });
+  res.send('ë”°ë¦‰ì´ ë°±ì—”ë“œ ì„œë²„ê°€ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤!');
 });
 
-
-module.exports = app; // server.js¿¡¼­ »ç¿ëÇÏ±â À§ÇØ ³»º¸³»±â
+module.exports = app; // server.jsì—ì„œ ì‚¬ìš©í•˜ê¸° ìœ„í•´ ë‚´ë³´ë‚´ê¸°
