@@ -2,35 +2,33 @@
 // (모든 import 경로 수정)
 
 import { useState, useEffect } from "react";
-import { User, Award, MapPin, Calendar, Trophy, Medal, Star, Target, Bike, TrendingUp, Edit, Lock, ArrowLeft } from "lucide-react"; // ArrowLeft 추가
+import { User, Award, MapPin, Trophy, Star, Bike, Edit, Lock } from "lucide-react";
 import { Card } from "../components/ui/card"; // 경로 수정
 import { Button } from "../components/ui/button"; // 경로 수정
 import { Badge } from "../components/ui/badge"; // 경로 수정
-import Header from "../components/layout/Header"; // 경로 수정 및 default import
 import { Progress } from "../components/ui/progress"; // 경로 수정
 import { Input } from "../components/ui/input"; // 경로 수정
 import { Label } from "../components/ui/label"; // 경로 수정
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"; // 경로 수정
 
-// (수정) 이전 utils/api 대신 우리가 만든 API 함수를 import 해야 함
-// import { getCurrentUser, updateProfile, changePassword } from "../utils/api"; 
-// (실제 API는 Person 1이 구현해야 하므로 임시 함수로 대체)
-const getCurrentUser = () => { /* mock */ return { name: "사용자 이름", email: "user@kwangwoon.ac.kr" }; };
-const updateProfile = async (form: any) => { /* mock */ return { success: true, user: form }; };
-const changePassword = async (current: string, newP: string) => { /* mock */ return { success: true }; };
+// API 함수 import
+import { getCurrentUser as getUser, isAuthenticated } from "../api/authApi";
+import { getMyActiveTickets } from "../api/ticketApi";
+import { getRentalHistory } from "../api/rentalApi";
+import { useNavigate } from "react-router-dom";
 
 
 interface ProfilePageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onStationFinderClick: () => void;
-  onNoticeClick: () => void;
-  onCommunityClick: () => void;
-  onPurchaseClick: () => void;
-  onFaqClick: () => void;
-  onHomeClick: () => void;
-  onRankingClick: () => void;
+  onClose?: () => void;
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+  onStationFinderClick?: () => void;
+  onNoticeClick?: () => void;
+  onCommunityClick?: () => void;
+  onPurchaseClick?: () => void;
+  onFaqClick?: () => void;
+  onHomeClick?: () => void;
+  onRankingClick?: () => void;
 }
 
 // ... (Achievement interface와 achievements 데이터는 원본과 동일하게 유지) ...
@@ -54,22 +52,12 @@ const achievements: Achievement[] = [
 ];
 
 
-export default function ProfilePage({ 
-  onClose, 
-  onLoginClick, 
-  onSignupClick, 
-  onStationFinderClick, 
-  onNoticeClick, 
-  onCommunityClick, 
-  onPurchaseClick, 
-  onFaqClick, 
-  onHomeClick,
-  onRankingClick 
-}: ProfilePageProps) {
+export default function ProfilePage(_props: ProfilePageProps = {}) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"info" | "achievements">("info");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   // 사용자 데이터 상태
@@ -82,8 +70,8 @@ export default function ProfilePage({
     totalDistance: 0,
     totalRides: 0,
     rank: 0,
-    currentTicket: "정기권 (30일)",
-    ticketExpiry: "2025-11-28",
+    currentTicket: "",
+    ticketExpiry: "",
   });
 
   // 수정 폼 데이터
@@ -100,85 +88,88 @@ export default function ProfilePage({
     confirmPassword: "",
   });
 
-  // 사용자 정보 로드
+  // 사용자 정보 및 이용권 로드
   useEffect(() => {
-    // (이 부분은 Person 1이 AuthContext와 연동하여 수정해야 함)
-    const user = getCurrentUser(); 
-    if (user) {
-      setUserData({
-        name: user.name,
-        email: user.email,
-        phone: user.phone || "",
-        studentId: user.studentId || "",
-        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "2025.11.08", // 임시값
-        totalDistance: user.totalDistance || 0,
-        totalRides: user.totalRides || 0,
-        rank: 142, // 임시값
-        currentTicket: "정기권 (30일)", // 임시값
-        ticketExpiry: "2025-11-28", // 임시값
-      });
-      setEditForm({
-        name: user.name,
-        phone: user.phone || "",
-        studentId: user.studentId || "",
-      });
-    }
-  }, []);
-
-  // 정보 수정 핸들러
-  const handleEditProfile = async () => {
-    // ... (로직은 원본과 동일하게 유지) ...
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const result = await updateProfile(editForm);
-      if (result.success && result.user) {
-        setUserData(prev => ({
-          ...prev,
-          name: result.user!.name,
-          phone: result.user!.phone,
-          studentId: result.user!.studentId,
-        }));
-        alert("프로필이 업데이트되었습니다.");
-        setIsEditDialogOpen(false);
-        // window.dispatchEvent(new Event('loginStatusChanged')); // Context 사용 시 이 로직은 필요 없음
+    const loadUserData = async () => {
+      if (!isAuthenticated()) {
+        navigate('/login');
+        return;
       }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+
+      setIsLoading(true);
+      try {
+        const user = getUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
+        // 이용권 정보 가져오기
+        const ticketsResponse = await getMyActiveTickets();
+        let ticketInfo = { name: "이용권 없음", expiry: "" };
+        
+        if (ticketsResponse.success && ticketsResponse.data && ticketsResponse.data.length > 0) {
+          const activeTicket = ticketsResponse.data[0];
+          ticketInfo = {
+            name: activeTicket.ticket_name,
+            expiry: new Date(activeTicket.expiry_time).toLocaleDateString()
+          };
+        }
+
+        // 대여 이력 가져오기
+        const historyResponse = await getRentalHistory();
+        let totalRides = 0;
+        let totalDistance = 0;
+        
+        if (historyResponse.success && historyResponse.data) {
+          totalRides = historyResponse.data.length;
+          // 거리 계산은 나중에 추가
+        }
+
+        setUserData({
+          name: user.username || "",
+          email: user.email || "",
+          phone: "",
+          studentId: "",
+          memberSince: new Date().toLocaleDateString(),
+          totalDistance: totalDistance,
+          totalRides: totalRides,
+          rank: 0,
+          currentTicket: ticketInfo.name,
+          ticketExpiry: ticketInfo.expiry,
+        });
+
+        setEditForm({
+          name: user.username || "",
+          phone: "",
+          studentId: "",
+        });
+      } catch (err) {
+        console.error("사용자 데이터 로드 실패:", err);
+        setError("데이터를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [navigate]);
+
+  // 정보 수정 핸들러 (백엔드 API 구현 대기)
+  const handleEditProfile = async () => {
+    alert("프로필 수정 기능은 곧 추가될 예정입니다.");
+    setIsEditDialogOpen(false);
   };
 
-  // 비밀번호 변경 핸들러
+  // 비밀번호 변경 핸들러 (백엔드 API 구현 대기)
   const handleChangePassword = async () => {
-    // ... (로직은 원본과 동일하게 유지) ...
-    setError("");
-
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setError("새 비밀번호가 일치하지 않습니다.");
       return;
     }
-
-    setIsLoading(true);
-
-    try {
-      const result = await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-      if (result.success) {
-        alert("비밀번호가 변경되었습니다.");
-        setIsPasswordDialogOpen(false);
-        setPasswordForm({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    
+    alert("비밀번호 변경 기능은 곧 추가될 예정입니다.");
+    setIsPasswordDialogOpen(false);
   };
 
   const stats = [
@@ -225,7 +216,7 @@ export default function ProfilePage({
                 <Button
                   variant="outline"
                   className="border-[#00A862] text-[#00A862] hover:bg-[#00A862] hover:text-white"
-                  onClick={onRankingClick}
+                  onClick={() => navigate('/ranking')}
                 >
                   <Trophy className="w-4 h-4 mr-2" />
                   랭킹 보기

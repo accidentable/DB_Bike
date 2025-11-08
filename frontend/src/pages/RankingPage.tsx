@@ -15,16 +15,16 @@ import {
 } from "../components/ui/select"; // 경로 수정
 
 interface RankingPageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onStationFinderClick: () => void;
-  onNoticeClick: () => void;
-  onCommunityClick: () => void;
-  onPurchaseClick: () => void;
-  onFaqClick: () => void;
-  onHomeClick: () => void;
-  onProfileClick: () => void;
+  onClose?: () => void;
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+  onStationFinderClick?: () => void;
+  onNoticeClick?: () => void;
+  onCommunityClick?: () => void;
+  onPurchaseClick?: () => void;
+  onFaqClick?: () => void;
+  onHomeClick?: () => void;
+  onProfileClick?: () => void;
 }
 
 interface RankingUser {
@@ -51,18 +51,7 @@ const rankingData: RankingUser[] = [
   { rank: 142, name: "김따릉", distance: 287.5, rides: 67, isCurrentUser: true },
 ];
 
-export default function RankingPage({
-  onClose,
-  onLoginClick,
-  onSignupClick,
-  onStationFinderClick,
-  onNoticeClick,
-  onCommunityClick,
-  onPurchaseClick,
-  onFaqClick,
-  onHomeClick,
-  onProfileClick
-}: RankingPageProps) {
+export default function RankingPage(_props: RankingPageProps = {}) {
   const [rankingType, setRankingType] = useState<"distance" | "rides">("distance");
   const [period, setPeriod] = useState<"전체" | "이번달" | "이번주">("전체");
 

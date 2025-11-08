@@ -11,6 +11,9 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import CommunityPage from './pages/CommunityPage';
 import ProfilePage from './pages/ProfilePage';
+import PurchasePage from './pages/PurchasePage';
+import FAQPage from './pages/FAQPage';
+import RankingPage from './pages/RankingPage';
 // ... (다른 페이지들도 import)
 
 function App() {
@@ -22,9 +25,11 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/purchase" element={<PurchasePage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          {/* ... (CommunityPage, ProfilePage 등 라우트 추가) ... */}
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/ranking" element={<RankingPage />} />
         </Routes>
       </main>
     </>

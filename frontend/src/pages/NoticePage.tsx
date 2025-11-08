@@ -5,7 +5,6 @@ import { Calendar, Eye, Pin, Filter, SortDesc, ArrowLeft } from "lucide-react"; 
 import { Card } from "../components/ui/card"; // 경로 수정
 import { Badge } from "../components/ui/badge"; // 경로 수정
 import { Button } from "../components/ui/button"; // 경로 수정
-import Header from "../components/layout/Header"; // 경로 수정 및 default import
 import { useState } from "react";
 import {
   Select,
@@ -16,14 +15,14 @@ import {
 } from "../components/ui/select"; // 경로 수정
 
 interface NoticePageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onStationFinderClick: () => void;
-  onCommunityClick: () => void;
-  onPurchaseClick: () => void;
-  onFaqClick: () => void;
-  onHomeClick: () => void;
+  onClose?: () => void;
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+  onStationFinderClick?: () => void;
+  onCommunityClick?: () => void;
+  onPurchaseClick?: () => void;
+  onFaqClick?: () => void;
+  onHomeClick?: () => void;
 }
 
 interface Notice {
@@ -46,7 +45,7 @@ const notices: Notice[] = [
   { id: 6, title: "11월 정기 점검으로 인한 일부 대여소 운영 중단", content: `...`, date: "2025-10-15", views: 2103, isPinned: false, category: "일반" },
 ];
 
-export default function NoticePage({ onClose, onLoginClick, onSignupClick, onStationFinderClick, onCommunityClick, onPurchaseClick, onFaqClick, onHomeClick }: NoticePageProps) {
+export default function NoticePage(_props: NoticePageProps = {}) {
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Notice["category"] | "전체">("전체");
   const [sortBy, setSortBy] = useState<"date" | "views">("date");

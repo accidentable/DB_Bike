@@ -1,75 +1,83 @@
-// src/api/rentalApi.ts
-// (대여, 반납 관련 API)
+/**
+ * 대여/반납 관련 API 함수들
+ */
 
 import client from './client';
 
+// 대여 기록 타입 정의
+export interface Rental {
+  rental_id: number;
+  member_id: number;
+  bike_id: number;
+  start_station_id: number;
+  end_station_id?: number;
+  start_time: string;
+  end_time?: string;
+}
+
+// API 응답 타입
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
 /**
- * 현재 대여 중인 내역 조회
- * GET /api/rentals/current
- * (로그인 필요)
+ * 현재 대여 중인 자전거 조회 (로그인 필요)
  */
-export const getCurrentRental = async () => {
+export async function getCurrentRental(): Promise<ApiResponse<Rental | null>> {
   try {
     const response = await client.get('/api/rentals/current');
-    return response.data; // { success: true, data: RentedBikeInfo | null }
-  } catch (error) {
-    console.error('getCurrentRental API error:', error);
-    throw error;
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '현재 대여 정보를 불러오는 중 오류가 발생했습니다.',
+    };
   }
-};
+}
 
 /**
- * 대여 이력 조회
- * GET /api/rentals/history
- * (로그인 필요)
+ * 대여 이력 조회 (로그인 필요)
  */
-export const getRentalHistory = async () => {
+export async function getRentalHistory(): Promise<ApiResponse<Rental[]>> {
   try {
     const response = await client.get('/api/rentals/history');
-    return response.data; // { success: true, data: RentalHistory[] }
-  } catch (error) {
-    console.error('getRentalHistory API error:', error);
-    throw error;
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여 이력을 불러오는 중 오류가 발생했습니다.',
+    };
   }
-};
+}
 
 /**
- * 자전거 대여
- * POST /api/rentals/rent
- * (로그인 필요)
- * @param {Object} params - 대여 정보
- * @param {number} params.bikeId - 자전거 ID
- * @param {number} params.startStationId - 대여소 ID
+ * 자전거 대여 (로그인 필요)
  */
-export const rentBike = async (params: { bikeId: number; startStationId: number }) => {
+export async function rentBike(bikeId: number, startStationId: number): Promise<ApiResponse<Rental>> {
   try {
-    const response = await client.post('/api/rentals/rent', {
-      bikeId: params.bikeId,
-      startStationId: params.startStationId,
-    });
-    return response.data; // { success: true, data: RentalInfo }
-  } catch (error) {
-    console.error('rentBike API error:', error);
-    throw error;
+    const response = await client.post('/api/rentals/rent', { bikeId, startStationId });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '자전거 대여 중 오류가 발생했습니다.',
+    };
   }
-};
+}
 
 /**
- * 자전거 반납
- * POST /api/rentals/return
- * (로그인 필요)
- * @param {Object} params - 반납 정보
- * @param {number} params.endStationId - 반납할 대여소 ID
+ * 자전거 반납 (로그인 필요)
  */
-export const returnBike = async (params: { endStationId: number }) => {
+export async function returnBike(endStationId: number): Promise<ApiResponse<Rental>> {
   try {
-    const response = await client.post('/api/rentals/return', {
-      endStationId: params.endStationId,
-    });
-    return response.data; // { success: true, data: ReturnInfo }
-  } catch (error) {
-    console.error('returnBike API error:', error);
-    throw error;
+    const response = await client.post('/api/rentals/return', { endStationId });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '자전거 반납 중 오류가 발생했습니다.',
+    };
   }
-};
-
+}

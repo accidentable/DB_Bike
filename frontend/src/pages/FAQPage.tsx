@@ -11,14 +11,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "..
 import Header from "../components/layout/Header"; // 경로 수정 및 default import
 
 interface FAQPageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onStationFinderClick: () => void;
-  onNoticeClick: () => void;
-  onCommunityClick: () => void;
-  onPurchaseClick: () => void;
-  onHomeClick: () => void;
+  onClose?: () => void;
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+  onStationFinderClick?: () => void;
+  onNoticeClick?: () => void;
+  onCommunityClick?: () => void;
+  onPurchaseClick?: () => void;
+  onHomeClick?: () => void;
 }
 
 // ... (faqs, additionalFaqs 데이터는 원본과 동일하게 유지) ...
@@ -44,7 +44,7 @@ const additionalFaqs = [
   { id: 16, question: "따릉이 대여소를 우리 동네에도 설치할 수 있나요?", category: "대여소" },
 ];
 
-export default function FAQPage({ onClose, onLoginClick, onSignupClick, onStationFinderClick, onNoticeClick, onCommunityClick, onPurchaseClick, onHomeClick }: FAQPageProps) {
+export default function FAQPage(_props: FAQPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showChatbot, setShowChatbot] = useState(false);
   const [chatMessages, setChatMessages] = useState([

@@ -2,10 +2,10 @@
 // (API 연동 및 mock data 제거 완료)
 
 import { useState, useEffect } from "react";
-import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Image as ImageIcon } from "lucide-react";
+import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X } from "lucide-react";
 
 // 1. (수정) API 경로 및 Context 경로 수정
-import { getPosts, createPost, getPostById } from "../api/postApi";
+import { getPosts, createPost, getPost, type Post } from "../api/postApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
 
@@ -27,22 +27,6 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-
-// --- 3. (수정) 백엔드 응답에 맞춘 Post 타입 재정의 ---
-interface Post {
-  post_id: number;
-  title: string;
-  content: string;
-  username: string; // author 대신 백엔드에서 주는 username
-  created_at: string; // ISO 날짜 문자열
-  views: number;
-  likes: number;
-  comments_count: number; // comments 대신 comments_count
-  category: string;
-  is_pinned: boolean; // isPinned 대신 is_pinned
-  // attachments: { name: string; url: string; type: string }[]; // 파일 첨부 필드는 추후 구현
-}
-
 // 4. (수정) 목업 데이터 삭제
 // const initialPosts: Post[] = [ ... ]; // 삭제
 
@@ -55,7 +39,7 @@ export default function CommunityPage() {
   // --- API 데이터 상태 ---
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [isLoading, setIsLoading] = setIsLoading(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // --- UI 상태 ---
@@ -83,7 +67,7 @@ export default function CommunityPage() {
             // searchQuery: undefined
         };
         const response = await getPosts(options); // API 호출
-        if (response.success) {
+        if (response.success && response.data && response.data.posts) {
             // (수정) 고정글을 먼저 정렬해서 상태에 저장 (클라이언트 정렬 로직 대체)
             const pinned = response.data.posts.filter(p => p.is_pinned);
             const normal = response.data.posts.filter(p => !p.is_pinned);
@@ -99,8 +83,8 @@ export default function CommunityPage() {
   const handlePostClick = async (postId: number) => {
     try {
         // (수정) 상세 API 호출 (조회수 증가 로직 포함)
-        const response = await getPostById(postId);
-        if (response.success) {
+        const response = await getPost(postId);
+        if (response.success && response.data) {
             setSelectedPost(response.data);
             fetchPosts(); // 목록 페이지의 조회수 갱신을 위해 재호출 (옵션)
         }
@@ -121,18 +105,14 @@ export default function CommunityPage() {
     }
 
     try {
-        // (수정) API 호출 시 FormData 사용 (파일 첨부 대비)
-        const formData = new FormData();
-        formData.append('title', newPost.title.trim());
-        formData.append('content', newPost.content.trim());
-        formData.append('category', newPost.category);
+        // (수정) API 호출 (파일 첨부는 나중에 구현)
+        const postData = {
+            title: newPost.title.trim(),
+            content: newPost.content.trim(),
+            category: newPost.category
+        };
 
-        // 첨부 파일 추가 (파일 첨부는 백엔드 로직에 따라 수정 필요)
-        attachedFiles.forEach(file => {
-            formData.append('files', file); // files는 백엔드가 받을 필드명
-        });
-
-        await createPost(formData); // API 호출
+        await createPost(postData); // API 호출
         
         // 성공 후 상태 초기화 및 목록 갱신
         setNewPost({ title: "", content: "", category: "자유" });

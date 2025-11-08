@@ -1,37 +1,65 @@
-// src/api/stationApi.ts
-// (getAvailableBikes 함수 추가)
+/**
+ * 대여소 관련 API 함수들
+ */
 
 import client from './client';
 
-// (참고) 인터페이스는 필요시 파일 상단에 정의합니다.
-// interface StationListResponse { success: boolean; data: any[]; }
+// 대여소 타입 정의
+export interface Station {
+  station_id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  bike_count: number;
+  status: string;
+  created_at: string;
+}
+
+// 자전거 타입 정의
+export interface Bike {
+  bike_id: number;
+  bike_number?: string;
+  status: string;
+  lock_status: string;
+}
+
+// API 응답 타입
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
 
 /**
- * 대여소 목록 조회 (검색, 정렬)
+ * 대여소 목록 조회 (공개)
  */
-export const getStations = async (params: { query?: string; lat?: number; lon?: number }) => {
+export async function getStations(params?: {
+  query?: string;
+  lat?: number;
+  lon?: number;
+}): Promise<ApiResponse<Station[]>> {
   try {
     const response = await client.get('/api/stations', { params });
-    return response.data; // { success: true, data: Station[] }
-  } catch (error) {
-    console.error('getStations API error:', error);
-    throw error;
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여소 목록을 불러오는 중 오류가 발생했습니다.',
+    };
   }
-};
+}
 
 /**
- * 자전거 목록 조회 (특정 대여소)
- * HomePage.tsx에서 이 함수를 찾고 있습니다.
+ * 특정 대여소의 자전거 목록 조회 (공개)
  */
-export const getAvailableBikes = async (stationId: number) => {
+export async function getAvailableBikes(stationId: number): Promise<ApiResponse<Bike[]>> {
   try {
-    // GET /api/stations/:stationId/bikes
     const response = await client.get(`/api/stations/${stationId}/bikes`);
-    return response.data; // { success: true, data: Bike[] }
-  } catch (error) {
-    console.error('getAvailableBikes API error:', error);
-    throw error;
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '자전거 목록을 불러오는 중 오류가 발생했습니다.',
+    };
   }
-};
-
-// (다른 station 관련 API가 있다면 여기에 추가)
+}

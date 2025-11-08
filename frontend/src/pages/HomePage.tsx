@@ -67,7 +67,7 @@ export default function HomePage() {
     setError(null);
     try {
       const data = await getStations({ query, lat, lon });
-      if (data.success) {
+      if (data.success && data.data) {
         setStations(data.data);
       }
     } catch (err) {
@@ -82,7 +82,13 @@ export default function HomePage() {
     try {
       const data = await getCurrentRental();
       if (data.success && data.data) {
-        setRentedBike(data.data);
+        // Rental 타입을 RentedBikeInfo 타입으로 변환
+        setRentedBike({
+          rental_id: data.data.rental_id,
+          start_time: data.data.start_time,
+          start_station_name: '', // API에서 제공하지 않으면 빈 문자열
+          bike_id: data.data.bike_id
+        } as RentedBikeInfo);
       } else {
         setRentedBike(null);
       }
@@ -113,7 +119,7 @@ export default function HomePage() {
     setError(null);
     try {
       const data = await getAvailableBikes(station.station_id);
-      if (data.success) {
+      if (data.success && data.data) {
         setBikes(data.data);
       }
     } catch (err) {
@@ -129,20 +135,32 @@ export default function HomePage() {
 
     setIsLoading(true);
     setError(null);
-    try {
-      await rentBike({
-        bikeId: selectedBike.bike_id,
-        startStationId: selectedStation.station_id
-      });
+    
+    const response = await rentBike(selectedBike.bike_id, selectedStation.station_id);
+    
+    if (response.success) {
+      alert("대여가 완료되었습니다!");
       await fetchCurrentRental();
       setSelectedBike(null);
       setSelectedStation(null);
       setBikes([]);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "대여에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
+    } else {
+      const errorMessage = response.message || "대여에 실패했습니다.";
+      
+      // 이용권이 없는 경우 처리
+      if (errorMessage.includes("이용권")) {
+        const goToPurchase = window.confirm(
+          "이용권이 없습니다.\n이용권 구매 페이지로 이동하시겠습니까?"
+        );
+        if (goToPurchase) {
+          navigate('/purchase');
+        }
+      } else {
+        setError(errorMessage);
+      }
     }
+    
+    setIsLoading(false);
   };
 
   const handleReturn = async () => {
@@ -153,7 +171,7 @@ export default function HomePage() {
     setIsLoading(true);
     setError(null);
     try {
-      await returnBike({ endStationId: selectedStation.station_id });
+      await returnBike(selectedStation.station_id);
       setRentedBike(null);
       setElapsedTime(0);
       setSelectedStation(null);

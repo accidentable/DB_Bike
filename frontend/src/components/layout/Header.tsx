@@ -29,6 +29,7 @@ export default function Header() {
 
         <nav className="hidden md:flex gap-6 items-center">
           <Link to="/" className="text-sm font-medium hover:text-[#00A862]">대여소 찾기</Link>
+          <Link to="/purchase" className="text-sm font-medium hover:text-[#00A862]">이용권 구매</Link>
           <Link to="/community" className="text-sm font-medium hover:text-[#00A862]">커뮤니티</Link>
           <Link to="/faq" className="text-sm font-medium hover:text-[#00A862]">FAQ</Link>
           <Link to="/ranking" className="text-sm font-medium hover:text-[#00A862]">랭킹</Link>
