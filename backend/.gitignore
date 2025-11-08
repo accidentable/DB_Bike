@@ -1,0 +1,42 @@
+# ----------------------------------------------------------------
+# .gitignore for Node.js Project
+# ----------------------------------------------------------------
+
+# 1. 의존성 (Dependencies)
+# (npm install로 설치되는 모든 패키지)
+node_modules/
+
+# 2. 민감한 환경 변수 파일 (!!!)
+# (DB 접속정보, JWT 시크릿 키 포함)
+.env
+
+# 3. 로그 (Logs)
+# (npm 에러 로그 등)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 4. 운영체제(OS) 자동 생성 파일
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# 5. IDE 및 에디터 설정
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 6. (선택) 빌드 결과물
+# (TypeScript 등을 사용한다면)
+# dist/
+# build/
+
+# 7. (선택) NPM 캐시
+npm-cache/
