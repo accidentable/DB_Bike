@@ -1,301 +1,120 @@
-import { useState } from "react";
+// src/pages/PurchasePage.tsx
+// (목업 데이터 제거 및 API 연동 뼈대 추가)
+
+import { useState, useEffect } from "react";
 import { Check, ThumbsUp, MessageCircle, Star } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
-import { Header } from "./Header";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Textarea } from "../components/ui/textarea";
+import Header from "../components/layout/Header";
+// (신규) 이용권 API 함수 (Person 1이 구현할 파일)
+// import { getTicketPlans, purchaseTicket, likePlan, submitReview } from "../api/ticketApi"; 
+import { useAuth } from "../contexts/AuthContext";
 
-interface PurchasePageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onStationFinderClick: () => void;
-  onNoticeClick: () => void;
-  onCommunityClick: () => void;
-  onFaqClick: () => void;
-  onHomeClick: () => void;
+// --- 백엔드 응답 타입 정의 (Person 1의 ticketApi.ts에서 사용) ---
+interface Plan {
+  plan_id: number;
+  name: string;
+  price: number; // API는 number로 줄 확률 높음
+  duration_days: number;
+  features: string[];
+  is_popular: boolean;
+  likes_count: number; 
+  reviews_count: number;
 }
-
 interface Review {
-  id: number;
-  author: string;
-  date: string;
+  review_id: number;
+  author_name: string;
   rating: number;
   content: string;
   likes: number;
-  liked: boolean;
 }
+// ---
 
-interface Plan {
-  name: string;
-  price: string;
-  duration: string;
-  features: string[];
-  popular: boolean;
-  likes: number;
-  liked: boolean;
-  reviews: Review[];
-}
+export default function PurchasePage() { // (props 제거)
+  const { isLoggedIn, navigate } = useAuth(); // AuthContext 사용
 
-const initialPlans: Plan[] = [
-  {
-    name: "1시간권",
-    price: "1,000원",
-    duration: "1시간",
-    features: [
-      "1시간 이용 가능",
-      "추가 시간당 1,000원",
-      "모든 대여소 이용 가능",
-      "24시간 이용 가능",
-    ],
-    popular: false,
-    likes: 245,
-    liked: false,
-    reviews: [
-      {
-        id: 1,
-        author: "김철수",
-        date: "2025.10.28",
-        rating: 4,
-        content: "짧은 거리 이동할 때 딱 좋아요! 가격도 저렴하고 편리합니다.",
-        likes: 12,
-        liked: false,
-      },
-      {
-        id: 2,
-        author: "이영희",
-        date: "2025.10.25",
-        rating: 5,
-        content: "가끔 이용하는데 1시간이면 충분해서 이용권 자주 구매합니다.",
-        likes: 8,
-        liked: false,
-      },
-    ],
-  },
-  {
-    name: "1일권",
-    price: "2,000원",
-    duration: "24시간",
-    features: [
-      "24시간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "당일 자정까지 유효",
-    ],
-    popular: true,
-    likes: 892,
-    liked: false,
-    reviews: [
-      {
-        id: 1,
-        author: "박민수",
-        date: "2025.10.30",
-        rating: 5,
-        content: "하루 종일 여러 곳 돌아다닐 때 최고예요. 가성비 끝판왕!",
-        likes: 45,
-        liked: false,
-      },
-      {
-        id: 2,
-        author: "정수진",
-        date: "2025.10.29",
-        rating: 5,
-        content: "주말에 서울 구경할 때 사용했는데 너무 좋았어요. 추천합니다!",
-        likes: 32,
-        liked: false,
-      },
-      {
-        id: 3,
-        author: "최동욱",
-        date: "2025.10.27",
-        rating: 4,
-        content: "가격 대비 만족도가 높습니다. 2시간마다 반납하면 되니까 불편함도 없어요.",
-        likes: 18,
-        liked: false,
-      },
-    ],
-  },
-  {
-    name: "정기권",
-    price: "5,000원",
-    duration: "30일",
-    features: [
-      "30일간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "365일 24시간 이용",
-    ],
-    popular: false,
-    likes: 1523,
-    liked: false,
-    reviews: [
-      {
-        id: 1,
-        author: "강지훈",
-        date: "2025.10.31",
-        rating: 5,
-        content: "출퇴근용으로 완벽합니다. 한 달에 5천원이면 정말 저렴해요!",
-        likes: 67,
-        liked: false,
-      },
-      {
-        id: 2,
-        author: "윤서아",
-        date: "2025.10.28",
-        rating: 5,
-        content: "매일 이용하는데 정기권이 제일 경제적이에요. 강추!",
-        likes: 54,
-        liked: false,
-      },
-      {
-        id: 3,
-        author: "임태윤",
-        date: "2025.10.26",
-        rating: 4,
-        content: "자주 이용한다면 정기권이 답입니다. 한달 내내 부담 없이 타요.",
-        likes: 29,
-        liked: false,
-      },
-    ],
-  },
-  {
-    name: "연간권",
-    price: "30,000원",
-    duration: "365일",
-    features: [
-      "1년간 무제한 이용",
-      "1회 이용시간 2시간까지",
-      "모든 대여소 이용 가능",
-      "가장 경제적인 선택",
-    ],
-    popular: false,
-    likes: 2341,
-    liked: false,
-    reviews: [
-      {
-        id: 1,
-        author: "송민호",
-        date: "2025.10.30",
-        rating: 5,
-        content: "1년 동안 쓰니까 한 달에 2,500원 꼴이에요. 완전 혜자!",
-        likes: 89,
-        liked: false,
-      },
-      {
-        id: 2,
-        author: "한지민",
-        date: "2025.10.27",
-        rating: 5,
-        content: "매일 출퇴근에 이용하는데 연간권이 제일 합리적이에요. 최고입니다!",
-        likes: 76,
-        liked: false,
-      },
-      {
-        id: 3,
-        author: "오성민",
-        date: "2025.10.24",
-        rating: 5,
-        content: "작년에 이어 올해도 연간권 끊었어요. 자주 타면 이게 제일 이득!",
-        likes: 62,
-        liked: false,
-      },
-      {
-        id: 4,
-        author: "백현우",
-        date: "2025.10.22",
-        rating: 4,
-        content: "일주일에 3번 이상만 타도 본전 뽑는 것 같아요. 좋습니다.",
-        likes: 41,
-        liked: false,
-      },
-    ],
-  },
-];
-
-export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFinderClick, onNoticeClick, onCommunityClick, onFaqClick, onHomeClick }: PurchasePageProps) {
-  const [plans, setPlans] = useState<Plan[]>(initialPlans);
-  const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
+  // (수정) initialPlans 목업 데이터 제거
+  const [plans, setPlans] = useState<Plan[]>([]); 
+  const [reviews, setReviews] = useState<Review[]>([]); // 현재 선택된 플랜의 리뷰
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [showReviewForm, setShowReviewForm] = useState<number | null>(null);
   const [reviewContent, setReviewContent] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLikePlan = (index: number) => {
-    setPlans((prevPlans) =>
-      prevPlans.map((plan, i) =>
-        i === index
-          ? {
-              ...plan,
-              liked: !plan.liked,
-              likes: plan.liked ? plan.likes - 1 : plan.likes + 1,
-            }
-          : plan
-      )
-    );
+  // --- 1. API 호출: 이용권 목록 가져오기 ---
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setIsLoading(true);
+      try {
+        // const response = await getTicketPlans(); // API 호출
+        // if (response.success) {
+        //   setPlans(response.data);
+        // }
+        
+        // (API가 구현될 때까지 임시 목업 데이터를 사용)
+        setPlans([
+          { plan_id: 1, name: "1시간권", price: 1000, duration_days: 0, features: ["1시간 이용 가능", "추가 시간당 1,000원"], is_popular: false, likes_count: 245, reviews_count: 2 },
+          { plan_id: 2, name: "1일권", price: 2000, duration_days: 1, features: ["24시간 무제한 이용", "1회 이용시간 2시간까지"], is_popular: true, likes_count: 892, reviews_count: 3 },
+          { plan_id: 3, name: "정기권", price: 5000, duration_days: 30, features: ["30일간 무제한 이용", "1회 이용시간 2시간까지"], is_popular: false, likes_count: 1523, reviews_count: 3 },
+        ]);
+        
+      } catch (err) {
+        console.error("Failed to fetch plans:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  // --- 2. API 연동: 구매하기 (결제 로직) ---
+  const handlePurchase = async (planId: number) => {
+    if (!isLoggedIn) return navigate('/login');
+    
+    // (Person 1이 결제 SDK 연동 후 이 로직을 구현)
+    alert(`[결제 팝업 시뮬레이션] ${planId}번 플랜 결제 요청을 보냅니다.`);
+    
+    // try {
+    //   const paymentResult = await openPaymentSDK(planId); // Toss/Portone SDK 호출
+    //   const response = await purchaseTicket(planId, paymentResult.uid); // 백엔드 검증 API 호출
+    //   if (response.success) {
+    //     alert("이용권 구매 및 등록이 완료되었습니다.");
+    //   }
+    // } catch (err) {
+    //   alert("결제 또는 등록에 실패했습니다.");
+    // }
   };
 
-  const handleLikeReview = (planIndex: number, reviewId: number) => {
-    setPlans((prevPlans) =>
-      prevPlans.map((plan, i) =>
-        i === planIndex
-          ? {
-              ...plan,
-              reviews: plan.reviews.map((review) =>
-                review.id === reviewId
-                  ? {
-                      ...review,
-                      liked: !review.liked,
-                      likes: review.liked ? review.likes - 1 : review.likes + 1,
-                    }
-                  : review
-              ),
-            }
-          : plan
-      )
-    );
+  // --- 3. API 연동: 후기 작성/조회 ---
+  const handleReviewClick = (planId: number) => {
+    setSelectedPlanId(planId);
+    // (신규) API 호출: getReviews(planId) 로 해당 플랜의 리뷰 목록을 가져와 setReviews에 저장
   };
-
-  const handleSubmitReview = (planIndex: number) => {
+  
+  const handleSubmitReview = async (planId: number) => {
+    if (!isLoggedIn) return alert('로그인이 필요합니다.');
     if (!reviewContent.trim()) return;
 
-    const newReview: Review = {
-      id: Date.now(),
-      author: "사용자" + Math.floor(Math.random() * 1000),
-      date: new Date().toLocaleDateString("ko-KR").replace(/\. /g, ".").slice(0, -1),
-      rating: reviewRating,
-      content: reviewContent,
-      likes: 0,
-      liked: false,
-    };
-
-    setPlans((prevPlans) =>
-      prevPlans.map((plan, i) =>
-        i === planIndex
-          ? {
-              ...plan,
-              reviews: [newReview, ...plan.reviews],
-            }
-          : plan
-      )
-    );
+    // try {
+    //   await submitReview(planId, reviewContent, reviewRating); // 백엔드 API 호출
+    //   alert("후기가 등록되었습니다.");
+    //   // handleReviewClick(planId); // 리뷰 목록 새로고침
+    // } catch (err) {
+    //   alert('리뷰 등록에 실패했습니다.');
+    // }
+    
+    // (임시 목업 로직)
+    setReviews([{ review_id: Date.now(), author_name: user?.username || '새로운 유저', rating: reviewRating, content: reviewContent, likes: 0 }]);
 
     setReviewContent("");
     setReviewRating(5);
     setShowReviewForm(null);
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        onLoginClick={onLoginClick}
-        onSignupClick={onSignupClick}
-        onStationFinderClick={onStationFinderClick}
-        onNoticeClick={onNoticeClick}
-        onCommunityClick={onCommunityClick}
-        onPurchaseClick={onClose}
-        onFaqClick={onFaqClick}
-        onHomeClick={onHomeClick}
-      />
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="mb-2">이용권 구매</h1>
@@ -307,22 +126,20 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {plans.map((plan, index) => (
             <Card
-              key={index}
+              key={plan.plan_id}
               className={`p-6 relative ${
-                plan.popular
-                  ? "border-[#00A862] border-2 shadow-lg"
-                  : "border-gray-200"
+                plan.is_popular ? "border-[#00A862] border-2 shadow-lg" : "border-gray-200"
               }`}
             >
-              {plan.popular && (
+              {plan.is_popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00A862] text-white px-4 py-1 rounded-full text-sm">
                   인기
                 </div>
               )}
               <div className="text-center mb-6">
                 <h3 className="mb-2">{plan.name}</h3>
-                <div className="text-3xl text-[#00A862] mb-1">{plan.price}</div>
-                <p className="text-sm text-gray-600">{plan.duration}</p>
+                <div className="text-3xl text-[#00A862] mb-1">{plan.price.toLocaleString()}원</div>
+                <p className="text-sm text-gray-600">{plan.duration_days}일</p>
               </div>
               <ul className="space-y-3 mb-6">
                 {plan.features.map((feature, featureIndex) => (
@@ -333,55 +150,47 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                 ))}
               </ul>
               <Button
+                onClick={() => handlePurchase(plan.plan_id)}
                 className={`w-full mb-4 ${
-                  plan.popular
-                    ? "bg-[#00A862] hover:bg-[#008F54]"
-                    : "bg-gray-900 hover:bg-gray-800"
+                  plan.is_popular ? "bg-[#00A862] hover:bg-[#008F54]" : "bg-gray-900 hover:bg-gray-800"
                 }`}
               >
                 구매하기
               </Button>
 
-              {/* Like Button */}
+              {/* Like Button & Review Count (API 연동 필요) */}
               <div className="flex items-center justify-between pt-4 border-t">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleLikePlan(index)}
-                  className={`flex items-center gap-2 ${
-                    plan.liked ? "text-[#00A862]" : "text-gray-600"
-                  }`}
+                  // onClick={() => handleLikePlan(plan.plan_id)} // API 연동 필요
+                  className={`flex items-center gap-2 text-gray-600`}
                 >
-                  <ThumbsUp
-                    className={`w-4 h-4 ${plan.liked ? "fill-current" : ""}`}
-                  />
-                  <span>{plan.likes}</span>
+                  <ThumbsUp className={`w-4 h-4`} />
+                  <span>{plan.likes_count}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedPlan(selectedPlan === index ? null : index)}
+                  onClick={() => handleReviewClick(plan.plan_id)}
                   className="flex items-center gap-2 text-gray-600"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>{plan.reviews.length}</span>
+                  <span>{plan.reviews_count}</span>
                 </Button>
               </div>
             </Card>
           ))}
         </div>
 
-        {/* Reviews Section */}
-        {selectedPlan !== null && (
+        {/* Reviews Section (Review State 기반으로 렌더링) */}
+        {selectedPlanId !== null && (
           <Card className="p-6 mb-12">
+            {/* ... (리뷰 폼 UI는 원본과 동일하게 유지) ... */}
             <div className="flex items-center justify-between mb-6">
-              <h3>{plans[selectedPlan].name} 후기</h3>
+              <h3>{plans.find(p => p.plan_id === selectedPlanId)?.name} 후기</h3>
               <Button
-                onClick={() =>
-                  setShowReviewForm(
-                    showReviewForm === selectedPlan ? null : selectedPlan
-                  )
-                }
+                onClick={() => setShowReviewForm(showReviewForm === selectedPlanId ? null : selectedPlanId)}
                 className="bg-[#00A862] hover:bg-[#008F54]"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -390,7 +199,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
             </div>
 
             {/* Review Form */}
-            {showReviewForm === selectedPlan && (
+            {showReviewForm === selectedPlanId && (
               <Card className="p-4 mb-6 bg-gray-50">
                 <div className="mb-4">
                   <label className="block text-sm mb-2">평점</label>
@@ -403,9 +212,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                       >
                         <Star
                           className={`w-6 h-6 ${
-                            rating <= reviewRating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
+                            rating <= reviewRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
                           }`}
                         />
                       </button>
@@ -431,7 +238,7 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                     취소
                   </Button>
                   <Button
-                    onClick={() => handleSubmitReview(selectedPlan)}
+                    onClick={() => handleSubmitReview(selectedPlanId)}
                     className="bg-[#00A862] hover:bg-[#008F54]"
                   >
                     등록
@@ -442,23 +249,19 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
 
             {/* Reviews List */}
             <div className="space-y-4">
-              {plans[selectedPlan].reviews.map((review) => (
-                <Card key={review.id} className="p-4">
+              {reviews.map((review) => (
+                <Card key={review.review_id} className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm">{review.author}</span>
-                        <span className="text-xs text-gray-500">{review.date}</span>
+                        <span className="text-sm">{review.author_name}</span>
+                        {/* <span className="text-xs text-gray-500">{review.date}</span> */}
                       </div>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`w-4 h-4 ${
-                              star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
+                            className={`w-4 h-4 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
                           />
                         ))}
                       </div>
@@ -466,16 +269,10 @@ export function PurchasePage({ onClose, onLoginClick, onSignupClick, onStationFi
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleLikeReview(selectedPlan, review.id)}
-                      className={`flex items-center gap-1 ${
-                        review.liked ? "text-[#00A862]" : "text-gray-600"
-                      }`}
+                      // onClick={() => handleLikeReview(selectedPlanId, review.review_id)} // API 연동 필요
+                      className={`flex items-center gap-1 text-gray-600`}
                     >
-                      <ThumbsUp
-                        className={`w-4 h-4 ${
-                          review.liked ? "fill-current" : ""
-                        }`}
-                      />
+                      <ThumbsUp className={`w-4 h-4`} />
                       <span className="text-sm">{review.likes}</span>
                     </Button>
                   </div>

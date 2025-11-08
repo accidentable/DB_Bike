@@ -1,14 +1,24 @@
+// src/pages/ProfilePage.tsx
+// (모든 import 경로 수정)
+
 import { useState, useEffect } from "react";
-import { User, Award, MapPin, Calendar, Trophy, Medal, Star, Target, Bike, TrendingUp, Edit, Lock } from "lucide-react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Header } from "./Header";
-import { Progress } from "./ui/progress";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { getCurrentUser, updateProfile, changePassword } from "../utils/api";
+import { User, Award, MapPin, Calendar, Trophy, Medal, Star, Target, Bike, TrendingUp, Edit, Lock, ArrowLeft } from "lucide-react"; // ArrowLeft 추가
+import { Card } from "../components/ui/card"; // 경로 수정
+import { Button } from "../components/ui/button"; // 경로 수정
+import { Badge } from "../components/ui/badge"; // 경로 수정
+import Header from "../components/layout/Header"; // 경로 수정 및 default import
+import { Progress } from "../components/ui/progress"; // 경로 수정
+import { Input } from "../components/ui/input"; // 경로 수정
+import { Label } from "../components/ui/label"; // 경로 수정
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"; // 경로 수정
+
+// (수정) 이전 utils/api 대신 우리가 만든 API 함수를 import 해야 함
+// import { getCurrentUser, updateProfile, changePassword } from "../utils/api"; 
+// (실제 API는 Person 1이 구현해야 하므로 임시 함수로 대체)
+const getCurrentUser = () => { /* mock */ return { name: "사용자 이름", email: "user@kwangwoon.ac.kr" }; };
+const updateProfile = async (form: any) => { /* mock */ return { success: true, user: form }; };
+const changePassword = async (current: string, newP: string) => { /* mock */ return { success: true }; };
+
 
 interface ProfilePageProps {
   onClose: () => void;
@@ -23,6 +33,7 @@ interface ProfilePageProps {
   onRankingClick: () => void;
 }
 
+// ... (Achievement interface와 achievements 데이터는 원본과 동일하게 유지) ...
 interface Achievement {
   id: number;
   name: string;
@@ -34,57 +45,16 @@ interface Achievement {
 }
 
 const achievements: Achievement[] = [
-  {
-    id: 1,
-    name: "첫 걸음",
-    description: "첫 따릉이 이용 완료",
-    icon: "🚴",
-    earned: true,
-  },
-  {
-    id: 2,
-    name: "출퇴근 마스터",
-    description: "10일 연속 이용",
-    icon: "🏆",
-    earned: true,
-  },
-  {
-    id: 3,
-    name: "장거리 라이더",
-    description: "누적 100km 달성",
-    icon: "🎯",
-    earned: true,
-  },
-  {
-    id: 4,
-    name: "환경 지킴이",
-    description: "누적 500km 달성",
-    icon: "🌿",
-    earned: false,
-    progress: 287,
-    total: 500,
-  },
-  {
-    id: 5,
-    name: "전국구",
-    description: "50개 이상의 대여소 이용",
-    icon: "🗺️",
-    earned: false,
-    progress: 32,
-    total: 50,
-  },
-  {
-    id: 6,
-    name: "단골 회원",
-    description: "100회 이용 달성",
-    icon: "⭐",
-    earned: false,
-    progress: 67,
-    total: 100,
-  },
+  { id: 1, name: "첫 걸음", description: "첫 따릉이 이용 완료", icon: "🚴", earned: true },
+  { id: 2, name: "출퇴근 마스터", description: "10일 연속 이용", icon: "🏆", earned: true },
+  { id: 3, name: "장거리 라이더", description: "누적 100km 달성", icon: "🎯", earned: true },
+  { id: 4, name: "환경 지킴이", description: "누적 500km 달성", icon: "🌿", earned: false, progress: 287, total: 500 },
+  { id: 5, name: "전국구", description: "50개 이상의 대여소 이용", icon: "🗺️", earned: false, progress: 32, total: 50 },
+  { id: 6, name: "단골 회원", description: "100회 이용 달성", icon: "⭐", earned: false, progress: 67, total: 100 },
 ];
 
-export function ProfilePage({ 
+
+export default function ProfilePage({ 
   onClose, 
   onLoginClick, 
   onSignupClick, 
@@ -132,19 +102,20 @@ export function ProfilePage({
 
   // 사용자 정보 로드
   useEffect(() => {
-    const user = getCurrentUser();
+    // (이 부분은 Person 1이 AuthContext와 연동하여 수정해야 함)
+    const user = getCurrentUser(); 
     if (user) {
       setUserData({
         name: user.name,
         email: user.email,
         phone: user.phone || "",
         studentId: user.studentId || "",
-        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "",
+        memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "2025.11.08", // 임시값
         totalDistance: user.totalDistance || 0,
         totalRides: user.totalRides || 0,
-        rank: 142,
-        currentTicket: "정기권 (30일)",
-        ticketExpiry: "2025-11-28",
+        rank: 142, // 임시값
+        currentTicket: "정기권 (30일)", // 임시값
+        ticketExpiry: "2025-11-28", // 임시값
       });
       setEditForm({
         name: user.name,
@@ -156,6 +127,7 @@ export function ProfilePage({
 
   // 정보 수정 핸들러
   const handleEditProfile = async () => {
+    // ... (로직은 원본과 동일하게 유지) ...
     setError("");
     setIsLoading(true);
 
@@ -170,7 +142,7 @@ export function ProfilePage({
         }));
         alert("프로필이 업데이트되었습니다.");
         setIsEditDialogOpen(false);
-        window.dispatchEvent(new Event('loginStatusChanged'));
+        // window.dispatchEvent(new Event('loginStatusChanged')); // Context 사용 시 이 로직은 필요 없음
       }
     } catch (err: any) {
       setError(err.message);
@@ -181,6 +153,7 @@ export function ProfilePage({
 
   // 비밀번호 변경 핸들러
   const handleChangePassword = async () => {
+    // ... (로직은 원본과 동일하게 유지) ...
     setError("");
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -209,46 +182,16 @@ export function ProfilePage({
   };
 
   const stats = [
-    {
-      label: "누적 거리",
-      value: `${userData.totalDistance}km`,
-      icon: <MapPin className="w-5 h-5 text-[#00A862]" />,
-      description: "탄소 배출 절감 약 57.5kg"
-    },
-    {
-      label: "이용 횟수",
-      value: `${userData.totalRides}회`,
-      icon: <Bike className="w-5 h-5 text-[#00A862]" />,
-      description: "평균 이용 시간 25분"
-    },
-    {
-      label: "전체 랭킹",
-      value: `${userData.rank}위`,
-      icon: <Trophy className="w-5 h-5 text-[#00A862]" />,
-      description: "상위 5%"
-    },
-    {
-      label: "획득 업적",
-      value: `${achievements.filter(a => a.earned).length}/${achievements.length}`,
-      icon: <Award className="w-5 h-5 text-[#00A862]" />,
-      description: "달성률 50%"
-    }
+    // ... (stats 데이터는 원본과 동일하게 유지) ...
+    { label: "누적 거리", value: `${userData.totalDistance}km`, icon: <MapPin className="w-5 h-5 text-[#00A862]" />, description: "탄소 배출 절감 약 57.5kg" },
+    { label: "이용 횟수", value: `${userData.totalRides}회`, icon: <Bike className="w-5 h-5 text-[#00A862]" />, description: "평균 이용 시간 25분" },
+    { label: "전체 랭킹", value: `${userData.rank}위`, icon: <Trophy className="w-5 h-5 text-[#00A862]" />, description: "상위 5%" },
+    { label: "획득 업적", value: `${achievements.filter(a => a.earned).length}/${achievements.length}`, icon: <Award className="w-5 h-5 text-[#00A862]" />, description: "달성률 50%" }
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        onLoginClick={onLoginClick}
-        onSignupClick={onSignupClick}
-        onStationFinderClick={onStationFinderClick}
-        onNoticeClick={onNoticeClick}
-        onCommunityClick={onCommunityClick}
-        onPurchaseClick={onPurchaseClick}
-        onFaqClick={onFaqClick}
-        onHomeClick={onHomeClick}
-        onProfileClick={onClose}
-        onRankingClick={onRankingClick}
-      />
+      {/* Header는 App.tsx에서 렌더링되므로 제거 */}
 
       <div className="container mx-auto px-4 py-8">
         {/* Profile Header */}
