@@ -75,7 +75,16 @@ router.get('/types', async (req, res) => {
  */
 router.post('/purchase', verifyToken, async (req, res) => {
   try {
-    const memberId = req.user.memberId;
+    // memberId 확인 및 검증
+    const memberId = req.user?.memberId || req.user?.member_id || req.user?.id;
+    
+    if (!memberId) {
+      return res.status(401).json({
+        success: false,
+        message: '사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.'
+      });
+    }
+
     const { ticketTypeId } = req.body;
 
     // 입력값 검증
@@ -86,8 +95,19 @@ router.post('/purchase', verifyToken, async (req, res) => {
       });
     }
 
+    // memberId를 숫자로 변환 (문자열일 수 있음)
+    const numericMemberId = parseInt(memberId, 10);
+    if (isNaN(numericMemberId)) {
+      return res.status(400).json({
+        success: false,
+        message: '유효하지 않은 사용자 ID입니다.'
+      });
+    }
+
+    console.log('이용권 구매 요청:', { memberId: numericMemberId, ticketTypeId });
+
     // 이용권 구매 처리
-    const result = await ticketService.purchaseTicket(memberId, ticketTypeId);
+    const result = await ticketService.purchaseTicket(numericMemberId, ticketTypeId);
 
     res.status(201).json({
       success: true,
@@ -95,7 +115,9 @@ router.post('/purchase', verifyToken, async (req, res) => {
       data: result.ticket
     });
   } catch (error) {
-    const statusCode = error.message.includes('존재하지 않는') ? 404 : 500;
+    console.error('이용권 구매 에러:', error);
+    const statusCode = error.message.includes('존재하지 않는') ? 404 : 
+                      error.message.includes('foreign key') ? 400 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message || '이용권 구매 중 오류가 발생했습니다.'

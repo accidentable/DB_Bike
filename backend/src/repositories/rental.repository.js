@@ -130,7 +130,9 @@ const rentalRepository = {
   findCurrentRentalByMemberId: async (memberId) => {
     const sql = `
       SELECT 
-        r.rental_id, r.start_time,
+        r.rental_id, 
+        -- UTC 시간을 KST(Asia/Seoul)로 변환하여 ISO 형식으로 반환 (시간대 정보 포함)
+        TO_CHAR(r.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS"+09:00"') AS start_time,
         s.name AS start_station_name,
         b.bike_id
       FROM rentals r
@@ -149,7 +151,10 @@ const rentalRepository = {
     // PDF 요구사항(JOIN) [cite: 113-114]과 init.sql 스키마 반영
     const sql = `
       SELECT 
-        r.rental_id, r.start_time, r.end_time,
+        r.rental_id, 
+        -- UTC 시간을 KST(Asia/Seoul)로 변환하여 ISO 형식으로 반환 (시간대 정보 포함)
+        TO_CHAR(r.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS"+09:00"') AS start_time,
+        TO_CHAR(r.end_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS"+09:00"') AS end_time,
         s_start.name AS start_station_name,
         s_end.name AS end_station_name,
         r.bike_id

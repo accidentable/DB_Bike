@@ -24,8 +24,15 @@ async function getAllTicketTypes() {
 async function purchaseTicket(memberId, ticketTypeId) {
   try {
     console.log('=== 이용권 구매 시작 ===');
-    console.log('회원 ID:', memberId);
+    console.log('회원 ID:', memberId, '타입:', typeof memberId);
     console.log('이용권 타입 ID:', ticketTypeId);
+    
+    // 0. memberId 유효성 검증
+    if (!memberId || isNaN(parseInt(memberId, 10))) {
+      throw new Error('유효하지 않은 사용자 ID입니다.');
+    }
+    
+    const numericMemberId = parseInt(memberId, 10);
     
     // 1. 이용권 종류가 존재하는지 확인
     const ticketType = await ticketRepository.getTicketTypeById(ticketTypeId);
@@ -43,7 +50,7 @@ async function purchaseTicket(memberId, ticketTypeId) {
 
     // 3. 이용권 구매 처리
     const purchasedTicket = await ticketRepository.purchaseTicket(
-      memberId,
+      numericMemberId,
       ticketTypeId,
       expiryTime
     );
@@ -61,6 +68,10 @@ async function purchaseTicket(memberId, ticketTypeId) {
     };
   } catch (error) {
     console.error('Error in purchaseTicket:', error);
+    // 외래 키 제약 조건 위반 에러를 더 명확한 메시지로 변환
+    if (error.message && error.message.includes('foreign key constraint')) {
+      throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+    }
     throw error;
   }
 }
