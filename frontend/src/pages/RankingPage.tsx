@@ -1,15 +1,18 @@
+// src/pages/RankingPage.tsx
+// (모든 import 경로 수정)
+
 import { useState } from "react";
 import { Trophy, Medal, TrendingUp, MapPin, Bike, Calendar } from "lucide-react";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Header } from "./Header";
+import { Card } from "../components/ui/card"; // 경로 수정
+import { Badge } from "../components/ui/badge"; // 경로 수정
+import Header from "../components/layout/Header"; // 경로 수정 및 default import
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../components/ui/select"; // 경로 수정
 
 interface RankingPageProps {
   onClose: () => void;
@@ -34,6 +37,7 @@ interface RankingUser {
 }
 
 const rankingData: RankingUser[] = [
+  // ... (목업 데이터는 원본과 동일하게 유지) ...
   { rank: 1, name: "박라이더", distance: 1247.8, rides: 342, badge: "🥇" },
   { rank: 2, name: "이환경", distance: 1156.2, rides: 298, badge: "🥈" },
   { rank: 3, name: "최건강", distance: 1089.5, rides: 276, badge: "🥉" },
@@ -47,7 +51,7 @@ const rankingData: RankingUser[] = [
   { rank: 142, name: "김따릉", distance: 287.5, rides: 67, isCurrentUser: true },
 ];
 
-export function RankingPage({
+export default function RankingPage({
   onClose,
   onLoginClick,
   onSignupClick,
@@ -74,18 +78,7 @@ export function RankingPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        onLoginClick={onLoginClick}
-        onSignupClick={onSignupClick}
-        onStationFinderClick={onStationFinderClick}
-        onNoticeClick={onNoticeClick}
-        onCommunityClick={onCommunityClick}
-        onPurchaseClick={onPurchaseClick}
-        onFaqClick={onFaqClick}
-        onHomeClick={onHomeClick}
-        onProfileClick={onProfileClick}
-        onRankingClick={onClose}
-      />
+      {/* Header는 App.tsx에서 렌더링되므로 제거 */}
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">

@@ -1,209 +1,215 @@
+// src/pages/HomePage.tsx
+// (모든 import 경로 수정 완료)
+
 import { useState, useEffect } from "react";
-import { MapPin, Search, Navigation, Bike, Battery, Clock, CheckCircle2, X } from "lucide-react";
-import { rentBike as rentBikeApi, returnBike as returnBikeApi, getCurrentRental, isLoggedIn } from "../utils/api";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Header } from "./Header";
+import { MapPin, Search, Navigation, Bike, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-interface StationFinderPageProps {
-  onClose: () => void;
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  onNoticeClick: () => void;
-  onCommunityClick: () => void;
-  onPurchaseClick: () => void;
-  onFaqClick: () => void;
-  onHomeClick: () => void;
-  onProfileClick: () => void;
-  onRankingClick: () => void;
-}
+// (수정) ../api/ (O)
+import { getStations, getAvailableBikes } from "../api/stationApi";
+import { rentBike, returnBike, getCurrentRental } from "../api/rentalApi";
+// (수정) ../contexts/ (O)
+import { useAuth } from "../contexts/AuthContext";
 
-interface RentedBikeInfo {
-  bike: Bike;
-  station: Station;
-  startTime: Date;
-}
+// (수정) ../components/ui/ (O)
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
 
+// (Interface 정의는 동일)
+// ... (Station, Bike, RentedBikeInfo interface) ...
 interface Station {
-  id: number;
+  station_id: number;
   name: string;
-  address: string;
-  available: number;
-  total: number;
-  distance: string;
-  bikes: Bike[];
+  latitude: number;
+  longitude: number;
+  bike_count: number;
+  distance_km?: number;
 }
-
 interface Bike {
-  id: string;
-  number: string;
-  battery: number;
-  status: "available" | "rented" | "maintenance";
+  bike_id: number;
+  status: string;
+}
+interface RentedBikeInfo {
+  rental_id: number;
+  start_time: string;
+  start_station_name: string;
+  bike_id: number;
 }
 
-const mockStations: Station[] = [
-  {
-    id: 1,
-    name: "강남역 1번 출구",
-    address: "서울시 강남구 강남대로 지하 396",
-    available: 12,
-    total: 20,
-    distance: "0.2km",
-    bikes: [
-      { id: "b1", number: "1001", battery: 95, status: "available" },
-      { id: "b2", number: "1002", battery: 87, status: "available" },
-      { id: "b3", number: "1003", battery: 72, status: "available" },
-      { id: "b4", number: "1004", battery: 91, status: "available" },
-      { id: "b5", number: "1005", battery: 0, status: "rented" },
-      { id: "b6", number: "1006", battery: 88, status: "available" },
-      { id: "b7", number: "1007", battery: 65, status: "available" },
-      { id: "b8", number: "1008", battery: 0, status: "rented" },
-    ],
-  },
-  {
-    id: 2,
-    name: "역삼역 2번 출구",
-    address: "서울시 강남구 테헤란로 지하 151",
-    available: 8,
-    total: 15,
-    distance: "0.5km",
-    bikes: [
-      { id: "b9", number: "2001", battery: 93, status: "available" },
-      { id: "b10", number: "2002", battery: 78, status: "available" },
-      { id: "b11", number: "2003", battery: 0, status: "rented" },
-      { id: "b12", number: "2004", battery: 85, status: "available" },
-      { id: "b13", number: "2005", battery: 69, status: "available" },
-    ],
-  },
-  {
-    id: 3,
-    name: "선릉역 3번 출구",
-    address: "서울시 강남구 선릉로 428",
-    available: 15,
-    total: 25,
-    distance: "0.7km",
-    bikes: [
-      { id: "b14", number: "3001", battery: 96, status: "available" },
-      { id: "b15", number: "3002", battery: 82, status: "available" },
-      { id: "b16", number: "3003", battery: 77, status: "available" },
-      { id: "b17", number: "3004", battery: 91, status: "available" },
-      { id: "b18", number: "3005", battery: 88, status: "available" },
-      { id: "b19", number: "3006", battery: 0, status: "rented" },
-    ],
-  },
-  {
-    id: 4,
-    name: "삼성역 4번 출구",
-    address: "서울시 강남구 영동대로 지하 524",
-    available: 3,
-    total: 18,
-    distance: "0.9km",
-    bikes: [
-      { id: "b20", number: "4001", battery: 71, status: "available" },
-      { id: "b21", number: "4002", battery: 0, status: "rented" },
-      { id: "b22", number: "4003", battery: 83, status: "available" },
-      { id: "b23", number: "4004", battery: 0, status: "rented" },
-    ],
-  },
-];
 
-export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoticeClick, onCommunityClick, onPurchaseClick, onFaqClick, onHomeClick, onProfileClick, onRankingClick }: StationFinderPageProps) {
+// (수정) export default function
+export default function HomePage() {
+  const { isLoggedIn, user } = useAuth();
+  const navigate = useNavigate();
+
+  // ... (이하 모든 코드는 이전 답변의 수정본과 동일합니다) ...
+  // ... (API 연동 로직, JSX 렌더링 부분) ...
+  // --- API 데이터 상태 ---
+  const [stations, setStations] = useState<Station[]>([]);
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [rentedBike, setRentedBike] = useState<RentedBikeInfo | null>(null);
+
+  // --- UI 상태 ---
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
-  const [rentalAction, setRentalAction] = useState<"rent" | "return" | null>(null);
-  const [rentedBike, setRentedBike] = useState<RentedBikeInfo | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const filteredStations = mockStations.filter((station) =>
-    station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleRent = () => {
-    if (selectedBike && selectedStation) {
-      setRentalAction("rent");
-      setTimeout(() => {
-        setRentedBike({
-          bike: selectedBike,
-          station: selectedStation,
-          startTime: new Date(),
-        });
-        setRentalAction(null);
-        setSelectedBike(null);
-        setSelectedStation(null);
-      }, 1000);
+  // --- API 호출 함수 ---
+  const fetchStations = async (query = "", lat?: number, lon?: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getStations({ query, lat, lon });
+      if (data.success) {
+        setStations(data.data);
+      }
+    } catch (err) {
+      setError("대여소 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleReturn = () => {
-    if (rentedBike) {
-      setRentalAction("return");
-      setTimeout(() => {
-        alert(`자전거를 반납했습니다! 이용 시간: ${Math.floor(elapsedTime / 60)}분 ${elapsedTime % 60}초`);
+  const fetchCurrentRental = async () => {
+    if (!isLoggedIn) return;
+    try {
+      const data = await getCurrentRental();
+      if (data.success && data.data) {
+        setRentedBike(data.data);
+      } else {
         setRentedBike(null);
-        setElapsedTime(0);
-        setRentalAction(null);
-      }, 1000);
+      }
+    } catch (err) {
+      console.error("현재 대여 정보 로드 실패", err);
+      setRentedBike(null);
+    }
+  };
+  
+  const handleMyLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchStations("", position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          setError("위치 정보를 가져올 수 없습니다.");
+        }
+      );
     }
   };
 
-  // 대여 시간 타이머
+  // --- 대여/반납 로직 ---
+  const handleStationClick = async (station: Station) => {
+    setSelectedStation(station);
+    setSelectedBike(null);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getAvailableBikes(station.station_id);
+      if (data.success) {
+        setBikes(data.data);
+      }
+    } catch (err) {
+      setError("자전거 정보를 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRent = async () => {
+    if (!isLoggedIn) return navigate('/login');
+    if (!selectedBike || !selectedStation) return setError("자전거를 선택해주세요.");
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      await rentBike({
+        bikeId: selectedBike.bike_id,
+        startStationId: selectedStation.station_id
+      });
+      await fetchCurrentRental();
+      setSelectedBike(null);
+      setSelectedStation(null);
+      setBikes([]);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "대여에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReturn = async () => {
+    if (!isLoggedIn) return navigate('/login');
+    if (!rentedBike) return setError("반납할 자전거가 없습니다.");
+    if (!selectedStation) return setError("반납할 대여소를 선택해주세요.");
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      await returnBike({ endStationId: selectedStation.station_id });
+      setRentedBike(null);
+      setElapsedTime(0);
+      setSelectedStation(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "반납에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- useEffect 훅 ---
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      fetchStations(searchQuery);
+    }, 500);
+    return () => clearTimeout(timerId);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchStations();
+  }, []); 
+
+  useEffect(() => {
+    fetchCurrentRental();
+  }, [isLoggedIn]);
+
   useEffect(() => {
     if (rentedBike) {
       const interval = setInterval(() => {
         const now = new Date();
-        const diff = Math.floor((now.getTime() - rentedBike.startTime.getTime()) / 1000);
+        const diff = Math.floor((now.getTime() - new Date(rentedBike.start_time).getTime()) / 1000);
         setElapsedTime(diff);
       }, 1000);
       return () => clearInterval(interval);
     }
   }, [rentedBike]);
 
+  // --- JSX 렌더링 ---
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        onLoginClick={onLoginClick}
-        onSignupClick={onSignupClick}
-        onStationFinderClick={onClose}
-        onNoticeClick={onNoticeClick}
-        onCommunityClick={onCommunityClick}
-        onPurchaseClick={onPurchaseClick}
-        onFaqClick={onFaqClick}
-        onHomeClick={onHomeClick}
-        onProfileClick={onProfileClick}
-        onRankingClick={onRankingClick}
-      />
-
-      {/* 대여 상태 창 */}
-      {rentedBike && (
+      {isLoggedIn && rentedBike && (
         <div className="fixed bottom-4 right-4 z-40 w-80">
           <Card className="p-4 shadow-lg border-2 border-[#00A862] bg-white">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="flex items-center gap-2">
-                <Bike className="w-5 h-5 text-[#00A862]" />
-                대여 중
-              </h3>
-            </div>
+            <h3 className="flex items-center gap-2 mb-3">
+              <Bike className="w-5 h-5 text-[#00A862]" />
+              {user?.username}님, 대여 중
+            </h3>
             <Separator className="mb-3" />
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">자전거 번호</span>
-                <span>{rentedBike.bike.number}번</span>
+                <span>{rentedBike.bike_id}번</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">대여 장소</span>
-                <span className="text-right">{rentedBike.station.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">배터리</span>
-                <span className="flex items-center gap-1">
-                  <Battery className="w-4 h-4 text-[#00A862]" />
-                  {rentedBike.bike.battery}%
-                </span>
+                <span className="text-right">{rentedBike.start_station_name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">이용 시간</span>
@@ -216,61 +222,62 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
             <Button
               onClick={handleReturn}
               className="w-full mt-4 bg-[#00A862] hover:bg-[#008F54]"
-              disabled={rentalAction === "return"}
+              disabled={!selectedStation || isLoading}
             >
-              {rentalAction === "return" ? "반납 중..." : "반납하기"}
+              {selectedStation ? `${selectedStation.name}에 반납하기` : "반납할 대여소 선택"}
             </Button>
           </Card>
         </div>
       )}
 
       <div className="container mx-auto px-4 py-8">
+        {error && (
+          <div className="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
+            {error}
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="mb-2">대여소 찾기</h1>
           <p className="text-gray-600">가까운 대여소를 찾아 자전거를 대여하세요</p>
         </div>
-
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Station List */}
           <div className="lg:col-span-1">
             <div className="mb-4 flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  placeholder="대여소 이름 또는 주소 검색"
+                  placeholder="대여소 이름 검색"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" onClick={handleMyLocation} disabled={isLoading}>
                 <Navigation className="w-4 h-4" />
               </Button>
             </div>
-
             <div className="space-y-3 h-[calc(100vh-280px)] overflow-y-auto">
-              {filteredStations.map((station) => (
+              {isLoading && stations.length === 0 && <p>대여소 목록을 불러오는 중...</p>}
+              {stations.map((station) => (
                 <Card
-                  key={station.id}
+                  key={station.station_id}
                   className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                    selectedStation?.id === station.id ? "border-[#00A862] bg-green-50" : ""
+                    selectedStation?.station_id === station.station_id ? "border-[#00A862] bg-green-50" : ""
                   }`}
-                  onClick={() => {
-                    setSelectedStation(station);
-                    setSelectedBike(null);
-                  }}
+                  onClick={() => handleStationClick(station)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-base">{station.name}</h3>
-                        <Badge variant="outline" className="text-xs">
-                          {station.distance}
-                        </Badge>
+                        {station.distance_km && (
+                          <Badge variant="outline" className="text-xs">
+                            {station.distance_km.toFixed(1)}km
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-500 mb-2">{station.address}</p>
                       <p className="text-sm text-gray-600">
-                        이용 가능: <span className="text-[#00A862]">{station.available}대</span> / {station.total}대
+                        이용 가능: <span className="text-[#00A862]">{station.bike_count}대</span>
                       </p>
                     </div>
                     <MapPin className="w-5 h-5 text-[#00A862]" />
@@ -278,155 +285,58 @@ export function StationFinderPage({ onClose, onLoginClick, onSignupClick, onNoti
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        station.available / station.total > 0.5
-                          ? "bg-[#00A862]"
-                          : station.available / station.total > 0.2
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
+                        station.bike_count > 10 ? "bg-[#00A862]" : station.bike_count > 3 ? "bg-yellow-500" : "bg-red-500"
                       }`}
-                      style={{
-                        width: `${(station.available / station.total) * 100}%`,
-                      }}
+                      style={{ width: `${Math.min((station.bike_count / 20) * 100, 100)}%` }}
                     />
                   </div>
                 </Card>
               ))}
             </div>
           </div>
-
-          {/* Station Detail & Bike List */}
           <div className="lg:col-span-2">
             {selectedStation ? (
               <Card className="p-6">
-                <div className="mb-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="mb-2">{selectedStation.name}</h2>
-                      <p className="text-sm text-gray-600 mb-1">{selectedStation.address}</p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="flex items-center gap-1">
-                          <Bike className="w-4 h-4 text-[#00A862]" />
-                          이용 가능: {selectedStation.available}대
-                        </span>
-                        <span className="text-gray-500">총 {selectedStation.total}대</span>
-                      </div>
-                    </div>
-                    <Badge className="bg-[#00A862]">{selectedStation.distance}</Badge>
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <div className="flex items-center justify-between mb-4">
-                    <h3>이용 가능한 자전거</h3>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleRent}
-                        className="bg-[#00A862] hover:bg-[#008F54]"
-                        disabled={!selectedBike || rentalAction !== null}
-                      >
-                        대여하기
-                      </Button>
-                      <Button
-                        onClick={handleReturn}
-                        variant="outline"
-                        className="border-[#00A862] text-[#00A862] hover:bg-green-50"
-                        disabled={rentalAction !== null}
-                      >
-                        반납하기
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {selectedStation.bikes.map((bike) => (
-                      <Card
-                        key={bike.id}
-                        className={`p-4 transition-all ${
-                          bike.status === "available"
-                            ? "cursor-pointer hover:shadow-md"
-                            : "opacity-50 cursor-not-allowed"
-                        } ${
-                          selectedBike?.id === bike.id ? "border-[#00A862] bg-green-50" : ""
-                        }`}
-                        onClick={() => {
-                          if (bike.status === "available") {
-                            setSelectedBike(bike);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <Bike className="w-5 h-5 text-[#00A862]" />
-                            <span className="font-medium">#{bike.number}</span>
-                          </div>
-                          {bike.status === "available" ? (
-                            <Badge className="bg-[#00A862]">이용 가능</Badge>
-                          ) : bike.status === "rented" ? (
-                            <Badge variant="secondary">대여중</Badge>
-                          ) : (
-                            <Badge variant="destructive">정비중</Badge>
-                          )}
-                        </div>
-
-                        {bike.status === "available" && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">배터리</span>
-                              <span className="flex items-center gap-1">
-                                <Battery
-                                  className={`w-4 h-4 ${
-                                    bike.battery > 70
-                                      ? "text-[#00A862]"
-                                      : bike.battery > 30
-                                      ? "text-yellow-500"
-                                      : "text-red-500"
-                                  }`}
-                                />
-                                {bike.battery}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className={`h-2 rounded-full ${
-                                  bike.battery > 70
-                                    ? "bg-[#00A862]"
-                                    : bike.battery > 30
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                                }`}
-                                style={{ width: `${bike.battery}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
+                <h2 className="mb-2">{selectedStation.name}</h2>
+                <div className="flex items-center gap-4 text-sm mb-4">
+                  <span className="flex items-center gap-1">
+                    <Bike className="w-4 h-4 text-[#00A862]" />
+                    이용 가능: {selectedStation.bike_count}대
+                  </span>
+                  {selectedStation.distance_km && (
+                    <Badge className="bg-[#00A862]">{selectedStation.distance_km.toFixed(1)}km</Badge>
+                  )}
                 </div>
-
-                {selectedBike && (
-                  <div className="mt-6 pt-6 border-t">
-                    <Card className="p-4 bg-green-50 border-[#00A862]">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="mb-1">선택한 자전거</h3>
-                          <p className="text-sm text-gray-600">
-                            자전거 #{selectedBike.number} | 배터리 {selectedBike.battery}%
-                          </p>
-                        </div>
-                        <CheckCircle2 className="w-8 h-8 text-[#00A862]" />
+                <Separator className="my-4" />
+                <div className="flex items-center justify-between mb-4">
+                  <h3>이용 가능한 자전거</h3>
+                  <Button
+                    onClick={handleRent}
+                    className="bg-[#00A862] hover:bg-[#008F54]"
+                    disabled={!selectedBike || isLoading || !!rentedBike}
+                  >
+                    {rentedBike ? "이미 대여 중" : (isLoading ? "처리 중..." : "대여하기")}
+                  </Button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {isLoading && bikes.length === 0 && <p>자전거 목록을 불러오는 중...</p>}
+                  {bikes.map((bike) => (
+                    <Card
+                      key={bike.bike_id}
+                      className={`p-4 transition-all cursor-pointer hover:shadow-md ${
+                        selectedBike?.bike_id === bike.bike_id ? "border-[#00A862] bg-green-50" : ""
+                      }`}
+                      onClick={() => setSelectedBike(bike)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Bike className="w-5 h-5 text-[#00A862]" />
+                        <span className="font-medium">자전거 #{bike.bike_id}</span>
+                        <Badge className="bg-[#00A862]">이용 가능</Badge>
                       </div>
-                      <Button
-                        onClick={handleRent}
-                        className="w-full bg-[#00A862] hover:bg-[#008F54]"
-                        size="lg"
-                        disabled={rentalAction !== null}
-                      >
-                        {rentalAction === "rent" ? "대여 중..." : "대여하기"}
-                      </Button>
                     </Card>
-                  </div>
-                )}
+                  ))}
+                  {bikes.length === 0 && !isLoading && <p>이용 가능한 자전거가 없습니다.</p>}
+                </div>
               </Card>
             ) : (
               <Card className="p-12 text-center">

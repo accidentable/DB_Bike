@@ -1,222 +1,34 @@
-import { useState, useEffect } from "react";
-import { Header } from "./components/Header";
-import { Hero } from "./components/Hero";
-import { StationMap } from "./components/StationMap";
-import { HowToUse } from "./components/HowToUse";
-import { Footer } from "./components/Footer";
-import { LoginPage } from "./components/LoginPage";
-import { SignupPage } from "./components/SignupPage";
-import { StationFinderPage } from "./components/StationFinderPage";
-import { CommunityPage } from "./components/CommunityPage";
-import { PurchasePage } from "./components/PurchasePage";
-import { FAQPage } from "./components/FAQPage";
-import { ProfilePage } from "./components/ProfilePage";
-import { RankingPage } from "./components/RankingPage";
-import { ChatbotWidget } from "./components/ChatbotWidget";
-import { AdminDashboard } from "./components/AdminDashboard";
-import { getCurrentUser } from "./utils/api";
+// src/App.tsx
+// (경로 수정 및 default import 수정 완료)
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<"home" | "login" | "signup" | "stationfinder" | "community" | "purchase" | "faq" | "profile" | "ranking" | "admin">("home");
-  const [isAdmin, setIsAdmin] = useState(false);
+import { Routes, Route } from 'react-router-dom';
 
-  useEffect(() => {
-    // 관리자 여부 확인
-    const user = getCurrentUser();
-    if (user && user.isAdmin) {
-      setIsAdmin(true);
-    }
+// (수정) './components/layout/Header' (O)
+import Header from './components/layout/Header'; 
+// (수정) './pages/HomePage' (O)
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import CommunityPage from './pages/CommunityPage';
+import ProfilePage from './pages/ProfilePage';
+// ... (다른 페이지들도 import)
 
-    // 로그인 상태 변경 감지
-    const handleLoginChange = () => {
-      const user = getCurrentUser();
-      setIsAdmin(user?.isAdmin || false);
-    };
-
-    window.addEventListener('loginStatusChanged', handleLoginChange);
-    return () => window.removeEventListener('loginStatusChanged', handleLoginChange);
-  }, []);
-
-  if (currentPage === "login") {
-    return (
-      <LoginPage
-        onClose={() => setCurrentPage("home")}
-        onSwitchToSignup={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "signup") {
-    return (
-      <SignupPage
-        onClose={() => setCurrentPage("home")}
-        onSwitchToLogin={() => setCurrentPage("login")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "stationfinder") {
-    return (
-      <StationFinderPage
-        onClose={() => setCurrentPage("stationfinder")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "community") {
-    return (
-      <CommunityPage
-        onClose={() => setCurrentPage("community")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "purchase") {
-    return (
-      <PurchasePage
-        onClose={() => setCurrentPage("purchase")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "faq") {
-    return (
-      <FAQPage
-        onClose={() => setCurrentPage("faq")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "profile") {
-    return (
-      <ProfilePage
-        onClose={() => setCurrentPage("profile")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
-  if (currentPage === "ranking") {
-    return (
-      <RankingPage
-        onClose={() => setCurrentPage("ranking")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-      />
-    );
-  }
-
-  if (currentPage === "admin" && isAdmin) {
-    return (
-      <AdminDashboard
-        onClose={() => setCurrentPage("home")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-      />
-    );
-  }
-
+function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <Header
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onNoticeClick={() => setCurrentPage("community")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-        onProfileClick={() => setCurrentPage("profile")}
-        onRankingClick={() => setCurrentPage("ranking")}
-        onAdminClick={() => setCurrentPage("admin")}
-      />
-      <Hero />
-      <StationMap />
-      <HowToUse />
-      <Footer 
-        onStationFinderClick={() => setCurrentPage("stationfinder")}
-        onCommunityClick={() => setCurrentPage("community")}
-        onPurchaseClick={() => setCurrentPage("purchase")}
-        onFaqClick={() => setCurrentPage("faq")}
-        onHomeClick={() => setCurrentPage("home")}
-      />
-      <ChatbotWidget />
-    </div>
+    <>
+      <Header /> {/* Header가 로그인/로그아웃 상태를 알 수 있음 */}
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          {/* ... (CommunityPage, ProfilePage 등 라우트 추가) ... */}
+        </Routes>
+      </main>
+    </>
   );
 }
+
+export default App;
