@@ -26,14 +26,11 @@ const { verifyToken, isAdmin } = require('./src/middleware/auth.middleware');
 // /api/auth 경로는 토큰 검증이 필요 없는 공개 경로
 app.use('/api/auth', authRoutes);
 
-// /api/rentals, /api/stations 경로는 로그인이 필요
-// (예시)
-app.use('/api/rentals', verifyToken, rentalRoutes);
-app.use('/api/stations', verifyToken, stationRoutes);
+// /api/stations, 대여소 조회는 토큰이 필요없음
+app.use('/api/stations', stationRoutes);
 
-// /api/admin 경로는 관리자 권한(isAdmin)까지 필요
-app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
-
+// /api/rentals 경로는 내부 미들웨어(verifyToken)로 자동 보호됨
+app.use('/api/rentals', rentalRoutes);
 
 // --- 5. 서버 헬스 체크 ---
 app.get('/', (req, res) => {

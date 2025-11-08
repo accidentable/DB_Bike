@@ -101,3 +101,4 @@ CREATE TABLE posts (
 CREATE INDEX idx_bikes_station ON bikes(station_id);
 CREATE INDEX idx_rentals_member_active ON rentals(member_id, end_time);
 CREATE INDEX idx_stations_status_bikes ON stations(status, bike_count);
+
