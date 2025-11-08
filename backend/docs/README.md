@@ -55,7 +55,7 @@ DB_HOST=localhost
 DB_PORT=5432
 
 ```
-
+---
 3단계: Docker DB 실행
 터미널에서 ddareungi-backend 폴더가 맞는지 확인한 후, 다음 명령어를 실행하세요.
 
@@ -63,12 +63,14 @@ DB_PORT=5432
 ```bash
 # Docker Desktop이 실행 중이어야 합니다.
 docker-compose up -d
-이 명령어는 docker-compose.yml 파일을 읽어 백그라운드에서 PostgreSQL 데이터베이스를 실행합니다.
-
-최초 실행 시 db/init.sql 파일을 자동으로 읽어 테이블을 생성합니다.
-
-이제 localhost:5432로 DB에 접속할 수 있습니다.
 ```
+
+- 이 명령어는 docker-compose.yml 파일을 읽어 백그라운드에서 PostgreSQL 데이터베이스를 실행합니다.
+
+- 최초 실행 시 db/init.sql 파일을 자동으로 읽어 테이블을 생성합니다.
+
+- 이제 localhost:5432로 DB에 접속할 수 있습니다.
+
 
 
 📁 3. 백엔드 폴더 구조
