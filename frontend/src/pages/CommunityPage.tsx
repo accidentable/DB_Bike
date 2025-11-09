@@ -6,6 +6,8 @@ import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, 
 
 // 1. (수정) API 경로 및 Context 경로 수정
 import { getPosts, createPost, getPost, updatePost, deletePost, type Post } from "../api/postApi";
+import { createComment, getComments, deleteComment, type Comment } from "../api/commentApi";
+import { toggleLike, getLikeInfo } from "../api/likeApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
 
@@ -39,6 +41,9 @@ export default function CommunityPage() {
   // --- API 데이터 상태 ---
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +63,7 @@ export default function CommunityPage() {
     content: "",
     category: "자유",
   });
+  const [newComment, setNewComment] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
   
@@ -95,10 +101,125 @@ export default function CommunityPage() {
             console.log('게시글 상세 정보:', response.data);
             console.log('현재 로그인 사용자:', user);
             setSelectedPost(response.data);
+            
+            // 댓글 목록 가져오기
+            const commentsResponse = await getComments(postId);
+            if (commentsResponse.success && commentsResponse.data) {
+                setComments(commentsResponse.data);
+            }
+            
+            // 좋아요 정보 가져오기
+            const likeResponse = await getLikeInfo(postId);
+            if (likeResponse.success && likeResponse.data) {
+                setLikeCount(likeResponse.data.likeCount);
+                setIsLiked(likeResponse.data.isLiked);
+            }
+            
             fetchPosts(); // 목록 페이지의 조회수 갱신을 위해 재호출 (옵션)
         }
     } catch (err) {
         setError("게시글 상세 정보를 불러오는데 실패했습니다.");
+    }
+  };
+
+  // 댓글 작성
+  const handleSubmitComment = async () => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      navigate('/login');
+      return;
+    }
+    
+    if (!selectedPost) return;
+    
+    if (!newComment.trim()) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const response = await createComment(selectedPost.post_id, newComment);
+      if (response.success) {
+        setNewComment("");
+        // 댓글 목록 새로고침
+        const commentsResponse = await getComments(selectedPost.post_id);
+        if (commentsResponse.success && commentsResponse.data) {
+          setComments(commentsResponse.data);
+        }
+        // 게시글 정보 새로고침 (댓글 수 업데이트)
+        const postResponse = await getPost(selectedPost.post_id);
+        if (postResponse.success && postResponse.data) {
+          setSelectedPost(postResponse.data);
+        }
+      } else {
+        alert(response.message || "댓글 작성에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("댓글 작성 중 오류:", err);
+      alert("댓글 작성 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
+    if (!selectedPost) return;
+    
+    if (!window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      const response = await deleteComment(selectedPost.post_id, commentId);
+      if (response.success) {
+        // 댓글 목록 새로고침
+        const commentsResponse = await getComments(selectedPost.post_id);
+        if (commentsResponse.success && commentsResponse.data) {
+          setComments(commentsResponse.data);
+        }
+        // 게시글 정보 새로고침 (댓글 수 업데이트)
+        const postResponse = await getPost(selectedPost.post_id);
+        if (postResponse.success && postResponse.data) {
+          setSelectedPost(postResponse.data);
+        }
+      } else {
+        alert(response.message || "댓글 삭제에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("댓글 삭제 중 오류:", err);
+      alert("댓글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 좋아요 토글
+  const handleToggleLike = async () => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      navigate('/login');
+      return;
+    }
+    
+    if (!selectedPost) return;
+
+    try {
+      const response = await toggleLike(selectedPost.post_id);
+      if (response.success && response.data) {
+        setIsLiked(response.data.liked);
+        // 좋아요 수 새로고침
+        const likeResponse = await getLikeInfo(selectedPost.post_id);
+        if (likeResponse.success && likeResponse.data) {
+          setLikeCount(likeResponse.data.likeCount);
+        }
+        // 게시글 정보 새로고침 (좋아요 수 업데이트)
+        const postResponse = await getPost(selectedPost.post_id);
+        if (postResponse.success && postResponse.data) {
+          setSelectedPost(postResponse.data);
+        }
+      } else {
+        alert(response.message || "좋아요 처리에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("좋아요 처리 중 오류:", err);
+      alert("좋아요 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -614,15 +735,88 @@ export default function CommunityPage() {
                   </div>
                 </div>
 
-                <div className="border-t pt-6 flex items-center gap-4">
-                  <Button variant="outline" className="flex items-center gap-2">
+                <div className="border-t pt-6 flex items-center gap-4 mb-6">
+                  <Button 
+                    variant="outline" 
+                    className={`flex items-center gap-2 ${isLiked ? 'bg-[#00A862] text-white border-[#00A862]' : ''}`}
+                    onClick={handleToggleLike}
+                  >
                     <ThumbsUp className="w-4 h-4" />
-                    좋아요 {selectedPost.likes}
+                    좋아요 {likeCount}
                   </Button>
                   <Button variant="outline" className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4" />
-                    댓글 {selectedPost.comments_count}
+                    댓글 {comments.length}
                   </Button>
+                </div>
+
+                {/* 댓글 섹션 */}
+                <div className="border-t pt-6">
+                  <h3 className="mb-4">댓글 {comments.length}개</h3>
+                  
+                  {/* 댓글 작성 폼 */}
+                  {isLoggedIn ? (
+                    <div className="mb-6">
+                      <Textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="댓글을 입력하세요"
+                        className="mb-2"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleSubmitComment}
+                          className="bg-[#00A862] hover:bg-[#008F54]"
+                        >
+                          <Send className="w-4 h-4 mr-2" />
+                          댓글 작성
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-6 text-center py-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-600">
+                        댓글을 작성하려면 <button onClick={() => navigate('/login')} className="text-[#00A862] underline">로그인</button>해주세요.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 댓글 목록 */}
+                  <div className="space-y-4">
+                    {comments.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        첫 댓글을 작성해보세요!
+                      </div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div key={comment.comment_id} className="border-b pb-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-semibold">{comment.username}</span>
+                                <span className="text-sm text-gray-500">
+                                  {new Date(comment.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p className="text-gray-700">{comment.content}</p>
+                            </div>
+                            
+                            {/* 본인 댓글에만 삭제 버튼 표시 */}
+                            {user && comment.member_id === user.member_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteComment(comment.comment_id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </Card>
             )}

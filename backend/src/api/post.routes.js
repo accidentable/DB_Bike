@@ -380,5 +380,171 @@ router.patch('/:id/pin', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/posts/:id/comments
+ * 댓글 작성
+ */
+router.post('/:id/comments', verifyToken, async (req, res) => {
+  try {
+    const postId = parseInt(req.params.id);
+    const { content } = req.body;
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 게시글 ID가 아닙니다.'
+      });
+    }
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '댓글 내용을 입력해주세요.'
+      });
+    }
+
+    const commentService = require('../services/comment.service');
+    const newComment = await commentService.createComment(postId, req.user.memberId, content);
+
+    res.status(201).json({
+      success: true,
+      data: newComment
+    });
+  } catch (error) {
+    console.error('Error creating comment:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '댓글 작성 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * GET /api/posts/:id/comments
+ * 게시글의 댓글 목록 조회
+ */
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const postId = parseInt(req.params.id);
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 게시글 ID가 아닙니다.'
+      });
+    }
+
+    const commentService = require('../services/comment.service');
+    const comments = await commentService.getCommentsByPostId(postId);
+
+    res.status(200).json({
+      success: true,
+      data: comments
+    });
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({
+      success: false,
+      message: '댓글 목록을 불러오는 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * DELETE /api/posts/:postId/comments/:commentId
+ * 댓글 삭제
+ */
+router.delete('/:postId/comments/:commentId', verifyToken, async (req, res) => {
+  try {
+    const commentId = parseInt(req.params.commentId);
+
+    if (isNaN(commentId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 댓글 ID가 아닙니다.'
+      });
+    }
+
+    const commentService = require('../services/comment.service');
+    await commentService.deleteComment(commentId, req.user.memberId, req.user.role);
+
+    res.status(200).json({
+      success: true,
+      message: '댓글이 삭제되었습니다.'
+    });
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    const statusCode = error.message.includes('권한') ? 403 : 
+                       error.message.includes('찾을 수 없습니다') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/posts/:id/like
+ * 좋아요 토글 (추가/취소)
+ */
+router.post('/:id/like', verifyToken, async (req, res) => {
+  try {
+    const postId = parseInt(req.params.id);
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 게시글 ID가 아닙니다.'
+      });
+    }
+
+    const likeService = require('../services/like.service');
+    const result = await likeService.toggleLike(postId, req.user.memberId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    res.status(500).json({
+      success: false,
+      message: '좋아요 처리 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * GET /api/posts/:id/like
+ * 게시글의 좋아요 정보 조회
+ */
+router.get('/:id/like', async (req, res) => {
+  try {
+    const postId = parseInt(req.params.id);
+
+    if (isNaN(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 게시글 ID가 아닙니다.'
+      });
+    }
+
+    const likeService = require('../services/like.service');
+    const memberId = req.user ? req.user.memberId : null;
+    const likeInfo = await likeService.getLikeInfo(postId, memberId);
+
+    res.status(200).json({
+      success: true,
+      data: likeInfo
+    });
+  } catch (error) {
+    console.error('Error fetching like info:', error);
+    res.status(500).json({
+      success: false,
+      message: '좋아요 정보를 불러오는 중 오류가 발생했습니다.'
+    });
+  }
+});
+
 // 라우터를 모듈로 내보내기 (app.js에서 사용)
 module.exports = router;
