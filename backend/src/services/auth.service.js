@@ -57,14 +57,15 @@ const authService = {
       { expiresIn: '1h' }           // 토큰 유효기간: 1시간
     );
 
-    // 4단계: 결과 반환
+    // 4단계: 결과 반환 - 응답 구조 통일
     return { 
-      token,  // 클라이언트가 이후 요청에 사용할 인증 토큰
+      token: token,  // 클라이언트가 이후 요청에 사용할 인증 토큰
       user: { 
-        member_id: user.member_id, // 사용자 ID (추가!)
-        email: user.email,      // 사용자 이메일
-        username: user.username, // 사용자명
-        role: user.role          // 사용자 역할
+        member_id: user.member_id, 
+        email: user.email,      
+        username: user.username, 
+        role: user.role,
+        isAdmin: user.role === 'admin' // isAdmin 플래그 추가
       } 
     };
   },

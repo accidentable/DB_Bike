@@ -43,7 +43,7 @@ app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
 // (신규) /api/tickets (이용권) 경로
 // - /api/tickets/types는 공개 (누구나 조회 가능)
 // - /api/tickets/purchase, /api/tickets/my-tickets, /api/tickets/history는 로그인 필요
-app.use('/api/tickets', ticketRoutes);
+app.use('/api/tickets', verifyToken, ticketRoutes);
 
 
 // --- 5. 서버 헬스 체크 ---

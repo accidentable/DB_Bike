@@ -19,22 +19,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
 
-  // (중요) 앱 로드 시 localStorage에서 토큰을 복원
-  useEffect(() => {
+  // localStorage에서 토큰과 사용자 정보를 불러오는 함수
+  const loadAuthState = () => {
     const storedToken = localStorage.getItem('authToken');
-    const storedUser = localStorage.getItem('authUser');
+    const storedUser = localStorage.getItem('user'); // 'user' 키로 변경
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setToken(storedToken);
+        setUser(parsedUser);
+        console.log('Auth state loaded:', { token: storedToken, user: parsedUser });
+      } catch (error) {
+        console.error('Failed to parse stored user:', error);
+        // 잘못된 데이터인 경우 초기화
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
     }
+  };
+
+  // 앱 로드 시 인증 상태 복원
+  useEffect(() => {
+    loadAuthState();
+  }, []);
+
+  // 로그인 이벤트 리스너 설정
+  useEffect(() => {
+    const handleLoginStatusChanged = (event: Event) => {
+      console.log('Login status changed event received');
+      loadAuthState(); // 인증 상태 다시 로드
+    };
+
+    window.addEventListener('loginStatusChanged', handleLoginStatusChanged);
+    return () => {
+      window.removeEventListener('loginStatusChanged', handleLoginStatusChanged);
+    };
   }, []);
 
   // 로그인 함수
   const login = (newToken: string, newUser: any) => {
+    console.log('Login function called with:', { newToken, newUser });
     setToken(newToken);
     setUser(newUser);
     localStorage.setItem('authToken', newToken);
-    localStorage.setItem('authUser', JSON.stringify(newUser));
+    localStorage.setItem('user', JSON.stringify(newUser)); // 'user' 키로 변경
   };
 
   // 로그아웃 함수
@@ -42,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
+    localStorage.removeItem('user'); // 'user' 키로 변경
   };
 
   const isLoggedIn = !!token;

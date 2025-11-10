@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface FooterProps {
   onStationFinderClick?: () => void;
@@ -9,6 +10,8 @@ interface FooterProps {
 }
 
 export function Footer({ onStationFinderClick, onCommunityClick, onPurchaseClick, onFaqClick, onHomeClick }: FooterProps) {
+  const navigate = useNavigate();
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-12">
@@ -76,9 +79,9 @@ export function Footer({ onStationFinderClick, onCommunityClick, onPurchaseClick
                 </button>
               </li>
               <li>
-                <a href="#" className="hover:text-[#C8102E] transition-colors">
-                  운영정책
-                </a>
+                <button onClick={() => navigate('/contact')} className="hover:text-[#C8102E] transition-colors text-left">
+                  이메일 문의
+                </button>
               </li>
               <li>
                 <a href="#" className="hover:text-[#C8102E] transition-colors">
@@ -98,6 +101,10 @@ export function Footer({ onStationFinderClick, onCommunityClick, onPurchaseClick
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#C8102E]" />
                 <span>help@kw-bike.kr</span>
+                <button onClick={() => navigate('/contact')} className="flex items-center gap-2 hover:text-[#C8102E] transition-colors">
+                  <Mail className="w-4 h-4 text-[#C8102E]" />
+                  <span>이메일 문의</span>
+                </button>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#C8102E] flex-shrink-0 mt-0.5" />

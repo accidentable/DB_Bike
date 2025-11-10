@@ -14,6 +14,7 @@ import ProfilePage from './pages/ProfilePage';
 import PurchasePage from './pages/PurchasePage';
 import FAQPage from './pages/FAQPage';
 import RankingPage from './pages/RankingPage';
+import ContactPage from './pages/ContactPage'; // 문의 페이지 import
 // ... (다른 페이지들도 import)
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/contact" element={<ContactPage />} /> {/* 문의 페이지 라우트 추가 */}
         </Routes>
       </main>
     </>

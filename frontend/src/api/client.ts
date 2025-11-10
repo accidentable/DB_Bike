@@ -7,8 +7,7 @@ const client = axios.create({
   baseURL: 'http://localhost:3000', // 우리 백엔드 서버 주소
 });
 
-// 2. (핵심) API 요청 인터셉터
-//    모든 API 요청이 백엔드로 날아가기 *전*에 이 코드가 실행됨
+// 2. API 요청 인터셉터
 client.interceptors.request.use(
   (config) => {
     // localStorage에서 토큰을 가져옴
@@ -22,6 +21,27 @@ client.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request Interceptor Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// 3. API 응답 인터셉터 추가
+client.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     return Promise.reject(error);
   }
 );

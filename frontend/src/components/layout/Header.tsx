@@ -33,6 +33,16 @@ export default function Header() {
           <Link to="/community" className="text-sm font-medium hover:text-[#00A862]">커뮤니티</Link>
           <Link to="/faq" className="text-sm font-medium hover:text-[#00A862]">FAQ</Link>
           <Link to="/ranking" className="text-sm font-medium hover:text-[#00A862]">랭킹</Link>
+          {user?.isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[#00A862] hover:bg-green-50"
+              onClick={() => navigate('/admin')}
+            >
+              관리자
+            </Button>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">

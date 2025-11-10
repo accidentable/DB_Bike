@@ -19,6 +19,7 @@ export interface Post {
   updated_at: string;
   username?: string;
   email?: string;
+  images?: string[]; // 이미지 URL 배열 추가
 }
 
 // 게시글 목록 응답 타입
@@ -83,9 +84,30 @@ export async function createPost(data: {
   content: string;
   category: string;
   is_pinned?: boolean;
+  images?: File[];
 }): Promise<ApiResponse<Post>> {
   try {
-    const response = await client.post('/api/posts', data);
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('content', data.content);
+    formData.append('category', data.category);
+    
+    if (data.is_pinned !== undefined) {
+      formData.append('is_pinned', String(data.is_pinned));
+    }
+    
+    // 이미지 파일 추가
+    if (data.images) {
+      data.images.forEach((file) => {
+        formData.append('images', file);
+      });
+    }
+
+    const response = await client.post('/api/posts', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error: any) {
     return {
@@ -102,9 +124,32 @@ export async function updatePost(postId: number, data: {
   title: string;
   content: string;
   category: string;
+  images?: File[];
+  deleteImages?: string[]; // 삭제할 이미지 URL 배열
 }): Promise<ApiResponse<Post>> {
   try {
-    const response = await client.put(`/api/posts/${postId}`, data);
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('content', data.content);
+    formData.append('category', data.category);
+    
+    // 새로운 이미지 파일 추가
+    if (data.images) {
+      data.images.forEach((file) => {
+        formData.append('images', file);
+      });
+    }
+
+    // 삭제할 이미지 URL 추가
+    if (data.deleteImages) {
+      formData.append('deleteImages', JSON.stringify(data.deleteImages));
+    }
+
+    const response = await client.put(`/api/posts/${postId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error: any) {
     return {

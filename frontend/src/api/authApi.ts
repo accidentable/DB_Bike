@@ -55,26 +55,46 @@ export async function signup(userData: SignupData): Promise<ApiResponse<User>> {
  */
 export async function login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
   try {
+    console.log('Attempting login with:', { email });
+    
     const response = await client.post('/api/auth/login', { email, password });
+    console.log('Login API response:', response.data);
     
-    if (response.data.success && response.data.data) {
-      // 토큰과 사용자 정보 저장
-      const { token, user } = response.data.data;
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify({
-        ...user,
-        isAdmin: user.role === 'admin'
-      }));
-      
-      // 로그인 상태 변경 이벤트 발생
-      window.dispatchEvent(new Event('loginStatusChanged'));
+    if (!response.data.success) {
+      throw new Error(response.data.message || '로그인에 실패했습니다.');
     }
+
+    if (!response.data.data || !response.data.data.token || !response.data.data.user) {
+      throw new Error('로그인 응답 데이터가 올바르지 않습니다.');
+    }
+
+    const { token, user } = response.data.data;
+
+    // 기존 데이터 삭제
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+
+    // 새로운 데이터 저장
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(user)); // user 객체는 이미 isAdmin을 포함
+
+    // 로그인 상태가 변경되었음을 알림
+    window.dispatchEvent(new CustomEvent('loginStatusChanged', {
+      detail: { user }
+    }));
     
-    return response.data;
+    return {
+      success: true,
+      data: {
+        token,
+        user
+      }
+    };
   } catch (error: any) {
+    console.error('Login error:', error);
     return {
       success: false,
-      message: error.response?.data?.message || '로그인 중 오류가 발생했습니다.',
+      message: error.response?.data?.message || error.message || '로그인 중 오류가 발생했습니다.',
     };
   }
 }

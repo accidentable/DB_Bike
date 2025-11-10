@@ -1,7 +1,7 @@
 // src/pages/HomePage.tsx
 // (모든 import 경로 수정 완료)
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // useRef 추가
 import { MapPin, Search, Navigation, Bike, Clock, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,8 @@ import { getStations, getAvailableBikes } from "../api/stationApi";
 import { rentBike, returnBike, getCurrentRental } from "../api/rentalApi";
 // (수정) ../contexts/ (O)
 import { useAuth } from "../contexts/AuthContext";
+// (신규) react-kakao-maps-sdk import
+import { Map, MapMarker, useKakaoLoader } from "react-kakao-maps-sdk";
 
 // (수정) ../components/ui/ (O)
 import { Input } from "../components/ui/input";
@@ -74,6 +76,12 @@ export default function HomePage() {
   const [returning, setReturning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // (신규) 지도 중심 좌표 상태 추가 (광운대학교 위치로 초기화)
+  const [mapCenter, setMapCenter] = useState({
+    lat: 37.619662,
+    lng: 127.060001,
+  });
+
   // --- API 호출 함수 ---
   const fetchStations = async (query = "", lat?: number, lon?: number) => {
     setIsLoading(true);
@@ -82,6 +90,10 @@ export default function HomePage() {
       const data = await getStations({ query, lat, lon });
       if (data.success && data.data) {
         setStations(data.data);
+        // 검색 결과가 있으면 첫 번째 대여소 위치로 지도 중심 이동
+        if (data.data.length > 0 && !lat && !lon) {
+          setMapCenter({ lat: data.data[0].latitude, lng: data.data[0].longitude });
+        }
       }
     } catch {
       setError("대여소 정보를 불러오는데 실패했습니다.");
@@ -124,6 +136,7 @@ export default function HomePage() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           fetchStations("", position.coords.latitude, position.coords.longitude);
+          setMapCenter({ lat: position.coords.latitude, lng: position.coords.longitude });
         },
         () => {
           setError("위치 정보를 가져올 수 없습니다.");
@@ -136,6 +149,7 @@ export default function HomePage() {
   const handleStationClick = async (station: Station) => {
     setSelectedStation(station);
     setSelectedBike(null);
+    setMapCenter({ lat: station.latitude, lng: station.longitude }); // 지도 중심 이동
     setIsLoading(true);
     setError(null);
     try {
@@ -294,6 +308,8 @@ export default function HomePage() {
 
   // --- JSX 렌더링 ---
   return (
+    // (신규) useKakaoLoader 훅을 사용하는 로더 컴포넌트로 감싸기
+    <KakaoMapLoader>
     <div className="min-h-screen bg-gray-50">
       {isLoggedIn && rentedBike && (
         <div className="fixed bottom-4 right-4 z-40 w-80">
@@ -401,8 +417,38 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-          <div className="lg:col-span-2">
-            {selectedStation ? (
+
+      {/* 지도와 자전거 목록을 포함하는 새로운 그리드 영역 */}
+      <div className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-5 lg:row-start-1 h-[500px]">
+          <Card className="w-full h-full overflow-hidden rounded-lg">
+            <Map // 카카오 맵 컴포넌트
+              center={mapCenter}
+              style={{ width: "100%", height: "100%"}}
+              level={4} // 지도 확대 레벨
+            >
+              {stations.map((station) => (
+                <MapMarker // 대여소 마커
+                  key={station.station_id}
+                  position={{ lat: station.latitude, lng: station.longitude }}
+                  onClick={() => handleStationClick(station)}
+                  image={{
+                    src: selectedStation?.station_id === station.station_id 
+                      ? "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png" // 클릭된 마커
+                      : "https://t1.daumcdn.net/mapjsapi/images/marker.png", // 기본 마커
+                    size: selectedStation?.station_id === station.station_id 
+                      ? { width: 36, height: 37 }
+                      : { width: 24, height: 35 },
+                  }}
+                >
+                  <div style={{padding: '5px', color: '#000', textAlign: 'center'}}>{station.name.replace(/^\d+\.\s*/, '')}</div>
+                </MapMarker>
+              ))}
+            </Map>
+          </Card>
+        </div>
+        <div className="lg:col-span-5 mt-6">
+          {selectedStation ? (
               <Card className="p-6">
                 <h2 className="mb-2">{selectedStation.name}</h2>
                 <div className="flex items-center gap-4 text-sm mb-4">
@@ -446,16 +492,17 @@ export default function HomePage() {
                 </div>
               </Card>
             ) : (
-              <Card className="p-12 text-center">
-                <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="mb-2 text-gray-600">대여소를 선택하세요</h3>
-                <p className="text-sm text-gray-500">
-                  왼쪽 목록에서 대여소를 선택하면 이용 가능한 자전거를 확인할 수 있습니다.
-                </p>
-              </Card>
+                <Card className="p-12 text-center">
+                  <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="mb-2 text-gray-600">대여소를 선택하세요</h3>
+                  <p className="text-sm text-gray-500">
+                    왼쪽 목록이나 지도에서 대여소를 선택하면 이용 가능한 자전거를 확인할 수 있습니다.
+                  </p>
+                </Card>
             )}
-          </div>
         </div>
+        </div>
+      </div>
       </div>
 
       {/* 반납 확인 다이얼로그 */}
@@ -500,5 +547,20 @@ export default function HomePage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </KakaoMapLoader>
   );
+}
+
+// (신규) 카카오 지도 로딩 상태를 관리하는 별도 컴포넌트
+function KakaoMapLoader({ children }: { children: React.ReactNode }) {
+  const [loading, error] = useKakaoLoader({
+    // 중요: 실제 서비스에서는 .env 파일을 사용하여 API 키를 관리해야 합니다.
+    // 예: appkey: process.env.REACT_APP_KAKAO_APP_KEY!
+    appkey: "a5bd90a1916723767639f08e406a73ab", 
+  });
+
+  if (loading) return <div className="text-center py-12">지도 로딩 중...</div>;
+  if (error) return <div className="text-center py-12 text-red-600">지도 로딩에 실패했습니다. API 키 또는 네트워크 연결을 확인해주세요.</div>;
+
+  return <>{children}</>;
 }
