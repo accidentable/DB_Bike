@@ -23,7 +23,7 @@ const postService = {
    * @param {string} userRole - 사용자 역할 (권한 확인용)
    * @returns {Promise<Object>} - 생성된 게시글 정보
    */
-  createPost: async (memberId, title, content, category, isPinned = false, userRole = 'user') => {
+  createPost: async (memberId, title, content, category, isPinned = false, userRole = 'user', images = [], attachments = []) => {
     // 권한 검증: 일반 사용자는 고정 게시글을 생성할 수 없음
     if (isPinned && userRole !== 'admin') {
       throw new Error('고정 게시글은 관리자만 생성할 수 있습니다.');
@@ -46,7 +46,9 @@ const postService = {
       title.trim(),
       content.trim(),
       category,
-      isPinned
+      isPinned,
+      images,
+      attachments
     );
 
     return newPost;
@@ -110,7 +112,7 @@ const postService = {
    * @param {string} userRole - 사용자 역할
    * @returns {Promise<Object>} - 수정된 게시글 정보
    */
-  updatePost: async (postId, memberId, title, content, category, userRole = 'user') => {
+  updatePost: async (postId, memberId, title, content, category, userRole = 'user', newImages = [], deleteImages = [], newAttachments = [], deleteAttachments = []) => {
     // 게시글 조회
     const post = await postRepository.findById(postId);
 
@@ -139,7 +141,11 @@ const postService = {
       postId,
       title.trim(),
       content.trim(),
-      category
+      category,
+      newImages,
+      deleteImages,
+      newAttachments,
+      deleteAttachments
     );
 
     return updatedPost;
@@ -193,6 +199,25 @@ const postService = {
     const updatedPost = await postRepository.updatePinnedStatus(postId, isPinned);
 
     return updatedPost;
+  },
+
+  /**
+   * 고정된 게시글 목록 조회
+   * @returns {Promise<Array>} - 고정된 게시글 배열
+   */
+  getPinnedPosts: async () => {
+    const pinnedPosts = await postRepository.findPinnedPosts();
+    return pinnedPosts;
+  },
+
+  /**
+   * 첨부파일 조회
+   * @param {number} attachmentId - 첨부파일 ID
+   * @returns {Promise<Object>} - 첨부파일 정보
+   */
+  getAttachment: async (attachmentId) => {
+    const attachment = await postRepository.findAttachmentById(attachmentId);
+    return attachment;
   },
 };
 

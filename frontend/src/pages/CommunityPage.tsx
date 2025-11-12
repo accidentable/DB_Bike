@@ -2,10 +2,10 @@
 // (API 연동 및 mock data 제거 완료)
 
 import { useState, useEffect } from "react";
-import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Trash2, Edit } from "lucide-react";
+import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Trash2, Edit, Download } from "lucide-react";
 
 // 1. (수정) API 경로 및 Context 경로 수정
-import { getPosts, createPost, getPost, updatePost, deletePost, type Post } from "../api/postApi";
+import { getPosts, createPost, getPost, updatePost, deletePost, getPinnedPosts, type Post } from "../api/postApi";
 import { createComment, getComments, deleteComment, type Comment } from "../api/commentApi";
 import { toggleLike, getLikeInfo } from "../api/likeApi";
 import { useAuth } from "../contexts/AuthContext";
@@ -40,6 +40,7 @@ export default function CommunityPage() {
 
   // --- API 데이터 상태 ---
   const [posts, setPosts] = useState<Post[]>([]);
+  const [pinnedPosts, setPinnedPosts] = useState<Post[]>([]); // 고정된 게시글 상태 추가
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLiked, setIsLiked] = useState(false);
@@ -64,10 +65,25 @@ export default function CommunityPage() {
     category: "자유",
   });
   const [newComment, setNewComment] = useState("");
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]); // 이미지 파일
+  const [attachedDocuments, setAttachedDocuments] = useState<File[]>([]); // 일반 첨부파일
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
-  
+  const [deleteImages, setDeleteImages] = useState<string[]>([]);
+  const [deleteAttachments, setDeleteAttachments] = useState<number[]>([]); // 삭제할 첨부파일 ID
+
   // --- 5. (신규) API 호출 로직 ---
+  const fetchPinnedPosts = async () => {
+    setError(null);
+    try {
+      const response = await getPinnedPosts();
+      if (response.success && response.data) {
+        setPinnedPosts(response.data);
+      }
+    } catch (err) {
+      setError("고정된 게시글을 불러오는데 실패했습니다.");
+    }
+  };
+
   const fetchPosts = async () => {
     setIsLoading(true);
     setError(null);
@@ -81,10 +97,9 @@ export default function CommunityPage() {
         };
         const response = await getPosts(options); // API 호출
         if (response.success && response.data && response.data.posts) {
-            // (수정) 고정글을 먼저 정렬해서 상태에 저장 (클라이언트 정렬 로직 대체)
-            const pinned = response.data.posts.filter(p => p.is_pinned);
-            const normal = response.data.posts.filter(p => !p.is_pinned);
-            setPosts([...pinned, ...normal]);
+            // (수정) 고정글을 제외하고 일반 게시글만 상태에 저장
+            const normalPosts = response.data.posts.filter(p => !p.is_pinned);
+            setPosts(normalPosts);
         }
     } catch (err) {
         setError("게시글 목록을 불러오는데 실패했습니다.");
@@ -116,6 +131,7 @@ export default function CommunityPage() {
             }
             
             fetchPosts(); // 목록 페이지의 조회수 갱신을 위해 재호출 (옵션)
+            fetchPinnedPosts(); // 고정 게시글 목록도 갱신
         }
     } catch (err) {
         setError("게시글 상세 정보를 불러오는데 실패했습니다.");
@@ -233,7 +249,12 @@ export default function CommunityPage() {
       content: selectedPost.content,
       category: selectedPost.category,
     });
-    setIsEditing(true);
+    setAttachedFiles([]);
+    setFilePreviewUrls(selectedPost.images || []);
+    // (수정) 수정 시 기존 첨부파일 상태도 설정
+    setAttachedDocuments([]); // 새 파일만 관리
+    setDeleteImages([]);
+    setDeleteAttachments([]); // 삭제할 첨부파일 ID
   };
 
   // 수정 제출
@@ -248,6 +269,10 @@ export default function CommunityPage() {
         title: editPost.title,
         content: editPost.content,
         category: editPost.category,
+        images: attachedFiles,
+        deleteImages: deleteImages,
+        attachments: attachedDocuments,
+        deleteAttachments: deleteAttachments,
       });
 
       if (response.success) {
@@ -259,6 +284,7 @@ export default function CommunityPage() {
           setSelectedPost(updatedResponse.data);
         }
         fetchPosts(); // 목록 새로고침
+        fetchPinnedPosts(); // 고정 게시글 목록도 갱신
       } else {
         alert(response.message || "게시글 수정에 실패했습니다.");
       }
@@ -283,6 +309,7 @@ export default function CommunityPage() {
         alert("게시글이 삭제되었습니다.");
         setSelectedPost(null);
         fetchPosts(); // 목록 새로고침
+        fetchPinnedPosts(); // 고정 게시글 목록도 갱신
       } else {
         alert(response.message || "게시글 삭제에 실패했습니다.");
       }
@@ -318,25 +345,32 @@ export default function CommunityPage() {
     }
 
     try {
-        // (수정) API 호출 (파일 첨부는 나중에 구현)
         const postData = {
             title: newPost.title.trim(),
             content: newPost.content.trim(),
-            category: newPost.category
+            category: newPost.category,
+            images: attachedFiles,
+            attachments: attachedDocuments,
         };
 
-        await createPost(postData); // API 호출
+        const response = await createPost(postData);
         
-        // 성공 후 상태 초기화 및 목록 갱신
-        setNewPost({ title: "", content: "", category: "자유" });
-        setAttachedFiles([]);
-        setFilePreviewUrls([]);
-        setIsWriting(false);
-        alert("게시글이 성공적으로 작성되었습니다!");
-        fetchPosts(); // 목록 갱신
+        if (response.success && response.data) {
+            setNewPost({ title: "", content: "", category: "자유" });
+            setAttachedFiles([]);
+            setAttachedDocuments([]);
+            setFilePreviewUrls([]);
+            setIsWriting(false);
+            alert("게시글이 성공적으로 작성되었습니다!");
+            
+            // 새 게시글을 목록의 맨 위에 추가
+            setPosts([response.data, ...posts]);
+            fetchPinnedPosts(); // 고정 게시글 목록도 갱신
+        } else {
+            alert(response.message || "게시글 작성에 실패했습니다.");
+        }
         
     } catch (err: any) {
-        // 백엔드에서 권한 오류 (403) 등을 던질 수 있음
         alert(err.response?.data?.message || "게시글 작성에 실패했습니다.");
     }
   };
@@ -346,7 +380,13 @@ export default function CommunityPage() {
   // 카테고리나 정렬 기준 변경 시 목록 갱신
   useEffect(() => {
     fetchPosts();
+    fetchPinnedPosts(); // 고정 게시글도 함께 불러옴
   }, [selectedCategory, sortBy]); // (수정) 의존성 배열에 filter/sort 상태 추가
+
+  // 컴포넌트 마운트 시 고정 게시글 불러오기
+  useEffect(() => {
+    fetchPinnedPosts();
+  }, []);
 
   // --- 7. (유지) UI 헬퍼 함수 ---
   const getCategoryColor = (category: string) => {
@@ -362,33 +402,98 @@ export default function CommunityPage() {
     }
   };
 
-  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileAttach = (e: React.ChangeEvent<HTMLInputElement>, isDocument: boolean = false) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const newFiles = Array.from(files);
-    const totalFiles = attachedFiles.length + newFiles.length;
     
-    if (totalFiles > 5) {
-      alert("최대 5개까지 파일을 첨부할 수 있습니다.");
-      return;
-    }
+    if (isDocument) {
+      // 일반 첨부파일 (PDF, DOCX, EXE 등)
+      const totalFiles = attachedDocuments.length + newFiles.length;
+      if (totalFiles > 10) {
+        alert("최대 10개까지 첨부파일을 첨부할 수 있습니다.");
+        return;
+      }
+      setAttachedDocuments([...attachedDocuments, ...newFiles]);
+    } else {
+      // 이미지 파일
+      const imageFiles = newFiles.filter(file => file.type.startsWith('image/'));
+      const totalImages = attachedFiles.length + imageFiles.length;
+      
+      if (imageFiles.length !== newFiles.length) {
+        alert("이미지 파일만 선택해주세요. 다른 파일은 '첨부파일' 버튼을 사용해주세요.");
+        return;
+      }
+      
+      if (totalImages > 5) {
+        alert("최대 5개까지 이미지를 첨부할 수 있습니다.");
+        return;
+      }
 
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
+      const newPreviewUrls = imageFiles.map(file => URL.createObjectURL(file));
+      
+      setAttachedFiles([...attachedFiles, ...imageFiles]);
+      setFilePreviewUrls([...filePreviewUrls, ...newPreviewUrls]);
+    }
     
-    setAttachedFiles([...attachedFiles, ...newFiles]);
-    setFilePreviewUrls([...filePreviewUrls, ...newPreviewUrls]);
+    // 입력 초기화
+    e.target.value = '';
   };
 
   const handleFileRemove = (index: number) => {
-    const newFiles = attachedFiles.filter((_, i) => i !== index);
-    const newUrls = filePreviewUrls.filter((_, i) => i !== index);
-    
+    const newAttachedFiles = attachedFiles.filter((_, i) => i !== index);
+    const newPreviewUrls = filePreviewUrls.filter((_, i) => i !== index);
+
     URL.revokeObjectURL(filePreviewUrls[index]);
-    
-    setAttachedFiles(newFiles);
-    setFilePreviewUrls(newUrls);
+
+    setAttachedFiles(newAttachedFiles);
+    setFilePreviewUrls(newPreviewUrls);
   };
+
+  const handleDocumentRemove = (index: number) => {
+    const newDocuments = attachedDocuments.filter((_, i) => i !== index);
+    setAttachedDocuments(newDocuments);
+  };
+
+  // *** (신규) 첨부파일 다운로드 함수 (PLACEHOLDER) ***
+  // TODO: 실제 API 엔드포인트로 교체해야 합니다.
+  const downloadAttachment = async (attachmentId: number, fileName: string) => {
+    console.log(`Downloading ${fileName} (ID: ${attachmentId})`);
+    alert(`'${fileName}' 다운로드를 시작합니다.\n\n(이 기능은 실제 API 연동이 필요합니다.)`);
+    
+    // --- 실제 구현 예시 (주석 처리) ---
+    // try {
+    //   // 1. API에 파일 요청 (인증 헤더 등이 필요할 수 있음)
+    //   const response = await fetch(`http://localhost:3000/api/attachments/${attachmentId}`); // GUESSED API PATH
+      
+    //   if (!response.ok) {
+    //     throw new Error('File download failed');
+    //   }
+
+    //   // 2. 응답을 Blob으로 변환
+    //   const blob = await response.blob();
+      
+    //   // 3. Blob을 URL로 변환
+    //   const url = window.URL.createObjectURL(blob);
+      
+    //   // 4. 임시 <a> 태그를 생성하여 다운로드 트리거
+    //   const link = document.createElement('a');
+    //   link.href = url;
+    //   link.setAttribute('download', fileName); // 다운로드될 파일명 설정
+    //   document.body.appendChild(link);
+    //   link.click();
+      
+    //   // 5. 임시 태그 및 URL 정리
+    //   link.parentNode?.removeChild(link);
+    //   window.URL.revokeObjectURL(url);
+      
+    // } catch (err) {
+    //   console.error("Download failed", err);
+    //   alert("파일을 다운로드하는 데 실패했습니다.");
+    // }
+  };
+  
   
   // --- 8. (수정) JSX 렌더링 ---
   return (
@@ -474,13 +579,20 @@ export default function CommunityPage() {
                     }
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00A862]"
                   >
+                    {user?.role === 'admin' && (
+                      <>
+                        <option value="공지사항">공지사항</option>
+                        <option value="이벤트">이벤트</option>
+                      </>
+                    )}
                     <option value="자유">자유</option>
                     <option value="질문">질문</option>
                     <option value="후기">후기</option>
                     <option value="제안">제안</option>
-                    {/* 공지/이벤트는 관리자만 작성 가능하므로 일반 유저 UI에서는 제거 */}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">* 공지사항과 이벤트는 관리자만 작성할 수 있습니다.</p>
+                  {user?.role !== 'admin' && (
+                    <p className="text-xs text-gray-500 mt-1">* 공지사항과 이벤트는 관리자만 작성할 수 있습니다.</p>
+                  )}
                 </div>
 
                 <div>
@@ -505,30 +617,32 @@ export default function CommunityPage() {
                   />
                 </div>
 
-                {/* 파일 첨부 */}
+                {/* --- (수정) 파일 첨부 섹션 시작 --- */}
+
+                {/* 1. 이미지 첨부 */}
                 <div>
-                  <Label>파일 첨부 (최대 5개)</Label>
+                  <Label>이미지 첨부 (최대 5개)</Label>
                   <div className="mt-2">
+                    {/* 기존 이미지 버튼 */}
                     <input
                       type="file"
-                      id="file-input"
+                      accept="image/*"
                       multiple
-                      accept="image/*,.pdf,.doc,.docx,.hwp"
-                      onChange={handleFileAttach}
+                      onChange={(e) => handleFileAttach(e, false)}
                       className="hidden"
+                      id="image-upload"
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => document.getElementById('file-input')?.click()}
+                      onClick={() => document.getElementById('image-upload')?.click()}
                       className="w-full"
                     >
-                      <Paperclip className="w-4 h-4 mr-2" />
                       파일 선택 ({attachedFiles.length}/5)
                     </Button>
                   </div>
 
-                  {/* 첨부된 파일 목록 */}
+                  {/* 첨부된 이미지 목록 */}
                   {attachedFiles.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {attachedFiles.map((file, index) => (
@@ -565,6 +679,53 @@ export default function CommunityPage() {
                     </div>
                   )}
                 </div>
+
+                {/* 2. 일반 첨부파일 (신규 추가) */}
+                <div>
+                  <Label>첨부파일 (최대 10개)</Label>
+                  <div className="mt-2">
+                    {/* 새로 추가: 첨부파일 버튼 */}
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => handleFileAttach(e, true)}
+                      className="hidden"
+                      id="document-upload"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => document.getElementById('document-upload')?.click()}>
+                      <Paperclip className="w-4 h-4 mr-2" />
+                      첨부파일 ({attachedDocuments.length}/10)
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 첨부파일 목록 표시 (신규 추가) */}
+                {attachedDocuments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {attachedDocuments.map((file, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                        <Paperclip className="w-4 h-4" />
+                        <span className="flex-1 text-sm truncate">{file.name}</span>
+                        <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleDocumentRemove(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* --- (수정) 파일 첨부 섹션 끝 --- */}
+
 
                 <div className="flex gap-2 pt-4">
                   <Button
@@ -671,6 +832,67 @@ export default function CommunityPage() {
                     />
                   </div>
 
+                  {/* 파일 첨부 (수정 모드) - TODO: 첨부파일(문서) 수정 로직 추가 필요 */}
+                  <div>
+                    <Label>파일 첨부 (최대 5개)</Label>
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        id="edit-file-input"
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx,.hwp" // TODO: 여기도 이미지/문서 분리 필요
+                        onChange={handleFileAttach}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('edit-file-input')?.click()}
+                        className="w-full"
+                      >
+                        <Paperclip className="w-4 h-4 mr-2" />
+                        파일 선택 ({(filePreviewUrls.length || 0)}/5)
+                      </Button>
+                    </div>
+
+                    {/* 첨부된 파일 목록 */}
+                    {filePreviewUrls.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {filePreviewUrls.map((url, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                            <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                              <img 
+                                src={url.startsWith('blob:') ? url : `http://localhost:3000/${url}`}
+                                alt={`preview ${index}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">{attachedFiles[index]?.name || url}</p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (url.startsWith('blob:')) {
+                                  handleFileRemove(index);
+                                } else {
+                                  setDeleteImages([...deleteImages, url]);
+                                  setFilePreviewUrls(filePreviewUrls.filter(u => u !== url));
+                                }
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* TODO: (수정 모드) 기존 첨부파일(문서) 목록 및 신규 첨부파일(문서) 로직 추가 */}
+
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleSubmitEdit}
@@ -733,6 +955,50 @@ export default function CommunityPage() {
                       {selectedPost.content}
                     </pre>
                   </div>
+                  {/* 이미지 표시 */}
+                  {selectedPost.images && selectedPost.images.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      {selectedPost.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={`http://localhost:3000/${image}`}
+                          alt={`post image ${index + 1}`}
+                          className="rounded-lg"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* --- (신규) 첨부파일 목록 섹션 --- */}
+                  {selectedPost.attachments && selectedPost.attachments.length > 0 && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        첨부파일 ({selectedPost.attachments.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedPost.attachments.map((attachment) => (
+                          <button
+                            key={attachment.attachment_id}
+                            onClick={() => downloadAttachment(attachment.attachment_id, attachment.file_name)}
+                            className="flex items-center gap-3 p-3 bg-white rounded border hover:bg-gray-50 w-full text-left"
+                          >
+                            <Paperclip className="w-5 h-5 text-gray-500" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{attachment.file_name}</p>
+                              <p className="text-xs text-gray-500">
+                                {/* file_size가 bytes 단위라고 가정 */}
+                                {(attachment.file_size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            <Download className="w-4 h-4 text-gray-400" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* --- (신규) 첨부파일 목록 섹션 끝 --- */}
+
                 </div>
 
                 <div className="border-t pt-6 flex items-center gap-4 mb-6">
@@ -826,6 +1092,58 @@ export default function CommunityPage() {
           <div className="max-w-4xl mx-auto">
             {isLoading && <div className="text-center py-10">목록을 불러오는 중입니다...</div>}
             
+            {/* 고정된 게시글 섹션 */}
+            {pinnedPosts.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-3 text-[#00A862] flex items-center gap-2">
+                  <Pin className="w-6 h-6" /> 고정된 게시글
+                </h2>
+                <div className="space-y-3">
+                  {pinnedPosts.map((post) => (
+                    <Card
+                      key={`pinned-${post.post_id}`}
+                      className="p-5 cursor-pointer hover:shadow-md transition-shadow border-2 border-[#00A862] bg-[#00A862]/5"
+                      onClick={() => handlePostClick(post.post_id)}
+                    >
+                      <div className="flex items-start gap-4">
+                        <Pin className="w-5 h-5 text-[#00A862] flex-shrink-0 mt-1" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className={getCategoryColor(post.category)}>
+                              {post.category}
+                            </Badge>
+                            <Badge variant="outline" className="border-[#00A862] text-[#00A862]">
+                              고정
+                            </Badge>
+                          </div>
+                          <h3 className="mb-2 truncate">{post.title}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>{post.username}</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {post.created_at.split('T')[0]}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-4 h-4" />
+                              {post.views}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <ThumbsUp className="w-4 h-4" />
+                              {post.likes}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" />
+                              {post.comments_count}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               {posts.map((post) => (
                 <Card

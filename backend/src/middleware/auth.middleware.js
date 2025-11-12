@@ -1,74 +1,67 @@
-/**
- * 의존성:
- *   - jsonwebtoken: JWT 토큰 검증 라이브러리
- */
-
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+const JWT_SECRET = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'dev-secret-key';
+
 /**
- * 
- * @param {Object} req - Express 요청 객체
- * @param {Object} res - Express 응답 객체
- * @param {Function} next - 다음 미들웨어로 넘어가는 함수
- * 
+ * Middleware to verify token (Required)
  */
 const verifyToken = (req, res, next) => {
-  // 1단계: Authorization 헤더에서 토큰 추출
   const authHeader = req.headers['authorization'];
-  
-  // 2단계: 토큰 파싱
   const token = authHeader && authHeader.split(' ')[1];
 
-  // 3단계: 토큰 존재 여부 확인
   if (!token) {
-    return res.status(403).json({ 
-      message: 'Token is required.' 
-    });
+    return res.status(403).json({ message: 'Token is required.' });
   }
 
   try {
-    // 4단계: JWT 토큰 검증 및 디코딩
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    
-    // 5단계: 검증된 사용자 정보를 req 객체에 저장
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
-    
+    next();
   } catch (err) {
-    // 6단계: 토큰 검증 실패 처리
-    return res.status(401).json({ 
-      message: 'Invalid token.' 
-    });
+    return res.status(401).json({ message: 'Invalid token.' });
   }
-
-  // 7단계: 다음 미들웨어 또는 라우터로 요청 전달
-  return next();
 };
 
 /**
- * 관리자 권한을 확인하는 미들웨어
- * 
- * @param {Object} req - Express 요청 객체 (req.user가 설정되어 있어야 함)
- * @param {Object} res - Express 응답 객체
- * @param {Function} next - 다음 미들웨어로 넘어가는 함수
+ * Middleware to optionally verify token.
+ * If a token exists, it verifies it and attaches the user to the request.
+ * If not, it just passes through.
+ */
+const optionalVerifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next(); // No token, just continue
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // Valid token, add user to request
+  } catch (err) {
+    // Token is present but invalid. We can choose to ignore and proceed,
+    // or handle it. For now, we'll just log a warning and proceed.
+    console.warn("Optional token verification failed:", err.message);
+  }
+  
+  next();
+};
+
+
+/**
+ * Middleware to check for admin role.
  */
 const isAdmin = (req, res, next) => {
-
-  // req.user가 존재하고 역할이 'admin'인지 확인
   if (req.user && req.user.role === 'admin') {
-    // 관리자 권한이 있으면 다음 미들웨어/라우터로 진행
     next();
   } else {
-    // 관리자 권한이 없으면 403 Forbidden 반환
-    res.status(403).json({ 
-      message: 'Admin permission required.' 
-    });
+    res.status(403).json({ message: 'Admin permission required.' });
   }
 };
 
-// 미들웨어 함수들을 모듈로 내보내기
-// app.js나 라우터에서 사용할 수 있도록 export
 module.exports = {
-  verifyToken,  // JWT 토큰 검증 미들웨어
-  isAdmin       // 관리자 권한 확인 미들웨어
+  verifyToken,
+  isAdmin,
+  optionalVerifyToken
 };

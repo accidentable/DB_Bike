@@ -17,33 +17,78 @@
 const express = require('express');
 const router = express.Router();
 const postService = require('../services/post.service');
-const { verifyToken, isAdmin } = require('../middleware/auth.middleware');
+const { verifyToken, isAdmin, optionalVerifyToken } = require('../middleware/auth.middleware');
+const multer = require('multer');
+const path = require('path');
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // 이미지와 일반 첨부파일을 구분하여 저장
+    if (file.fieldname === 'images') {
+      cb(null, 'uploads/images/');
+    } else {
+      cb(null, 'uploads/attachments/');
+    }
+  },
+  filename: function (req, file, cb) {
+    // 파일명에 타임스탬프 추가하여 중복 방지
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// 파일 필터링: 허용할 파일 형식 정의
+const fileFilter = (req, file, cb) => {
+  // 허용할 MIME 타입 목록
+  const allowedMimeTypes = [
+    // 이미지
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    // 문서
+    'application/pdf',
+    'application/msword', // .doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    'application/vnd.ms-excel', // .xls
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-powerpoint', // .ppt
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+    'text/plain', // .txt
+    // 압축 파일
+    'application/zip',
+    'application/x-zip-compressed',
+    'application/x-rar-compressed',
+    'application/x-7z-compressed',
+    // 실행 파일 (주의: 보안상 위험할 수 있음)
+    'application/x-msdownload', // .exe
+    'application/x-msdos-program',
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`지원하지 않는 파일 형식입니다: ${file.mimetype}`), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB 제한
+  }
+});
 
 /**
  * POST /api/posts
- * 게시글 작성
- * * 요청 본문 (req.body):
- * - title: string (필수) - 게시글 제목
- * - content: string (필수) - 게시글 내용
- * - category: string (필수) - 게시글 카테고리 (notice, event, review 등)
- * - is_pinned: boolean (선택) - 고정 여부 (관리자만 가능)
- * * 성공 응답 (201):
- * {
- * success: true,
- * data: { 게시글 정보 }
- * }
- * * 실패 응답 (400/403):
- * {
- * success: false,
- * message: string
- * }
+ * 게시글 작성 (이미지 + 첨부파일)
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, upload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'attachments', maxCount: 10 }
+]), async (req, res) => {
   try {
-    // 1. 요청 본문에서 게시글 정보 추출
     const { title, content, category, is_pinned } = req.body;
     
-    // 2. 필수 입력값 검증
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
@@ -51,25 +96,38 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // 3. 서비스 계층의 createPost 함수 호출
-    // verifyToken 미들웨어를 통해 req.user에 사용자 정보가 설정됨
+    // 이미지 파일 처리
+    const images = req.files && req.files['images'] 
+      ? req.files['images'].map(file => file.path) 
+      : [];
+
+    // 첨부파일 처리
+    const attachments = req.files && req.files['attachments']
+      ? req.files['attachments'].map(file => ({
+          fileName: file.originalname,
+          filePath: file.path,
+          fileSize: file.size,
+          fileType: file.mimetype
+        }))
+      : [];
+
     const newPost = await postService.createPost(
-      req.user.memberId,  // 작성자 ID
+      req.user.memberId,
       title,
       content,
       category,
-      is_pinned || false,  // 기본값: false
-      req.user.role        // 사용자 역할 (권한 확인용)
+      is_pinned === 'true',
+      req.user.role,
+      images,
+      attachments
     );
 
-    // 4. 성공 응답 반환 (201 Created)
     res.status(201).json({
       success: true,
       data: newPost
     });
 
   } catch (error) {
-    // 5. 에러 처리
     const statusCode = error.message.includes('권한') ? 403 : 400;
     res.status(statusCode).json({
       success: false,
@@ -204,9 +262,11 @@ router.get('/:id', async (req, res) => {
  * message: string
  * }
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, upload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'attachments', maxCount: 10 }
+]), async (req, res) => {
   try {
-    // 1. 경로 파라미터에서 게시글 ID 추출
     const postId = parseInt(req.params.id);
 
     if (isNaN(postId)) {
@@ -216,10 +276,8 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // 2. 요청 본문에서 수정 정보 추출
-    const { title, content, category } = req.body;
+    const { title, content, category, deleteImages, deleteAttachments } = req.body;
 
-    // 3. 필수 입력값 검증
     if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
@@ -227,25 +285,40 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // 4. 서비스 계층의 updatePost 함수 호출
-    // 작성자 또는 관리자만 수정 가능
+    const newImages = req.files && req.files['images'] 
+      ? req.files['images'].map(file => file.path) 
+      : [];
+    const parsedDeleteImages = deleteImages ? JSON.parse(deleteImages) : [];
+
+    const newAttachments = req.files && req.files['attachments']
+      ? req.files['attachments'].map(file => ({
+          fileName: file.originalname,
+          filePath: file.path,
+          fileSize: file.size,
+          fileType: file.mimetype
+        }))
+      : [];
+    const parsedDeleteAttachments = deleteAttachments ? JSON.parse(deleteAttachments) : [];
+
     const updatedPost = await postService.updatePost(
       postId,
-      req.user.memberId,  // 요청한 사용자 ID
+      req.user.memberId,
       title,
       content,
       category,
-      req.user.role       // 사용자 역할
+      req.user.role,
+      newImages,
+      parsedDeleteImages,
+      newAttachments,
+      parsedDeleteAttachments
     );
 
-    // 5. 성공 응답 반환 (200 OK)
     res.status(200).json({
       success: true,
       data: updatedPost
     });
 
   } catch (error) {
-    // 6. 에러 처리
     let statusCode = 500;
     if (error.message.includes('찾을 수 없습니다')) statusCode = 404;
     else if (error.message.includes('권한')) statusCode = 403;
@@ -518,7 +591,7 @@ router.post('/:id/like', verifyToken, async (req, res) => {
  * GET /api/posts/:id/like
  * 게시글의 좋아요 정보 조회
  */
-router.get('/:id/like', async (req, res) => {
+router.get('/:id/like', optionalVerifyToken, async (req, res) => {
   try {
     const postId = parseInt(req.params.id);
 
@@ -530,7 +603,7 @@ router.get('/:id/like', async (req, res) => {
     }
 
     const likeService = require('../services/like.service');
-    const memberId = req.user ? req.user.memberId : null;
+    const memberId = req.user ? (req.user.memberId || req.user.member_id) : null;
     const likeInfo = await likeService.getLikeInfo(postId, memberId);
 
     res.status(200).json({
@@ -542,6 +615,77 @@ router.get('/:id/like', async (req, res) => {
     res.status(500).json({
       success: false,
       message: '좋아요 정보를 불러오는 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * GET /api/posts/pinned
+ * 고정된 게시글 목록 조회
+ * * 성공 응답 (200):
+ * {
+ * success: true,
+ * data: Array // 고정된 게시글 배열
+ * }
+ */
+router.get('/pinned', async (req, res) => {
+  try {
+    const pinnedPosts = await postService.getPinnedPosts();
+    res.status(200).json({
+      success: true,
+      data: pinnedPosts
+    });
+  } catch (error) {
+    console.error('Error fetching pinned posts:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '고정된 게시글을 불러오는 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
+ * GET /api/posts/attachments/:attachmentId/download
+ * 첨부파일 다운로드
+ */
+router.get('/attachments/:attachmentId/download', async (req, res) => {
+  try {
+    const attachmentId = parseInt(req.params.attachmentId);
+
+    if (isNaN(attachmentId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 첨부파일 ID가 아닙니다.'
+      });
+    }
+
+    const attachment = await postService.getAttachment(attachmentId);
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: '첨부파일을 찾을 수 없습니다.'
+      });
+    }
+
+    // 파일 다운로드
+    res.download(attachment.file_path, attachment.file_name, (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: '파일 다운로드 중 오류가 발생했습니다.'
+          });
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in download endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '파일 다운로드 중 오류가 발생했습니다.'
     });
   }
 });

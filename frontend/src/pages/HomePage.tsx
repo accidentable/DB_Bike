@@ -556,7 +556,7 @@ function KakaoMapLoader({ children }: { children: React.ReactNode }) {
   const [loading, error] = useKakaoLoader({
     // 중요: 실제 서비스에서는 .env 파일을 사용하여 API 키를 관리해야 합니다.
     // 예: appkey: process.env.REACT_APP_KAKAO_APP_KEY!
-    appkey: "a5bd90a1916723767639f08e406a73ab", 
+    appkey: "0ddb80336b17ea45f9f7c27852fbea10", 
   });
 
   if (loading) return <div className="text-center py-12">지도 로딩 중...</div>;

@@ -4,6 +4,16 @@
 
 import client from './client';
 
+// 첨부파일 타입 정의
+export interface Attachment {
+  attachment_id: number;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  created_at: string;
+}
+
 // 게시글 타입 정의
 export interface Post {
   post_id: number;
@@ -20,6 +30,7 @@ export interface Post {
   username?: string;
   email?: string;
   images?: string[]; // 이미지 URL 배열 추가
+  attachments?: Attachment[]; // 첨부파일 배열 추가
 }
 
 // 게시글 목록 응답 타입
@@ -85,6 +96,7 @@ export async function createPost(data: {
   category: string;
   is_pinned?: boolean;
   images?: File[];
+  attachments?: File[];
 }): Promise<ApiResponse<Post>> {
   try {
     const formData = new FormData();
@@ -100,6 +112,13 @@ export async function createPost(data: {
     if (data.images) {
       data.images.forEach((file) => {
         formData.append('images', file);
+      });
+    }
+
+    // 첨부파일 추가
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append('attachments', file);
       });
     }
 
@@ -126,6 +145,8 @@ export async function updatePost(postId: number, data: {
   category: string;
   images?: File[];
   deleteImages?: string[]; // 삭제할 이미지 URL 배열
+  attachments?: File[]; // 새 첨부파일 배열
+  deleteAttachments?: number[]; // 삭제할 첨부파일 ID 배열
 }): Promise<ApiResponse<Post>> {
   try {
     const formData = new FormData();
@@ -143,6 +164,18 @@ export async function updatePost(postId: number, data: {
     // 삭제할 이미지 URL 추가
     if (data.deleteImages) {
       formData.append('deleteImages', JSON.stringify(data.deleteImages));
+    }
+
+    // 새로운 첨부파일 추가
+    if (data.attachments) {
+      data.attachments.forEach((file) => {
+        formData.append('attachments', file);
+      });
+    }
+
+    // 삭제할 첨부파일 ID 추가
+    if (data.deleteAttachments) {
+      formData.append('deleteAttachments', JSON.stringify(data.deleteAttachments));
     }
 
     const response = await client.put(`/api/posts/${postId}`, formData, {
@@ -171,5 +204,44 @@ export async function deletePost(postId: number): Promise<ApiResponse<void>> {
       success: false,
       message: error.response?.data?.message || '게시글 삭제 중 오류가 발생했습니다.',
     };
+  }
+}
+
+/**
+ * 고정된 게시글 목록 조회
+ */
+export async function getPinnedPosts(): Promise<ApiResponse<Post[]>> {
+  try {
+    const response = await client.get('/api/posts/pinned');
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '고정된 게시글을 불러오는 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 첨부파일 다운로드
+ */
+export async function downloadAttachment(attachmentId: number, fileName: string): Promise<void> {
+  try {
+    const response = await client.get(`/api/posts/attachments/${attachmentId}/download`, {
+      responseType: 'blob',
+    });
+    
+    // 파일 다운로드
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error: any) {
+    alert('파일 다운로드 중 오류가 발생했습니다.');
+    throw error;
   }
 }

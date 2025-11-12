@@ -5,8 +5,10 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Map, MapMarker, CustomOverlayMap } from "react-kakao-maps-sdk";
+import type {
+  KakaoMapPosition
+} from "../api/mapApi";
 import {
-  KakaoMapPosition,
   calculateDistance,
   getCurrentLocation,
   DEFAULT_CENTER,

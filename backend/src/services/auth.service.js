@@ -1,5 +1,5 @@
 /**
- * 
+ *
  * 의존성:
  *   - memberRepository: 데이터베이스 접근을 위한 Repository
  *   - bcrypt: 비밀번호 암호화/검증 라이브러리
@@ -10,6 +10,8 @@ const memberRepository = require('../repositories/member.repository');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'dev-secret-key';
 
 const authService = {
   /**
@@ -38,6 +40,17 @@ const authService = {
       throw new Error('User not found.');
     }
 
+    // 2-1단계: 이메일 규칙 기반 관리자 역할 부여
+    const isAdminEmail = email.toLowerCase().startsWith('admin');
+    if (isAdminEmail && user.role !== 'admin') {
+      const updatedUser = await memberRepository.updateRole(user.member_id, 'admin');
+      if (updatedUser) {
+        user.role = updatedUser.role;
+      } else {
+        user.role = 'admin';
+      }
+    }
+
     // 2단계: 비밀번호 검증
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
@@ -48,25 +61,26 @@ const authService = {
 
     // 3단계: JWT 토큰 생성
     const token = jwt.sign(
-      { 
+      {
         memberId: user.member_id,  // 사용자 고유 ID
         email: user.email,          // 사용자 이메일
         role: user.role             // 사용자 역할 (user/admin)
       },
-      process.env.JWT_SECRET_KEY,   // .env 파일의 시크릿 키
+      JWT_SECRET,   // .env 파일의 시크릿 키
       { expiresIn: '1h' }           // 토큰 유효기간: 1시간
     );
 
     // 4단계: 결과 반환 - 응답 구조 통일
-    return { 
+    return {
       token: token,  // 클라이언트가 이후 요청에 사용할 인증 토큰
-      user: { 
-        member_id: user.member_id, 
-        email: user.email,      
-        username: user.username, 
+      user: {
+        member_id: user.member_id,
+        email: user.email,
+        username: user.username,
         role: user.role,
+        point_balance: typeof user.point_balance === 'number' ? user.point_balance : 0,
         isAdmin: user.role === 'admin' // isAdmin 플래그 추가
-      } 
+      }
     };
   },
 
@@ -88,28 +102,39 @@ const authService = {
   signup: async (username, email, password) => {
  
     // 1단계: 이메일 중복 확인
-    const existingUser = await memberRepository.findByEmail(email);
+    const existingUserByEmail = await memberRepository.findByEmail(email);
     
     // 이미 사용 중인 이메일이면 에러 발생
-    if (existingUser) {
+    if (existingUserByEmail) {
       throw new Error('Email already in use.');
     }
 
-    // 2단계: 비밀번호 암호화
+    // 2단계: 사용자명 중복 확인
+    const existingUserByUsername = await memberRepository.findByUsername(username);
+    if (existingUserByUsername) {
+      throw new Error('Username already in use.');
+    }
+
+    // 3단계: 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3단계: Repository를 통해 사용자 생성
+    const isAdminEmail = email.toLowerCase().startsWith('admin');
+    const role = isAdminEmail ? 'admin' : 'user';
+
+    // 4단계: Repository를 통해 사용자 생성
     // role은 기본값 'user'로 설정
     const newUser = await memberRepository.createUser(
       username,        // 사용자명
       email,           // 이메일
-      hashedPassword   // 암호화된 비밀번호
+      hashedPassword,  // 암호화된 비밀번호
+      role
     );
     
-    // 4단계: 생성된 사용자 정보 반환
+    // 5단계: 생성된 사용자 정보 반환
     return newUser;
   },
 };
 
 // 서비스 객체를 모듈로 내보내기 (routes에서 사용)
 module.exports = authService;
+

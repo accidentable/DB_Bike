@@ -17,6 +17,9 @@ import RankingPage from './pages/RankingPage';
 import ContactPage from './pages/ContactPage'; // 문의 페이지 import
 // ... (다른 페이지들도 import)
 
+import AdminRoute from './AdminRoute';
+import AdminDashboard from './pages/AdminDashboardpage';
+
 function App() {
   return (
     <>
@@ -32,6 +35,9 @@ function App() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/ranking" element={<RankingPage />} />
           <Route path="/contact" element={<ContactPage />} /> {/* 문의 페이지 라우트 추가 */}
+          <Route path="/admin" element={<AdminRoute />}>
+            <Route index element={<AdminDashboard />} />
+          </Route>
         </Routes>
       </main>
     </>

@@ -21,19 +21,56 @@ const postRepository = {
    * @param {boolean} isPinned - 고정 여부 (기본값: false)
    * @returns {Promise<Object>} - 생성된 게시글 정보
    */
-  createPost: async (memberId, title, content, category, isPinned = false) => {
+  createPost: async (memberId, title, content, category, isPinned = false, images = [], attachments = []) => {
+    const client = await pool.connect();
     try {
-      const query = `
+      await client.query('BEGIN');
+
+      const postQuery = `
         INSERT INTO posts (member_id, title, content, category, is_pinned)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING post_id, member_id, title, content, category, views, likes, comments_count, is_pinned, created_at, updated_at;
       `;
-      const values = [memberId, title, content, category, isPinned];
-      const { rows } = await pool.query(query, values);
-      return rows[0];
+      const postValues = [memberId, title, content, category, isPinned];
+      const { rows } = await client.query(postQuery, postValues);
+      const newPost = rows[0];
+
+      if (images.length > 0) {
+        const imageQuery = `
+          INSERT INTO post_images (post_id, image_url)
+          SELECT $1, unnest($2::text[])
+        `;
+        await client.query(imageQuery, [newPost.post_id, images]);
+      }
+
+      if (attachments.length > 0) {
+        for (const attachment of attachments) {
+          const attachmentQuery = `
+            INSERT INTO post_attachments (post_id, file_name, file_path, file_size, file_type)
+            VALUES ($1, $2, $3, $4, $5)
+          `;
+          await client.query(attachmentQuery, [
+            newPost.post_id,
+            attachment.fileName,
+            attachment.filePath,
+            attachment.fileSize,
+            attachment.fileType
+          ]);
+        }
+      }
+
+      await client.query('COMMIT');
+      
+      newPost.images = images;
+      newPost.attachments = attachments;
+      return newPost;
+
     } catch (error) {
-      console.error('Error creating post:', error);
+      await client.query('ROLLBACK');
+      console.error('Error creating post with files:', error);
       throw error;
+    } finally {
+      client.release();
     }
   },
 
@@ -126,7 +163,15 @@ const postRepository = {
           p.created_at,
           p.updated_at,
           m.username,
-          m.email
+          m.email,
+          COALESCE(
+            (
+              SELECT ARRAY_AGG(pi.image_url)
+              FROM post_images pi
+              WHERE pi.post_id = p.post_id
+            ),
+            '{}'::text[]
+          ) AS images
         FROM posts p
         INNER JOIN members m ON p.member_id = m.member_id
         ${whereClause}
@@ -170,7 +215,32 @@ const postRepository = {
           p.created_at,
           p.updated_at,
           m.username,
-          m.email
+          m.email,
+          COALESCE(
+            (
+              SELECT ARRAY_AGG(pi.image_url)
+              FROM post_images pi
+              WHERE pi.post_id = p.post_id
+            ),
+            '{}'::text[]
+          ) AS images,
+          COALESCE(
+            (
+              SELECT JSON_AGG(
+                JSON_BUILD_OBJECT(
+                  'attachment_id', pa.attachment_id,
+                  'file_name', pa.file_name,
+                  'file_path', pa.file_path,
+                  'file_size', pa.file_size,
+                  'file_type', pa.file_type,
+                  'created_at', pa.created_at
+                )
+              )
+              FROM post_attachments pa
+              WHERE pa.post_id = p.post_id
+            ),
+            '[]'::json
+          ) AS attachments
         FROM posts p
         INNER JOIN members m ON p.member_id = m.member_id
         WHERE p.post_id = $1
@@ -210,19 +280,84 @@ const postRepository = {
    * @param {string} category - 카테고리
    * @returns {Promise<Object>} - 수정된 게시글 정보
    */
-  updatePost: async (postId, title, content, category) => {
+  updatePost: async (postId, title, content, category, newImages = [], deleteImages = [], newAttachments = [], deleteAttachments = []) => {
+    const client = await pool.connect();
     try {
-      const query = `
+      await client.query('BEGIN');
+
+      const postQuery = `
         UPDATE posts
         SET title = $1, content = $2, category = $3, updated_at = CURRENT_TIMESTAMP
         WHERE post_id = $4
         RETURNING post_id, member_id, title, content, category, views, likes, comments_count, is_pinned, created_at, updated_at;
       `;
-      const { rows } = await pool.query(query, [title, content, category, postId]);
-      return rows[0];
+      const { rows } = await client.query(postQuery, [title, content, category, postId]);
+      const updatedPost = rows[0];
+
+      // 이미지 삭제
+      if (deleteImages.length > 0) {
+        const deleteQuery = `
+          DELETE FROM post_images
+          WHERE post_id = $1 AND image_url = ANY($2::text[])
+        `;
+        await client.query(deleteQuery, [postId, deleteImages]);
+      }
+
+      // 새 이미지 추가
+      if (newImages.length > 0) {
+        const imageQuery = `
+          INSERT INTO post_images (post_id, image_url)
+          SELECT $1, unnest($2::text[])
+        `;
+        await client.query(imageQuery, [postId, newImages]);
+      }
+
+      // 첨부파일 삭제
+      if (deleteAttachments.length > 0) {
+        const deleteAttachQuery = `
+          DELETE FROM post_attachments
+          WHERE post_id = $1 AND attachment_id = ANY($2::int[])
+        `;
+        await client.query(deleteAttachQuery, [postId, deleteAttachments]);
+      }
+
+      // 새 첨부파일 추가
+      if (newAttachments.length > 0) {
+        for (const attachment of newAttachments) {
+          const attachmentQuery = `
+            INSERT INTO post_attachments (post_id, file_name, file_path, file_size, file_type)
+            VALUES ($1, $2, $3, $4, $5)
+          `;
+          await client.query(attachmentQuery, [
+            postId,
+            attachment.fileName,
+            attachment.filePath,
+            attachment.fileSize,
+            attachment.fileType
+          ]);
+        }
+      }
+
+      await client.query('COMMIT');
+
+      // 최종 이미지 목록
+      const imageQuery = 'SELECT image_url FROM post_images WHERE post_id = $1';
+      const imageResult = await client.query(imageQuery, [postId]);
+      updatedPost.images = imageResult.rows.map(row => row.image_url);
+
+      // 최종 첨부파일 목록
+      const attachQuery = 'SELECT * FROM post_attachments WHERE post_id = $1';
+      const attachResult = await client.query(attachQuery, [postId]);
+      updatedPost.attachments = attachResult.rows;
+
+      return updatedPost;
+
     } catch (error) {
-      console.error('Error updating post:', error);
+      await client.query('ROLLBACK');
+      console.error('Error updating post with files:', error);
       throw error;
+    } finally {
+      client.release();
     }
   },
 
@@ -259,6 +394,75 @@ const postRepository = {
       return rows[0];
     } catch (error) {
       console.error('Error updating pinned status:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 고정된 게시글 목록 조회
+   * @returns {Promise<Array>} - 고정된 게시글 배열
+   */
+  findPinnedPosts: async () => {
+    try {
+      const query = `
+        SELECT 
+          p.post_id,
+          p.member_id,
+          p.title,
+          p.content,
+          p.category,
+          p.views,
+          p.likes,
+          p.comments_count,
+          p.is_pinned,
+          p.created_at,
+          p.updated_at,
+          m.username,
+          m.email,
+          COALESCE(
+            (
+              SELECT ARRAY_AGG(pi.image_url)
+              FROM post_images pi
+              WHERE pi.post_id = p.post_id
+            ),
+            '{}'::text[]
+          ) AS images
+        FROM posts p
+        INNER JOIN members m ON p.member_id = m.member_id
+        WHERE p.is_pinned = TRUE
+        ORDER BY p.created_at DESC;
+      `;
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('Error finding pinned posts:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 첨부파일 ID로 조회
+   * @param {number} attachmentId - 첨부파일 ID
+   * @returns {Promise<Object|undefined>} - 첨부파일 정보 또는 undefined
+   */
+  findAttachmentById: async (attachmentId) => {
+    try {
+      const query = `
+        SELECT 
+          attachment_id,
+          post_id,
+          file_name,
+          file_path,
+          file_size,
+          file_type,
+          created_at
+        FROM post_attachments
+        WHERE attachment_id = $1
+      `;
+      const { rows } = await pool.query(query, [attachmentId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error finding attachment by id:', error);
       throw error;
     }
   },

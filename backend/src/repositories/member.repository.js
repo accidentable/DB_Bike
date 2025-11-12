@@ -61,6 +61,23 @@ const memberRepository = {
   },
 
   /**
+   * 사용자명으로 사용자 조회
+   * 
+   * @param {string} username - 조회할 사용자의 이름
+   * @returns {Promise<Object|undefined>} - 사용자 정보 객체 또는 undefined
+   */
+  findByUsername: async (username) => {
+    try {
+      const query = 'SELECT * FROM members WHERE username = $1';
+      const { rows } = await pool.query(query, [username]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error finding user by username:', error);
+      throw error;
+    }
+  },
+
+  /**
    * 새 사용자 생성 (회원가입)
    * 
    * @param {string} username - 사용자명 (UNIQUE 제약조건)
@@ -80,20 +97,20 @@ const memberRepository = {
    *   - 비밀번호는 보안상 반환하지 않음
    *   - role은 기본값 'user'로 설정
    */
-  createUser: async (username, email, hashedPassword) => {
+  createUser: async (username, email, hashedPassword, role = 'user') => {
     try {
       // SQL 쿼리 작성
       // INSERT 문을 사용하여 새 레코드를 삽입합니다.
       // RETURNING 절을 사용하여 삽입된 레코드의 특정 컬럼만 반환합니다.
       const query = `
-        INSERT INTO members (username, email, password, role)
-        VALUES ($1, $2, $3, 'user')
-        RETURNING member_id, email, username, role;
+        INSERT INTO members (username, email, password, role, point_balance)
+        VALUES ($1, $2, $3, $4, 5000)
+        RETURNING member_id, email, username, role, point_balance;
       `;
       
       // 쿼리 파라미터 배열
-      // 순서대로 $1, $2, $3에 바인딩합니다.
-      const values = [username, email, hashedPassword];
+      // 순서대로 $1, $2, $3, $4에 바인딩합니다.
+      const values = [username, email, hashedPassword, role];
       
       // 쿼리 실행
       const { rows } = await pool.query(query, values);
@@ -116,12 +133,120 @@ const memberRepository = {
     }
   },
 
+  /**
+   * 사용자 역할 업데이트
+   *
+   * @param {number} memberId - 사용자 ID
+   * @param {string} role - 변경할 역할
+   * @returns {Promise<Object>} - 업데이트된 사용자 정보
+   */
+  updateRole: async (memberId, role) => {
+    try {
+      const query = `
+        UPDATE members
+        SET role = $1
+        WHERE member_id = $2
+        RETURNING member_id, email, username, role, point_balance;
+      `;
+      const { rows } = await pool.query(query, [role, memberId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 모든 사용자 조회 (관리자용)
+   * 
+   * @returns {Promise<Array>} - 모든 사용자 배열
+   */
+  findAll: async () => {
+    try {
+      const query = `
+        SELECT 
+          member_id, 
+          username, 
+          email, 
+          role, 
+          point_balance,
+          created_at,
+          last_bike_id
+        FROM members 
+        ORDER BY created_at DESC
+      `;
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('Error finding all users:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * ID로 사용자 조회
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @returns {Promise<Object|undefined>} - 사용자 정보 객체 또는 undefined
+   */
+  findById: async (memberId) => {
+    try {
+      const query = 'SELECT * FROM members WHERE member_id = $1';
+      const { rows } = await pool.query(query, [memberId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error finding user by ID:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 사용자 정보 업데이트
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @param {Object} userData - 업데이트할 데이터
+   * @returns {Promise<Object>} - 업데이트된 사용자 정보
+   */
+  update: async (memberId, userData) => {
+    try {
+      const { username, email, role, point_balance } = userData;
+      const query = `
+        UPDATE members
+        SET 
+          username = COALESCE($1, username),
+          email = COALESCE($2, email),
+          role = COALESCE($3, role),
+          point_balance = COALESCE($4, point_balance)
+        WHERE member_id = $5
+        RETURNING member_id, username, email, role, point_balance, created_at;
+      `;
+      const values = [username, email, role, point_balance, memberId];
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 사용자 삭제
+   * 
+   * @param {number} memberId - 삭제할 사용자 ID
+   * @returns {Promise<void>}
+   */
+  delete: async (memberId) => {
+    try {
+      const query = 'DELETE FROM members WHERE member_id = $1';
+      await pool.query(query, [memberId]);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
   // 향후 추가될 수 있는 함수들:
-  // - updateUser: 사용자 정보 수정
   // - updatePassword: 비밀번호 변경
-  // - deleteUser: 사용자 삭제
-  // - findById: ID로 사용자 조회
-  // - findAll: 모든 사용자 조회 (관리자용)
 };
 
 // Repository 객체를 모듈로 내보내기 (services에서 사용)

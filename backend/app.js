@@ -12,6 +12,9 @@ app.use(cors()); // CORS 허용
 app.use(express.json()); // Request Body의 JSON 파싱
 app.use(express.urlencoded({ extended: true })); // URL-encoded 파싱
 
+// /uploads 경로를 정적 파일로 제공
+app.use('/uploads', express.static('uploads'));
+
 // --- 2. 라우터 불러오기 ---
 const authRoutes = require('./src/api/auth.routes');
 const postRoutes = require('./src/api/post.routes'); // post.routes도 추가된 것을 확인
