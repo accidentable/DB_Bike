@@ -6,7 +6,8 @@
   "scripts": {
     "start": "chcp 65001 >nul && node server.js",
     "dev": "chcp 65001 >nul && nodemon server.js",
-    "db:seed": "node seed.js"
+    "db:seed": "node seed.js",
+    "db:migrate-kakao": "node db/migrate_kakao_id.js"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3"
   },

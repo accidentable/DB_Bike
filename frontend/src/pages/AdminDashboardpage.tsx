@@ -14,7 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // Admin API 함수
-import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi"; 
+import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi";
+// Station API 함수
+import { getStations } from "../api/stationApi"; 
 
 // 목업 데이터
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B9D', '#C084FC', '#34D399', '#F59E0B', '#EF4444', '#3B82F6', '#10B981', '#F97316'];
@@ -50,18 +52,6 @@ const rentalRateData = [
   { name: '1. 120. 종각역 3번출구 앞', percent: 82.76, color: '#FFE066' },
 ];
 
-const stationInfoData = [
-  { id: 1, name: '101. 순화동주민센터 앞', bikes: '서울시 중구 무교동 31-1', available: 28, rented: 1 },
-  { id: 2, name: '102. 시청역 1번출구 앞', bikes: '서울시 중구 서소문동 50-1', available: 20, rented: 1 },
-  { id: 3, name: '2. 103. 을지로입구역 4번 출구 앞', bikes: '서울시 중구 서소문동 113', available: 17, rented: 1 },
-  { id: 4, name: '104. 광화문역 7번출구 옆', bikes: '서울시 종로구 사직동 7-2', available: 26, rented: 3 },
-  { id: 5, name: '105. 광화문역 5번출구 옆', bikes: '서울시 종로구 세종로 149', available: 21, rented: 3 },
-  { id: 6, name: '106. 서울역사박물관 옆', bikes: '서울시 종로구 신문로2가 2-1', available: 26, rented: 4 },
-  { id: 7, name: '117. 삼청파출소 앞', bikes: '서울시 종로구 삼청동 35-169', available: 18, rented: 3 },
-  { id: 8, name: '118. 안국역 1번 출구 옆', bikes: '서울시 종로구 안국동 7-1', available: 16, rented: 3 },
-  { id: 9, name: '119. 종각역 1번출구 앞', bikes: '서울시 종로구 관철동 13-13', available: 20, rented: 4 },
-  { id: 10, name: '1. 120. 종각역 3번출구 앞', bikes: '서울시 종로구 관철동 14-2', available: 24, rented: 5 },
-];
 
 const activityLogsData = [
   { time: '2025-11-11 08:30:15', user: 'hong@test.com', action: '로그인 시도 (성공)', status: 'success' },
@@ -78,6 +68,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>({totalUsers: 0, totalRentals: 0, activeRentals: 0, totalDistance: 0});
   const [users, setUsers] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
+  const [stations, setStations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -86,7 +77,6 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
-    studentId: "",
     isAdmin: false,
   });
   const [ticketForm, setTicketForm] = useState({
@@ -105,10 +95,11 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Node.js 백엔드 API 호출
-      const [statsRes, usersRes, rentalsRes] = await Promise.all([
+      const [statsRes, usersRes, rentalsRes, stationsRes] = await Promise.all([
         getDashboardStats(),
         getUsers(),
-        getRentals()
+        getRentals(),
+        getStations()
       ]);
 
       // 통계 데이터 설정
@@ -119,7 +110,6 @@ export default function AdminDashboard() {
         id: user.member_id,
         name: user.username,
         email: user.email,
-        studentId: user.student_id || '',
         createdAt: user.created_at,
         totalRides: 0, // TODO: 대여 횟수 집계 필요
         currentTicket: null, // TODO: 이용권 정보 필요
@@ -140,6 +130,11 @@ export default function AdminDashboard() {
         returnedAt: rental.end_time,
       }));
       setRentals(transformedRentals);
+
+      // 대여소 데이터 설정
+      if (stationsRes.success && stationsRes.data) {
+        setStations(stationsRes.data);
+      }
       
     } catch (error) {
       console.error("Error loading admin data:", error);
@@ -154,7 +149,6 @@ export default function AdminDashboard() {
     setEditForm({
       name: user.name,
       phone: user.phone || "",
-      studentId: user.studentId || "",
       isAdmin: user.isAdmin || false,
     });
     setIsEditDialogOpen(true);
@@ -215,8 +209,7 @@ export default function AdminDashboard() {
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.studentId && user.studentId.includes(searchTerm))
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -364,7 +357,7 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </Card>
 
-          {/* 대여소 정보 (목업 유지) */}
+          {/* 대여소 정보 */}
           <Card className="p-6 lg:col-span-2">
             <h3 className="mb-4">대여소 정보</h3>
             <div className="overflow-x-auto">
@@ -372,26 +365,49 @@ export default function AdminDashboard() {
                 <thead className="bg-gray-800 text-white">
                   <tr>
                     <th className="px-4 py-3 text-left">대여소명 ▼</th>
-                    <th className="px-4 py-3 text-left">주소 ▼</th>
+                    <th className="px-4 py-3 text-left">위치 (좌표) ▼</th>
                     <th className="px-4 py-3 text-right">대여가능 ▼</th>
                     <th className="px-4 py-3 text-right">대여중 ▼</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y bg-gray-700 text-white">
-                  {stationInfoData.map((station) => (
-                    <tr key={station.id} className="hover:bg-gray-600 transition-colors">
-                      <td className="px-4 py-3">{station.name}</td>
-                      <td className="px-4 py-3">{station.bikes}</td>
-                      <td className="px-4 py-3 text-right text-blue-400">{station.available}</td>
-                      <td className="px-4 py-3 text-right">{station.rented}</td>
+                  {isLoading && stations.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">대여소 정보를 불러오는 중...</td>
                     </tr>
-                  ))}
+                  ) : stations.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">대여소 정보가 없습니다.</td>
+                    </tr>
+                  ) : (
+                    stations.map((station) => {
+                      // 현재 대여중인 자전거 수 계산 (end_time이 null인 rentals 중에서 해당 대여소에서 시작한 것들)
+                      const rentedCount = rentals.filter(
+                        (rental) => rental.returnedAt === null && rental.stationName === station.name
+                      ).length;
+                      
+                      return (
+                        <tr key={station.station_id} className="hover:bg-gray-600 transition-colors">
+                          <td className="px-4 py-3">{station.name}</td>
+                          <td className="px-4 py-3 text-gray-300">
+                            {station.latitude.toFixed(6)}, {station.longitude.toFixed(6)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
+                          <td className="px-4 py-3 text-right">{rentedCount}</td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
                 <tfoot className="bg-gray-800 text-white">
                   <tr>
                     <td colSpan={2} className="px-4 py-3 font-semibold">Total</td>
-                    <td className="px-4 py-3 text-right text-blue-400 font-semibold">2150</td>
-                    <td className="px-4 py-3 text-right font-semibold">117</td>
+                    <td className="px-4 py-3 text-right text-blue-400 font-semibold">
+                      {stations.reduce((sum, station) => sum + (station.bike_count || 0), 0)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {rentals.filter((rental) => rental.returnedAt === null).length}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -454,7 +470,7 @@ export default function AdminDashboard() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
-                    placeholder="이름, 이메일, 학번으로 검색..."
+                    placeholder="이름, 이메일로 검색..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -468,7 +484,6 @@ export default function AdminDashboard() {
                     <tr>
                       <th className="px-4 py-3 text-left text-sm">이름</th>
                       <th className="px-4 py-3 text-left text-sm">이메일</th>
-                      <th className="px-4 py-3 text-left text-sm">학번</th>
                       <th className="px-4 py-3 text-left text-sm">가입일</th>
                       <th className="px-4 py-3 text-left text-sm">이용 횟수</th>
                       <th className="px-4 py-3 text-left text-sm">이용권</th>
@@ -481,7 +496,6 @@ export default function AdminDashboard() {
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">{user.name}</td>
                         <td className="px-4 py-3">{user.email}</td>
-                        <td className="px-4 py-3">{user.studentId || "-"}</td>
                         <td className="px-4 py-3">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
@@ -626,14 +640,6 @@ export default function AdminDashboard() {
                 id="edit-phone"
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-student-id">학번</Label>
-              <Input
-                id="edit-student-id"
-                value={editForm.studentId}
-                onChange={(e) => setEditForm({ ...editForm, studentId: e.target.value })}
               />
             </div>
             <div className="flex items-center gap-2">

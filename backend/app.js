@@ -22,6 +22,7 @@ const rentalRoutes = require('./src/api/rental.routes');
 const stationRoutes = require('./src/api/station.routes');
 const adminRoutes = require('./src/api/admin.routes');
 const ticketRoutes = require('./src/api/ticket.routes'); // 이용권 API
+const pointRoutes = require('./src/api/point.routes'); // 포인트 API
 // ... (support.routes.js 등) ...
 
 // --- 3. 미들웨어 불러오기 ---
@@ -47,6 +48,9 @@ app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
 // - /api/tickets/types는 공개 (누구나 조회 가능)
 // - /api/tickets/purchase, /api/tickets/my-tickets, /api/tickets/history는 로그인 필요
 app.use('/api/tickets', verifyToken, ticketRoutes);
+
+// (신규) /api/points (포인트) 경로 - 로그인 필요
+app.use('/api/points', verifyToken, pointRoutes);
 
 
 // --- 5. 서버 헬스 체크 ---

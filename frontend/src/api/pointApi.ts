@@ -9,6 +9,11 @@ export interface PointTransaction {
   created_at: string;
 }
 
+export interface ChargeResult {
+  member_id: number;
+  new_balance: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
@@ -29,7 +34,7 @@ export async function getPointBalance(): Promise<ApiResponse<number>> {
 }
 
 // 포인트 충전
-export async function chargePoints(amount: number): Promise<ApiResponse<PointTransaction>> {
+export async function chargePoints(amount: number): Promise<ApiResponse<ChargeResult>> {
   try {
     const response = await client.post('/api/points/charge', { amount });
     return response.data;

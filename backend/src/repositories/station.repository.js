@@ -49,7 +49,7 @@ const stationRepository = {
       sql += ' ORDER BY name ASC';
     }
     
-    sql += ' LIMIT 30';
+    sql += ' LIMIT 20';
 
     try {
       const { rows } = await pool.query(sql, params);

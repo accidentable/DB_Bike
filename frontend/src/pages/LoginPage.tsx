@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Card } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { login } from "../api/authApi";
+import { login, kakaoLogin } from "../api/authApi";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -85,9 +85,67 @@ export default function LoginPage() {
     }
   };
 
+  const handleKakaoLogin = () => {
+    // 카카오 JavaScript SDK가 로드되어 있는지 확인
+    if (typeof window !== 'undefined' && (window as any).Kakao) {
+      const Kakao = (window as any).Kakao;
+      
+      // 카카오 SDK 초기화 (이미 초기화되어 있으면 무시)
+      if (!Kakao.isInitialized()) {
+        Kakao.init(process.env.REACT_APP_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
+      }
+
+      // 카카오 로그인 실행
+      Kakao.Auth.login({
+        success: async (authObj: any) => {
+          try {
+            setIsLoading(true);
+            setError("");
+            
+            // 카카오 액세스 토큰으로 백엔드에 로그인 요청
+            const result = await kakaoLogin(authObj.access_token);
+            
+            if (result.success && result.data) {
+              alert(`환영합니다, ${result.data.user.username}님!`);
+              setTimeout(() => {
+                navigate('/');
+              }, 100);
+            } else {
+              setError(result.message || '카카오 로그인에 실패했습니다.');
+            }
+          } catch (err: any) {
+            console.error('카카오 로그인 에러:', err);
+            setError('카카오 로그인 중 오류가 발생했습니다.');
+          } finally {
+            setIsLoading(false);
+          }
+        },
+        fail: (err: any) => {
+          console.error('카카오 로그인 실패:', err);
+          setError('카카오 로그인에 실패했습니다.');
+        }
+      });
+    } else {
+      // 카카오 SDK가 로드되지 않은 경우
+      alert('카카오 SDK를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      
+      // 카카오 SDK 동적 로드
+      const script = document.createElement('script');
+      script.src = 'https://developers.kakao.com/sdk/js/kakao.js';
+      script.async = true;
+      script.onload = () => {
+        handleKakaoLogin();
+      };
+      document.head.appendChild(script);
+    }
+  };
+
   const handleSocialLogin = (provider: 'kakao' | 'naver') => {
-    // 소셜 로그인 기능은 아직 구현되지 않았습니다.
-    alert(`${provider} 로그인은 현재 준비 중입니다.`);
+    if (provider === 'kakao') {
+      handleKakaoLogin();
+    } else {
+      alert(`${provider} 로그인은 현재 준비 중입니다.`);
+    }
   };
 
   return (
@@ -192,25 +250,15 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            <Button variant="outline" className="w-full" type="button" onClick={() => handleSocialLogin('naver')}>
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="#03C75A"
-                  d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"
-                />
-              </svg>
-              네이버로 로그인
-            </Button>
-            <Button variant="outline" className="w-full" type="button" onClick={() => handleSocialLogin('kakao')}>
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  fill="#FEE500"
-                  d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"
-                />
-                <path
-                  fill="#000000"
-                  d="M12 4c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8z"
-                />
+            <Button 
+              variant="outline" 
+              className="w-full bg-[#FEE500] hover:bg-[#FDD835] text-black border-[#FEE500]" 
+              type="button" 
+              onClick={() => handleSocialLogin('kakao')}
+              disabled={isLoading}
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
               </svg>
               카카오로 로그인
             </Button>
@@ -240,19 +288,6 @@ export default function LoginPage() {
         에 동의하는 것으로 간주됩니다.
       </p>
 
-      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-900">
-            <p className="font-semibold mb-1">소셜 로그인 설정 안내</p>
-            <p className="text-xs text-amber-800">
-              네이버/카카오 로그인을 사용하려면 Supabase 대시보드에서 OAuth 설정이 필요합니다.
-              <br />
-              설정 방법: <a href="https://supabase.com/docs/guides/auth/social-login" target="_blank" rel="noopener noreferrer" className="underline">Supabase Social Login 문서</a>를 참고하세요.
-            </p>
-          </div>
-        </div>
-      </div>
       </div>
     </div>
   );

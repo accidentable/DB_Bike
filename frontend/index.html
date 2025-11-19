@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend-project</title>
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=a5bd90a1916723767639f08e406a73ab"></script>
+    <!-- 카카오 로그인 SDK -->
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script>
+      // 카카오 SDK 초기화 (SDK 로드 후 실행)
+      window.addEventListener('load', function() {
+        if (typeof Kakao !== 'undefined' && !Kakao.isInitialized()) {
+          Kakao.init('0ddb80336b17ea45f9f7c27852fbea10');
+          console.log('카카오 SDK 초기화 완료');
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

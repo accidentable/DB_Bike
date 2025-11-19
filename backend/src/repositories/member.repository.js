@@ -78,39 +78,58 @@ const memberRepository = {
   },
 
   /**
+   * 카카오 ID로 사용자 조회
+   * 
+   * @param {number} kakaoId - 카카오 사용자 ID
+   * @returns {Promise<Object|undefined>} - 사용자 정보 객체 또는 undefined
+   */
+  findByKakaoId: async (kakaoId) => {
+    try {
+      const query = 'SELECT * FROM members WHERE kakao_id = $1';
+      const { rows } = await pool.query(query, [kakaoId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error finding user by kakao_id:', error);
+      throw error;
+    }
+  },
+
+  /**
    * 새 사용자 생성 (회원가입)
    * 
    * @param {string} username - 사용자명 (UNIQUE 제약조건)
    * @param {string} email - 이메일 주소 (UNIQUE 제약조건)
    * @param {string} hashedPassword - bcrypt로 암호화된 비밀번호
+   * @param {string} role - 사용자 역할 (기본값: 'user')
+   * @param {number} kakaoId - 카카오 사용자 ID (선택)
    * @returns {Promise<Object>} - 생성된 사용자 정보 (비밀번호 제외)
    *   
    * 사용 시나리오:
    *   - 회원가입 시 새 사용자 생성
    * 
    * SQL 쿼리:
-   *   INSERT INTO members (username, email, password, role)
-   *   VALUES ($1, $2, $3, 'user')
-   *   RETURNING member_id, email, username, role;
+   *   INSERT INTO members (username, email, password, role, point_balance, kakao_id)
+   *   VALUES ($1, $2, $3, $4, 5000, $5)
+   *   RETURNING member_id, email, username, role, point_balance;
    *   
    *   - RETURNING 절을 사용하여 INSERT 후 생성된 레코드의 특정 컬럼만 반환
    *   - 비밀번호는 보안상 반환하지 않음
    *   - role은 기본값 'user'로 설정
    */
-  createUser: async (username, email, hashedPassword, role = 'user') => {
+  createUser: async (username, email, hashedPassword, role = 'user', kakaoId = null) => {
     try {
       // SQL 쿼리 작성
       // INSERT 문을 사용하여 새 레코드를 삽입합니다.
       // RETURNING 절을 사용하여 삽입된 레코드의 특정 컬럼만 반환합니다.
       const query = `
-        INSERT INTO members (username, email, password, role, point_balance)
-        VALUES ($1, $2, $3, $4, 5000)
+        INSERT INTO members (username, email, password, role, point_balance, kakao_id)
+        VALUES ($1, $2, $3, $4, 5000, $5)
         RETURNING member_id, email, username, role, point_balance;
       `;
       
       // 쿼리 파라미터 배열
-      // 순서대로 $1, $2, $3, $4에 바인딩합니다.
-      const values = [username, email, hashedPassword, role];
+      // 순서대로 $1, $2, $3, $4, $5에 바인딩합니다.
+      const values = [username, email, hashedPassword, role, kakaoId];
       
       // 쿼리 실행
       const { rows } = await pool.query(query, values);
@@ -241,6 +260,29 @@ const memberRepository = {
       await pool.query(query, [memberId]);
     } catch (error) {
       console.error('Error deleting user:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 카카오 ID 업데이트
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @param {number} kakaoId - 카카오 사용자 ID
+   * @returns {Promise<Object>} - 업데이트된 사용자 정보
+   */
+  updateKakaoId: async (memberId, kakaoId) => {
+    try {
+      const query = `
+        UPDATE members
+        SET kakao_id = $1
+        WHERE member_id = $2
+        RETURNING member_id, email, username, role, point_balance;
+      `;
+      const { rows } = await pool.query(query, [kakaoId, memberId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error updating kakao_id:', error);
       throw error;
     }
   }

@@ -32,7 +32,6 @@ export interface SignupData {
   email: string;
   password: string;
   phone?: string;
-  studentId?: string;
 }
 
 /**
@@ -131,4 +130,80 @@ export function getCurrentUser(): User | null {
  */
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem('authToken');
+}
+
+/**
+ * 카카오 로그인
+ */
+export async function kakaoLogin(accessToken: string): Promise<ApiResponse<LoginResponse>> {
+  try {
+    const response = await client.post('/api/auth/kakao', { accessToken });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || '카카오 로그인에 실패했습니다.');
+    }
+
+    if (!response.data.data || !response.data.data.token || !response.data.data.user) {
+      throw new Error('카카오 로그인 응답 데이터가 올바르지 않습니다.');
+    }
+
+    const { token, user } = response.data.data;
+
+    // 기존 데이터 삭제
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+
+    // 새로운 데이터 저장
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    // 로그인 상태가 변경되었음을 알림
+    window.dispatchEvent(new CustomEvent('loginStatusChanged', {
+      detail: { user }
+    }));
+    
+    return {
+      success: true,
+      data: {
+        token,
+        user
+      }
+    };
+  } catch (error: any) {
+    console.error('카카오 로그인 에러:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || '카카오 로그인 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 이메일 인증 코드 발송
+ */
+export async function sendVerificationEmail(email: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.post('/api/auth/send-verification-email', { email });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '인증 코드 발송 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 이메일 인증 코드 검증
+ */
+export async function verifyEmail(email: string, code: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.post('/api/auth/verify-email', { email, code });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '이메일 인증 중 오류가 발생했습니다.',
+    };
+  }
 }

@@ -9,6 +9,7 @@
 const memberRepository = require('../repositories/member.repository');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const emailService = require('./email.service');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'dev-secret-key';
@@ -90,6 +91,7 @@ const authService = {
    * @param {string} username - 사용자명 (고유값)
    * @param {string} email - 이메일 주소 (고유값)
    * @param {string} password - 평문 비밀번호 (최소 6자 이상)
+   * @param {boolean} skipEmailVerification - 이메일 인증 건너뛰기 (카카오 로그인 등)
    * @returns {Promise<Object>} - 생성된 사용자 정보
    *   {
    *     member_id: number,    // 생성된 사용자 ID
@@ -97,9 +99,9 @@ const authService = {
    *     username: string,     // 사용자명
    *     role: string         // 기본값: 'user'
    *   }
-   * @throws {Error} - 이메일이 이미 사용 중일 때
+   * @throws {Error} - 이메일이 이미 사용 중일 때, 이메일 인증이 완료되지 않았을 때
    */
-  signup: async (username, email, password) => {
+  signup: async (username, email, password, skipEmailVerification = false) => {
  
     // 1단계: 이메일 중복 확인
     const existingUserByEmail = await memberRepository.findByEmail(email);
@@ -115,13 +117,18 @@ const authService = {
       throw new Error('Username already in use.');
     }
 
-    // 3단계: 비밀번호 암호화
+    // 3단계: 이메일 인증 확인 (skipEmailVerification이 false인 경우)
+    if (!skipEmailVerification && !emailService.isEmailVerified(email)) {
+      throw new Error('Email verification is required.');
+    }
+
+    // 4단계: 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const isAdminEmail = email.toLowerCase().startsWith('admin');
     const role = isAdminEmail ? 'admin' : 'user';
 
-    // 4단계: Repository를 통해 사용자 생성
+    // 5단계: Repository를 통해 사용자 생성
     // role은 기본값 'user'로 설정
     const newUser = await memberRepository.createUser(
       username,        // 사용자명
@@ -130,8 +137,97 @@ const authService = {
       role
     );
     
-    // 5단계: 생성된 사용자 정보 반환
+    // 6단계: 회원가입 완료 후 인증 코드 삭제
+    emailService.deleteVerificationCode(email);
+    
+    // 7단계: 생성된 사용자 정보 반환
     return newUser;
+  },
+
+  /**
+   * 카카오 로그인/회원가입
+   * 
+   * @param {string} accessToken - 카카오 액세스 토큰
+   * @returns {Promise<Object>} - 토큰과 사용자 정보를 포함한 객체
+   */
+  kakaoLogin: async (accessToken) => {
+    try {
+      // 1단계: 카카오 API로 사용자 정보 가져오기
+      const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        }
+      });
+
+      if (!kakaoResponse.ok) {
+        throw new Error('카카오 인증에 실패했습니다.');
+      }
+
+      const kakaoUser = await kakaoResponse.json();
+      const kakaoId = kakaoUser.id;
+      const kakaoEmail = kakaoUser.kakao_account?.email;
+      const kakaoNickname = kakaoUser.kakao_account?.profile?.nickname || `카카오${kakaoId}`;
+
+      // 2단계: 카카오 ID로 기존 사용자 찾기
+      let user = await memberRepository.findByKakaoId(kakaoId);
+
+      if (!user) {
+        // 3단계: 기존 사용자가 없으면 회원가입
+        // 이메일이 있으면 이메일로도 확인
+        if (kakaoEmail) {
+          const existingUser = await memberRepository.findByEmail(kakaoEmail);
+          if (existingUser) {
+            // 기존 사용자가 있으면 카카오 ID 연결
+            await memberRepository.updateKakaoId(existingUser.member_id, kakaoId);
+            user = await memberRepository.findByKakaoId(kakaoId);
+          }
+        }
+
+        // 여전히 사용자가 없으면 새로 생성
+        if (!user) {
+          // 카카오 로그인은 비밀번호가 없으므로 랜덤 비밀번호 생성
+          const randomPassword = require('crypto').randomBytes(32).toString('hex');
+          const hashedPassword = await bcrypt.hash(randomPassword, 10);
+          
+          const newUser = await memberRepository.createUser(
+            kakaoNickname,
+            kakaoEmail || `kakao_${kakaoId}@kakao.com`,
+            hashedPassword,
+            'user',
+            kakaoId
+          );
+          user = await memberRepository.findByKakaoId(kakaoId);
+        }
+      }
+
+      // 4단계: JWT 토큰 생성
+      const token = jwt.sign(
+        {
+          memberId: user.member_id,
+          email: user.email,
+          role: user.role
+        },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      // 5단계: 결과 반환
+      return {
+        token: token,
+        user: {
+          member_id: user.member_id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+          point_balance: typeof user.point_balance === 'number' ? user.point_balance : 0,
+          isAdmin: user.role === 'admin'
+        }
+      };
+    } catch (error) {
+      console.error('카카오 로그인 에러:', error);
+      throw new Error(error.message || '카카오 로그인에 실패했습니다.');
+    }
   },
 };
 

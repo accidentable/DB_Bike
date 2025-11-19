@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Card } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
 import { Mail, Lock, User, Phone, Check, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { signup } from "../api/authApi";
+import { signup, kakaoLogin, sendVerificationEmail, verifyEmail } from "../api/authApi";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -29,6 +29,13 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
   });
+  
+  // 이메일 인증 관련 상태
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState("");
 
   const [agreements, setAgreements] = useState({
     all: false,
@@ -66,6 +73,61 @@ export default function SignupPage() {
     setAgreements(newAgreements);
   };
 
+  // 이메일 인증 코드 발송
+  const handleSendVerificationCode = async () => {
+    if (!formData.email) {
+      setVerificationMessage("이메일을 먼저 입력해주세요.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setVerificationMessage("올바른 이메일 형식이 아닙니다.");
+      return;
+    }
+
+    setIsSendingCode(true);
+    setVerificationMessage("");
+
+    try {
+      const result = await sendVerificationEmail(formData.email);
+      if (result.success) {
+        setVerificationMessage("인증 코드가 발송되었습니다. 이메일을 확인해주세요.");
+      } else {
+        setVerificationMessage(result.message || "인증 코드 발송에 실패했습니다.");
+      }
+    } catch (err: any) {
+      setVerificationMessage("인증 코드 발송 중 오류가 발생했습니다.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  // 이메일 인증 코드 검증
+  const handleVerifyCode = async () => {
+    if (!verificationCode) {
+      setVerificationMessage("인증 코드를 입력해주세요.");
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    setVerificationMessage("");
+
+    try {
+      const result = await verifyEmail(formData.email, verificationCode);
+      if (result.success) {
+        setIsEmailVerified(true);
+        setVerificationMessage("이메일 인증이 완료되었습니다.");
+      } else {
+        setVerificationMessage(result.message || "인증 코드가 올바르지 않습니다.");
+      }
+    } catch (err: any) {
+      setVerificationMessage("인증 코드 검증 중 오류가 발생했습니다.");
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -84,6 +146,11 @@ export default function SignupPage() {
     
     if (!agreements.terms || !agreements.privacy) {
       setError("필수 약관에 동의해주세요.");
+      return;
+    }
+
+    if (!isEmailVerified) {
+      setError("이메일 인증을 완료해주세요.");
       return;
     }
     
@@ -125,7 +192,7 @@ export default function SignupPage() {
         <Card className="p-8">
           <div className="text-center mb-8">
             {/* ... (헤더 동일) ... */}
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-[#00A862]">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-[#00A862]">
               <span className="text-4xl">🚲</span>
             </div>
             <h2 className="text-2xl font-bold mb-2">회원가입</h2>
@@ -167,24 +234,79 @@ export default function SignupPage() {
               {validationErrors.name && <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>}
             </div>
 
-            {/* 🚨 [수정] 이메일 필드 - 아이콘 구조 및 클래스 변경 */}
+            {/* 이메일 필드 및 인증 */}
             <div>
               <Label htmlFor="email">이메일</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="example@email.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className="pl-10"
-                  required
-                />
+              <div className="flex gap-2 mt-1">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="example@email.com"
+                    value={formData.email}
+                    onChange={(e) => {
+                      handleInputChange(e);
+                      setIsEmailVerified(false);
+                      setVerificationCode("");
+                      setVerificationMessage("");
+                    }}
+                    onBlur={handleBlur}
+                    className="pl-10"
+                    required
+                    disabled={isEmailVerified}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={isSendingCode || isEmailVerified || !formData.email}
+                  className="bg-[#00A862] hover:bg-[#008F54] whitespace-nowrap"
+                >
+                  {isSendingCode ? "발송 중..." : isEmailVerified ? "인증 완료" : "인증 코드 발송"}
+                </Button>
               </div>
               {validationErrors.email && <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>}
+              
+              {/* 인증 코드 입력 */}
+              {!isEmailVerified && formData.email && (
+                <div className="mt-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="인증 코드 6자리"
+                      value={verificationCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setVerificationCode(value);
+                        setVerificationMessage("");
+                      }}
+                      maxLength={6}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={isVerifyingCode || verificationCode.length !== 6}
+                      className="bg-[#00A862] hover:bg-[#008F54] whitespace-nowrap"
+                    >
+                      {isVerifyingCode ? "확인 중..." : "인증 확인"}
+                    </Button>
+                  </div>
+                  {verificationMessage && (
+                    <p className={`text-xs mt-1 ${isEmailVerified ? 'text-green-600' : 'text-red-500'}`}>
+                      {verificationMessage}
+                    </p>
+                  )}
+                  {isEmailVerified && (
+                    <div className="flex items-center gap-1 text-green-600 text-xs mt-1">
+                      <Check className="w-3 h-3" />
+                      <span>이메일 인증이 완료되었습니다.</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 🚨 [수정] 휴대폰 필드 - 아이콘 구조 및 클래스 변경 */}
@@ -343,6 +465,111 @@ export default function SignupPage() {
               {isLoading ? "가입 중..." : "회원가입"}
             </Button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">또는</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Button 
+                variant="outline" 
+                className="w-full bg-[#FEE500] hover:bg-[#FDD835] text-black border-[#FEE500]" 
+                type="button" 
+                onClick={async () => {
+                  // 카카오 JavaScript SDK가 로드되어 있는지 확인
+                  if (typeof window !== 'undefined' && (window as any).Kakao) {
+                    const Kakao = (window as any).Kakao;
+                    
+                    // 카카오 SDK 초기화
+                    if (!Kakao.isInitialized()) {
+                      Kakao.init(process.env.REACT_APP_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
+                    }
+
+                    // 카카오 로그인 실행
+                    Kakao.Auth.login({
+                      success: async (authObj: any) => {
+                        try {
+                          setIsLoading(true);
+                          setError("");
+                          
+                          // 카카오 액세스 토큰으로 백엔드에 로그인 요청
+                          const result = await kakaoLogin(authObj.access_token);
+                          
+                          if (result.success && result.data) {
+                            alert(`환영합니다, ${result.data.user.username}님!`);
+                            setTimeout(() => {
+                              navigate('/');
+                            }, 100);
+                          } else {
+                            setError(result.message || '카카오 로그인에 실패했습니다.');
+                          }
+                        } catch (err: any) {
+                          console.error('카카오 로그인 에러:', err);
+                          setError('카카오 로그인 중 오류가 발생했습니다.');
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      },
+                      fail: (err: any) => {
+                        console.error('카카오 로그인 실패:', err);
+                        setError('카카오 로그인에 실패했습니다.');
+                      }
+                    });
+                  } else {
+                    // 카카오 SDK 동적 로드
+                    const script = document.createElement('script');
+                    script.src = 'https://developers.kakao.com/sdk/js/kakao.js';
+                    script.async = true;
+                    script.onload = () => {
+                      const Kakao = (window as any).Kakao;
+                      if (!Kakao.isInitialized()) {
+                        Kakao.init(process.env.REACT_APP_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
+                      }
+                      Kakao.Auth.login({
+                        success: async (authObj: any) => {
+                          try {
+                            setIsLoading(true);
+                            setError("");
+                            const result = await kakaoLogin(authObj.access_token);
+                            if (result.success && result.data) {
+                              alert(`환영합니다, ${result.data.user.username}님!`);
+                              setTimeout(() => {
+                                navigate('/');
+                              }, 100);
+                            } else {
+                              setError(result.message || '카카오 로그인에 실패했습니다.');
+                            }
+                          } catch (err: any) {
+                            console.error('카카오 로그인 에러:', err);
+                            setError('카카오 로그인 중 오류가 발생했습니다.');
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        },
+                        fail: (err: any) => {
+                          console.error('카카오 로그인 실패:', err);
+                          setError('카카오 로그인에 실패했습니다.');
+                        }
+                      });
+                    };
+                    document.head.appendChild(script);
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z"/>
+                </svg>
+                카카오로 시작하기
+              </Button>
+            </div>
+          </div>
 
           <div className="mt-6 text-center text-sm">
             <span className="text-gray-600">이미 계정이 있으신가요? </span>

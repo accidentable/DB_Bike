@@ -691,6 +691,10 @@
     margin-right: calc(var(--spacing) * 3);
   }
 
+  .ml-12 {
+    margin-left: calc(var(--spacing) * 12);
+  }
+
   .mb-1 {
     margin-bottom: calc(var(--spacing) * 1);
   }
@@ -834,6 +838,10 @@
     height: 600px;
   }
 
+  .h-\[700px\] {
+    height: 700px;
+  }
+
   .h-\[calc\(100\%-1px\)\] {
     height: calc(100% - 1px);
   }
@@ -917,7 +925,9 @@
   .w-24 {
     width: calc(var(--spacing) * 24);
   }
-
+  .w-50 {
+    width: calc(var(--spacing) * 50);
+  }
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
@@ -1119,6 +1129,10 @@
     gap: calc(var(--spacing) * 4);
   }
 
+  .gap-5 {
+    gap: calc(var(--spacing) * 5);
+  }
+  
   .gap-6 {
     gap: calc(var(--spacing) * 6);
   }
@@ -1580,6 +1594,10 @@
   .px-6 {
     padding-inline: calc(var(--spacing) * 6);
   }
+  
+  .px-15 {
+    padding-inline: calc(var(--spacing) * 15);
+  }
 
   .py-0\.5 {
     padding-block: calc(var(--spacing) * .5);
@@ -1603,6 +1621,10 @@
 
   .py-4 {
     padding-block: calc(var(--spacing) * 4);
+  }
+
+  .py-7 {
+    padding-block: calc(var(--spacing) * 7);
   }
 
   .py-8 {
@@ -2600,6 +2622,7 @@
     }
   }
 
+  
   @media (width >= 64rem) {
     .lg\:col-span-1 {
       grid-column: span 1 / span 1;
@@ -3275,4 +3298,14 @@ html {
   to {
     height: 0;
   }
+}
+
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }

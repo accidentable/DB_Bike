@@ -1,6 +1,6 @@
 // src/pages/PurchasePage.tsx
 import { useState, useEffect } from "react";
-import { Check, ThumbsUp, MessageCircle } from "lucide-react";
+import { Check } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { getTicketTypes, purchaseTicket } from "../api/ticketApi";
@@ -50,13 +50,6 @@ const defaultTickets: TicketType[] = [
   }
 ];
 
-// 이용권별 좋아요/후기 수 (Mock 데이터)
-const ticketStats: { [key: string]: { likes: number; reviews: number } } = {
-  "1시간권": { likes: 245, reviews: 2 },
-  "1일권": { likes: 892, reviews: 3 },
-  "정기권": { likes: 1523, reviews: 3 },
-  "연간권": { likes: 2341, reviews: 4 },
-};
 
 export default function PurchasePage() {
   const navigate = useNavigate();
@@ -90,6 +83,23 @@ export default function PurchasePage() {
     };
     fetchTicketTypes();
   }, []);
+
+  // --- 포인트 잔액 가져오기 (회원가입 시 5000포인트 포함) ---
+  const fetchPointBalance = async () => {
+    if (!isLoggedIn) return;
+    try {
+      const response = await getPointBalance();
+      if (response.success && response.data !== undefined) {
+        setPointBalance(response.data);
+      }
+    } catch (err) {
+      console.error("포인트 잔액 불러오기 실패:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPointBalance();
+  }, [isLoggedIn]);
 
   // --- 2. 이용권 구매 ---
   const handlePurchase = async (ticketTypeId: number, ticketName: string, price: number) => {
@@ -131,6 +141,8 @@ export default function PurchasePage() {
       
       if (response.success && response.data) {
         alert(`${response.message || '이용권 구매가 완료되었습니다!'}\n만료 시간: ${new Date(response.data.expiry_time).toLocaleString()}`);
+        // 포인트 잔액을 DB에서 다시 가져와서 업데이트
+        await fetchPointBalance();
         // 구매 완료 후 프로필 페이지로 이동 (이용권 확인)
         navigate('/profile');
       } else {
@@ -232,9 +244,11 @@ export default function PurchasePage() {
                   onClick={async () => {
                     try {
                       const response = await chargePoints(chargeAmount);
-                      if (response.success) {
-                        alert(`${chargeAmount.toLocaleString()}P가 충전되었습니다.`);
-                        setPointBalance(prev => prev + chargeAmount);
+                      if (response.success && response.data) {
+                        // DB에서 반환된 실제 잔액으로 업데이트
+                        const newBalance = response.data.new_balance;
+                        alert(`${chargeAmount.toLocaleString()}P가 충전되었습니다.\n현재 잔액: ${newBalance.toLocaleString()}P`);
+                        setPointBalance(newBalance);
                         setShowChargeModal(false);
                       } else {
                         alert(response.message || '충전에 실패했습니다.');
@@ -291,56 +305,19 @@ export default function PurchasePage() {
                   <Button
                     onClick={() => handlePurchase(ticket.ticket_type_id, ticket.name, ticket.price)}
                     disabled={purchasingTicketId === ticket.ticket_type_id}
-                    className={`w-full mb-4 ${
+                    className={`w-full ${
                       isPopular ? "bg-[#00A862] hover:bg-[#008F54]" : "bg-gray-900 hover:bg-gray-800"
                     }`}
                   >
                     {purchasingTicketId === ticket.ticket_type_id ? '구매 중...' : `${ticket.price}P로 구매하기`}
                   </Button>
-
-                  {/* 좋아요 & 후기 영역 */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center gap-2 text-gray-600 hover:text-[#00A862]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // 좋아요 기능 (나중에 구현)
-                      }}
-                    >
-                      <ThumbsUp className="w-4 h-4" />
-                      <span>{ticketStats[ticket.name]?.likes || 0}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center gap-2 text-gray-600 hover:text-[#00A862]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // 후기 보기 기능 (나중에 구현)
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{ticketStats[ticket.name]?.reviews || 0}</span>
-                    </Button>
-                  </div>
                 </Card>
               );
             })}
           </div>
         )}
 
-        <Card className="p-8 bg-blue-50 border-blue-200 mt-12">
-          <h3 className="mb-4">💡 알아두세요</h3>
-          <ul className="space-y-2 text-sm text-gray-700">
-            <li>• 1회 이용시간 초과 시 추가 요금이 부과됩니다 (5분당 200원)</li>
-            <li>• 대여 후 2시간 이내 다른 대여소에 반납하시면 추가 요금이 없습니다</li>
-            <li>• 정기권, 연간권은 1회 이용 후 2시간 이내 반납 시 무료로 재대여 가능합니다</li>
-            <li>• 자전거 훼손 및 분실 시 별도 배상 책임이 있습니다</li>
-            <li>• 모든 요금제는 서울시 전역 2,500개 이상의 대여소에서 이용 가능합니다</li>
-          </ul>
-        </Card>
+        
       </div>
     </div>
   );

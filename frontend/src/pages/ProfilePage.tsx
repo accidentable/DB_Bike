@@ -65,7 +65,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
     name: "",
     email: "",
     phone: "",
-    studentId: "",
     memberSince: "",
     totalDistance: 0,
     totalRides: 0,
@@ -78,7 +77,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
-    studentId: "",
   });
 
   // 비밀번호 변경 폼
@@ -130,7 +128,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           name: user.username || "",
           email: user.email || "",
           phone: "",
-          studentId: "",
           memberSince: new Date().toLocaleDateString(),
           totalDistance: totalDistance,
           totalRides: totalRides,
@@ -142,7 +139,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
         setEditForm({
           name: user.username || "",
           phone: "",
-          studentId: "",
         });
       } catch (err) {
         console.error("사용자 데이터 로드 실패:", err);
@@ -382,10 +378,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                     <span className="text-sm text-gray-600 block mb-1">전화번호</span>
                     <p className="text-lg">{userData.phone || "미등록"}</p>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600 block mb-1">학번</span>
-                    <p className="text-lg">{userData.studentId || "미등록"}</p>
-                  </div>
                 </div>
               </div>
             </Card>
@@ -419,14 +411,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                 id="edit-phone"
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-student-id">학번</Label>
-              <Input
-                id="edit-student-id"
-                value={editForm.studentId}
-                onChange={(e) => setEditForm({ ...editForm, studentId: e.target.value })}
               />
             </div>
             <div className="flex gap-2">

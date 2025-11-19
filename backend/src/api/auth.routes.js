@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
+const emailService = require('../services/email.service');
 
 /**
  * POST /api/auth/login
@@ -89,6 +90,130 @@ router.post('/signup', async (req, res) => {
     // - 데이터베이스 오류
     // 위 경우 400 Bad Request 반환
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/kakao
+ * 카카오 로그인/회원가입 API 엔드포인트
+ * 
+ * 요청 본문:
+ *   - accessToken: string (필수) - 카카오 액세스 토큰
+ */
+router.post('/kakao', async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: '카카오 액세스 토큰이 필요합니다.'
+      });
+    }
+
+    const result = await authService.kakaoLogin(accessToken);
+
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.error('카카오 로그인 에러:', error);
+    res.status(401).json({
+      success: false,
+      message: error.message || '카카오 로그인에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/send-verification-email
+ * 이메일 인증 코드 발송 API
+ * 
+ * 요청 본문:
+ *   - email: string (필수) - 인증할 이메일 주소
+ */
+router.post('/send-verification-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일 주소가 필요합니다.'
+      });
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 이메일 형식이 아닙니다.'
+      });
+    }
+
+    // 이메일 중복 확인
+    const memberRepository = require('../repositories/member.repository');
+    const existingUser = await memberRepository.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: '이미 사용 중인 이메일입니다.'
+      });
+    }
+
+    // 인증 코드 발송
+    await emailService.sendVerificationEmail(email);
+
+    res.status(200).json({
+      success: true,
+      message: '인증 코드가 발송되었습니다.'
+    });
+  } catch (error) {
+    console.error('이메일 발송 에러:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '이메일 발송에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/verify-email
+ * 이메일 인증 코드 검증 API
+ * 
+ * 요청 본문:
+ *   - email: string (필수) - 이메일 주소
+ *   - code: string (필수) - 인증 코드
+ */
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일과 인증 코드가 필요합니다.'
+      });
+    }
+
+    const result = emailService.verifyCode(email, code);
+
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('이메일 인증 에러:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '이메일 인증에 실패했습니다.'
+    });
   }
 });
 

@@ -58,4 +58,33 @@ const pointService = {
   },
 
   /**
+   * 포인트 충전
+   * @param {number} memberId - 사용자 ID
+   * @param {number} amount - 충전할 포인트 양
+   * @returns {Promise<Object>} - 충전 결과 { member_id, new_balance }
+   */
+  chargePoints: async (memberId, amount) => {
+    if (amount <= 0) {
+      throw new Error('0보다 큰 금액을 입력해주세요.');
+    }
+
+    const newBalance = await pointRepository.addPoints(memberId, amount, '포인트 충전');
+    
+    return {
+      member_id: memberId,
+      new_balance: newBalance
+    };
+  },
+
+  /**
    * 사용자의 포인트 사용/적립 내역 조회
+   * @param {number} memberId - 사용자 ID
+   * @param {number} limit - 조회할 최대 개수 (기본값: 50)
+   * @returns {Promise<Array>} - 포인트 트랜잭션 배열
+   */
+  getPointHistory: async (memberId, limit = 50) => {
+    return await pointRepository.getHistory(memberId, limit);
+  }
+};
+
+module.exports = pointService;
