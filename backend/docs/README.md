@@ -3,8 +3,12 @@
 이 프로젝트는 '따릉이' 서비스의 Node.js/Express 백엔드 서버입니다.
 개발 환경의 통일을 위해 데이터베이스는 Docker (PostgreSQL)를 사용합니다.
 
-[cite_start]현재 Supabase KV 스토어 기반의 프로토타입을 PostgreSQL 기반의 아키텍처로 마이그레이션하는 작업을 진행 중입니다. [cite: 4, 40]
+현재 Supabase KV 스토어 기반의 프로토타입을 PostgreSQL 기반의 아키텍처로 마이그레이션하는 작업을 진행 중입니다.
 
+### docker 실행 시 되지 않으면 
+1. netstat -ano | findstr :5432
+2. taskkill /PID ---- /F
+3. taskkill /PID ---- /F
 ---
 
 ## 🚀 1. 개발 환경 설정 (필수)
