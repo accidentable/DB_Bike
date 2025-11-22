@@ -51,6 +51,7 @@ CREATE TABLE members (
   current_latitude DOUBLE PRECISION,
   current_longitude DOUBLE PRECISION,
   last_bike_id INT,
+  kakao_id BIGINT UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (last_bike_id) REFERENCES bikes(bike_id)
     ON UPDATE CASCADE ON DELETE SET NULL
@@ -219,6 +220,7 @@ CREATE INDEX idx_member_tickets_status ON member_tickets(status, expiry_time);
 CREATE INDEX idx_comments_post ON comments(post_id);
 CREATE INDEX idx_post_likes_post ON post_likes(post_id);
 CREATE INDEX idx_post_likes_member ON post_likes(member_id);
+CREATE INDEX idx_members_kakao_id ON members(kakao_id);
 
 
 -- 게시글 첨부파일 테이블 추가

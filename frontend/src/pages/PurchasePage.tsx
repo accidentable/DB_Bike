@@ -289,9 +289,11 @@ export default function PurchasePage() {
                   )}
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-bold mb-2">{ticket.name}</h3>
-                    <div className="text-3xl font-bold text-[#00A862] mb-1">
-                      {ticket.price.toLocaleString()}원
-                    </div>
+                    {!(isLoggedIn && ticket.name === '1시간권') && (
+                      <div className="text-3xl font-bold text-[#00A862] mb-1">
+                        {ticket.price.toLocaleString()}원
+                      </div>
+                    )}
                     <p className="text-sm text-gray-600">{formatDuration(ticket.duration_hours)}</p>
                   </div>
                   <ul className="space-y-3 mb-6">
