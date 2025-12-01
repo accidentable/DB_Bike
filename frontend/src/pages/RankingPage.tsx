@@ -1,18 +1,18 @@
 // src/pages/RankingPage.tsx
 // (모든 import 경로 수정)
 
-import { useState } from "react";
-import { Trophy, Medal, TrendingUp, MapPin, Bike, Calendar } from "lucide-react";
-import { Card } from "../components/ui/card"; // 경로 수정
-import { Badge } from "../components/ui/badge"; // 경로 수정
-import Header from "../components/layout/Header"; // 경로 수정 및 default import
+import { useState, useEffect } from "react";
+import { TrendingUp, MapPin, Bike } from "lucide-react";  // 사용하지 않는 import 제거
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select"; // 경로 수정
+} from "../components/ui/select";
+import { getTotalDistanceRanking } from "../api/rankingApi";  // ApiRankingUser 제거
 
 interface RankingPageProps {
   onClose?: () => void;
@@ -34,28 +34,59 @@ interface RankingUser {
   rides: number;
   badge?: string;
   isCurrentUser?: boolean;
+  member_id?: number;  // 추가: 고유 키를 위해
 }
-
-const rankingData: RankingUser[] = [
-  // ... (목업 데이터는 원본과 동일하게 유지) ...
-  { rank: 1, name: "박라이더", distance: 1247.8, rides: 342, badge: "🥇" },
-  { rank: 2, name: "이환경", distance: 1156.2, rides: 298, badge: "🥈" },
-  { rank: 3, name: "최건강", distance: 1089.5, rides: 276, badge: "🥉" },
-  { rank: 4, name: "정열정", distance: 987.3, rides: 251 },
-  { rank: 5, name: "강에코", distance: 945.6, rides: 234 },
-  { rank: 6, name: "윤자전거", distance: 892.4, rides: 219 },
-  { rank: 7, name: "임페달", distance: 856.9, rides: 207 },
-  { rank: 8, name: "한출퇴근", distance: 823.1, rides: 198 },
-  { rank: 9, name: "송바람", distance: 791.5, rides: 186 },
-  { rank: 10, name: "오달리기", distance: 765.8, rides: 174 },
-  { rank: 142, name: "김따릉", distance: 287.5, rides: 67, isCurrentUser: true },
-];
 
 export default function RankingPage(_props: RankingPageProps = {}) {
   const [rankingType, setRankingType] = useState<"distance" | "rides">("distance");
   const [period, setPeriod] = useState<"전체" | "이번달" | "이번주">("전체");
+  const [rankingData, setRankingData] = useState<RankingUser[]>([]);
+  const [currentUser, setCurrentUser] = useState<RankingUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const currentUser = rankingData.find(u => u.isCurrentUser);
+  useEffect(() => {
+    const loadRanking = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getTotalDistanceRanking();
+        if (response.success && response.data) {
+          // 데이터 변환
+          const transformed: RankingUser[] = response.data.ranking.map((user, index) => ({
+            rank: user.rank_position,
+            name: user.username,
+            distance: Math.round(user.total_distance_km * 10) / 10,
+            rides: user.total_rides,
+            badge: index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : undefined,
+            isCurrentUser: false,
+            member_id: user.member_id  // 추가: 고유 키를 위해
+          }));
+          
+          setRankingData(transformed);
+          
+          // 현재 사용자 정보
+          if (response.data.currentUser) {
+            const user = response.data.currentUser;
+            setCurrentUser({
+              rank: user.rank_position,
+              name: user.username,
+              distance: Math.round(user.total_distance_km * 10) / 10,
+              rides: user.total_rides,
+              isCurrentUser: true,
+              member_id: user.member_id  // 추가
+            });
+          }
+        }
+      } catch (error) {
+        console.error("랭킹 로드 실패:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRanking();
+  }, []);
+
+  const currentUserDisplay = currentUser;
   const topRankers = rankingData.filter(u => !u.isCurrentUser);
 
   const getRankDisplay = (rank: number) => {
@@ -65,10 +96,18 @@ export default function RankingPage(_props: RankingPageProps = {}) {
     return rank;
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg text-gray-600">랭킹을 불러오는 중...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header는 App.tsx에서 렌더링되므로 제거 */}
-
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="mb-2">랭킹</h1>
@@ -106,58 +145,60 @@ export default function RankingPage(_props: RankingPageProps = {}) {
         </div>
 
         {/* Top 3 Podium */}
-        <div className="mb-8">
-          <Card className="p-8 bg-gradient-to-br from-[#00A862]/10 to-white">
-            <h2 className="mb-6 text-center">🏆 TOP 3 🏆</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {topRankers.slice(0, 3).map((user) => (
-                <div
-                  key={user.rank}
-                  className={`flex flex-col items-center p-6 rounded-lg ${
-                    user.rank === 1
-                      ? "bg-yellow-100 border-2 border-yellow-400"
-                      : user.rank === 2
-                      ? "bg-gray-100 border-2 border-gray-400"
-                      : "bg-orange-100 border-2 border-orange-400"
-                  }`}
-                >
-                  <div className="text-5xl mb-3">{user.badge}</div>
-                  <h3 className="mb-2">{user.name}</h3>
-                  <div className="text-center space-y-1">
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4" />
-                      <span>{user.distance}km</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <Bike className="w-4 h-4" />
-                      <span>{user.rides}회</span>
+        {topRankers.length >= 3 && (  // 최소 3명이 있을 때만 표시
+          <div className="mb-8">
+            <Card className="p-8 bg-gradient-to-br from-[#00A862]/10 to-white">
+              <h2 className="mb-6 text-center">🏆 TOP 3 🏆</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topRankers.slice(0, 3).map((user) => (
+                  <div
+                    key={user.member_id || user.rank}  // 고유 키 사용
+                    className={`flex flex-col items-center p-6 rounded-lg ${
+                      user.rank === 1
+                        ? "bg-yellow-100 border-2 border-yellow-400"
+                        : user.rank === 2
+                        ? "bg-gray-100 border-2 border-gray-400"
+                        : "bg-orange-100 border-2 border-orange-400"
+                    }`}
+                  >
+                    <div className="text-5xl mb-3">{user.badge}</div>
+                    <h3 className="mb-2">{user.name}</h3>
+                    <div className="text-center space-y-1">
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        <MapPin className="w-4 h-4" />
+                        <span>{user.distance}km</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                        <Bike className="w-4 h-4" />
+                        <span>{user.rides}회</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Current User Rank */}
-        {currentUser && (
+        {currentUserDisplay && (
           <div className="mb-6">
             <Card className="p-6 border-2 border-[#00A862] bg-[#00A862]/5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="text-2xl font-bold text-[#00A862]">
-                    {currentUser.rank}위
+                    {currentUserDisplay.rank}위
                   </div>
                   <div>
-                    <h3 className="mb-1">{currentUser.name} (나)</h3>
+                    <h3 className="mb-1">{currentUserDisplay.name}</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {currentUser.distance}km
+                        {currentUserDisplay.distance}km
                       </span>
                       <span className="flex items-center gap-1">
                         <Bike className="w-4 h-4" />
-                        {currentUser.rides}회
+                        {currentUserDisplay.rides}회
                       </span>
                     </div>
                   </div>
@@ -174,42 +215,48 @@ export default function RankingPage(_props: RankingPageProps = {}) {
         <Card className="p-6">
           <h2 className="mb-4">전체 랭킹</h2>
           <div className="space-y-2">
-            {topRankers.map((user) => (
-              <div
-                key={user.rank}
-                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  user.rank <= 3
-                    ? "bg-gray-50"
-                    : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg ${
-                    user.rank <= 3 
-                      ? "bg-gradient-to-br from-[#00A862] to-[#008F54] text-white" 
-                      : "bg-gray-100"
-                  }`}>
-                    {getRankDisplay(user.rank)}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="mb-1">{user.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {user.distance}km
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Bike className="w-3 h-3" />
-                        {user.rides}회
-                      </span>
+            {topRankers.length > 0 ? (
+              topRankers.map((user) => (
+                <div
+                  key={user.member_id || user.rank}  // 고유 키 사용
+                  className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                    user.rank <= 3
+                      ? "bg-gray-50"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg ${
+                      user.rank <= 3 
+                        ? "bg-gradient-to-br from-[#00A862] to-[#008F54] text-white" 
+                        : "bg-gray-100"
+                    }`}>
+                      {getRankDisplay(user.rank)}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1">{user.name}</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {user.distance}km
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Bike className="w-3 h-3" />
+                          {user.rides}회
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  {user.rank <= 10 && (
+                    <TrendingUp className="w-5 h-5 text-[#00A862]" />
+                  )}
                 </div>
-                {user.rank <= 10 && (
-                  <TrendingUp className="w-5 h-5 text-[#00A862]" />
-                )}
+              ))
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                랭킹 데이터가 없습니다.
               </div>
-            ))}
+            )}
           </div>
         </Card>
       </div>

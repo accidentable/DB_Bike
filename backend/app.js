@@ -23,6 +23,10 @@ const stationRoutes = require('./src/api/station.routes');
 const adminRoutes = require('./src/api/admin.routes');
 const ticketRoutes = require('./src/api/ticket.routes'); // 이용권 API
 const pointRoutes = require('./src/api/point.routes'); // 포인트 API
+const achievementRoutes = require('./src/api/achievement.routes');
+const rankingRoutes = require('./src/api/ranking.routes');
+const { startWeeklyRankingScheduler } = require('./src/services/weekly-ranking-scheduler');
+
 // ... (support.routes.js 등) ...
 
 // --- 3. 미들웨어 불러오기 ---
@@ -52,6 +56,8 @@ app.use('/api/tickets', verifyToken, ticketRoutes);
 // (신규) /api/points (포인트) 경로 - 로그인 필요
 app.use('/api/points', verifyToken, pointRoutes);
 
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/rankings', rankingRoutes);
 
 // --- 5. 서버 헬스 체크 ---
 app.get('/', (req, res) => {
@@ -59,5 +65,6 @@ app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send('따릉이 백엔드 서버가 실행 중입니다!');
 });
-
+// 스케줄러 시작
+startWeeklyRankingScheduler();
 module.exports = app; // server.js에서 사용하기 위해 내보내기

@@ -59,6 +59,24 @@ const stationRepository = {
       throw error;
     }
   },
+  /**
+   * Find station by id.
+   */
+  findById: async (stationId) => {
+    const sql = `
+      SELECT station_id, name, latitude, longitude, status, bike_count
+      FROM stations
+      WHERE station_id = $1
+    `;
+    try {
+      const { rows } = await pool.query(sql, [stationId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error finding station by id:', error);
+      throw error;
+    }
+  },
+
 
   /**
    * 특정 대여소의 '정상' 상태 자전거 목록 조회

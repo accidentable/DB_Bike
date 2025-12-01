@@ -3,6 +3,8 @@
 
 const rentalRepository = require('../repositories/rental.repository');
 const ticketService = require('./ticket.service');
+const achievementService = require('./achievement.service');  // 추가
+
 
 const rentalService = {
   /**
@@ -46,14 +48,36 @@ const rentalService = {
   },
 
   /**
-   * 자전거 반납
-   */
-  returnBike: async (memberId, endStationId) => {
-    // Repository의 트랜잭션 호출
-    // (반납은 findCurrentRental을 굳이 호출 안 해도,
-    //  repository 내부의 UPDATE문에서 0 row aFfected로 알아서 걸러짐)
-    return await rentalRepository.returnBikeTransaction(memberId, endStationId);
-  },
+ * 자전거 반납
+ */
+returnBike: async (memberId, endStationId) => {
+  console.log('🚴 === 자전거 반납 시작 ===');
+  console.log('회원 ID:', memberId);
+  console.log('반납 대여소 ID:', endStationId);
+  
+  try {
+    console.log('🔄 반납 트랜잭션 시작...');
+    const result = await rentalRepository.returnBikeTransaction(memberId, endStationId);
+    console.log('✅ 반납 성공!', result);
+    console.log('📏 계산된 거리:', result.distance_km, 'km');
+    
+    // 반납 완료 후 업적 체크
+    try {
+      console.log('🏆 업적 체크 시작...');
+      await achievementService.checkAchievements(memberId);
+      console.log('✅ 업적 체크 완료');
+    } catch (achievementError) {
+      console.error('⚠️ 업적 체크 중 오류 (반납은 성공):', achievementError);
+      // 업적 체크 실패해도 반납은 성공으로 처리
+    }
+    
+    console.log('🚴 === 자전거 반납 완료 ===');
+    return result;
+  } catch (error) {
+    console.error('❌ 반납 오류:', error);
+    throw error;
+  }
+},
 
   /**
    * 현재 대여 상태 조회

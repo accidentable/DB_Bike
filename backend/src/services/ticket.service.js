@@ -4,6 +4,7 @@
  */
 
 const ticketRepository = require('../repositories/ticket.repository');
+const pointService = require('./point.service');
 
 /**
  * 모든 이용권 종류 조회
@@ -43,12 +44,25 @@ async function purchaseTicket(memberId, ticketTypeId) {
 
     console.log('이용권 정보:', ticketType.name);
 
-    // 2. 만료 시간 계산
+    // 2. 포인트 잔액 확인 및 차감
+    try {
+      await pointService.deductPoints(
+        numericMemberId, 
+        ticketType.price, 
+        `${ticketType.name} 구매`
+      );
+      console.log(`${ticketType.price}포인트 차감 완료`);
+    } catch (pointError) {
+      console.error('포인트 차감 오류:', pointError);
+      throw new Error(pointError.message || '포인트 차감 중 오류가 발생했습니다.');
+    }
+
+    // 3. 만료 시간 계산
     const now = new Date();
     const expiryTime = new Date(now.getTime() + ticketType.duration_hours * 60 * 60 * 1000);
     console.log('만료 시간:', expiryTime);
 
-    // 3. 이용권 구매 처리
+    // 4. 이용권 구매 처리
     const purchasedTicket = await ticketRepository.purchaseTicket(
       numericMemberId,
       ticketTypeId,
@@ -57,7 +71,7 @@ async function purchaseTicket(memberId, ticketTypeId) {
 
     console.log('구매 완료:', purchasedTicket);
 
-    // 4. 구매한 이용권 상세 정보 조회
+    // 5. 구매한 이용권 상세 정보 조회
     const ticketDetail = await ticketRepository.getMemberTicketById(purchasedTicket.member_ticket_id);
 
     console.log('=== 이용권 구매 완료 ===');

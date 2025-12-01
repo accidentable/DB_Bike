@@ -13,6 +13,7 @@ export interface Rental {
   end_station_id?: number;
   start_time: string;
   end_time?: string;
+  distance_km?: number;
 }
 
 // API 응답 타입

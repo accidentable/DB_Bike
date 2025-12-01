@@ -115,14 +115,17 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
         }
 
         // 대여 이력 가져오기
-        const historyResponse = await getRentalHistory();
-        let totalRides = 0;
-        let totalDistance = 0;
-        
-        if (historyResponse.success && historyResponse.data) {
-          totalRides = historyResponse.data.length;
-          // 거리 계산은 나중에 추가
-        }
+const historyResponse = await getRentalHistory();
+let totalRides = 0;
+let totalDistance = 0;
+
+if (historyResponse.success && historyResponse.data) {
+  totalRides = historyResponse.data.length;
+  // 거리 합계 계산
+  totalDistance = historyResponse.data.reduce((sum, rental) => {
+    return sum + (rental.distance_km || 0);
+  }, 0);
+}
 
         setUserData({
           name: user.username || "",

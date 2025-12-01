@@ -121,6 +121,9 @@ const memberRepository = {
       // SQL 쿼리 작성
       // INSERT 문을 사용하여 새 레코드를 삽입합니다.
       // RETURNING 절을 사용하여 삽입된 레코드의 특정 컬럼만 반환합니다.
+      // 트랜잭션 시작
+      await pool.query('BEGIN');
+
       const query = `
         INSERT INTO members (username, email, password, role, point_balance, kakao_id)
         VALUES ($1, $2, $3, $4, 5000, $5)
@@ -137,14 +140,37 @@ const memberRepository = {
       // RETURNING 절로 인해 삽입된 레코드의 정보가 반환됩니다.
       // rows[0]에는 member_id, email, username, role이 포함됩니다.
       // password는 보안상 반환하지 않습니다.
-      return rows[0];
+      //return rows[0];
+      const newUser = rows[0];
+    
+      // 2. 회원가입 보너스 포인트 트랜잭션 기록
+      if (newUser.member_id) {
+        const transactionQuery = `
+          INSERT INTO point_transactions (member_id, amount, type, description, balance_after)
+          VALUES ($1, $2, 'CHARGE', $3, $4)
+          RETURNING transaction_id;
+        `;
+        await pool.query(transactionQuery, [
+          newUser.member_id, 
+          5000, 
+          '회원가입 보너스', 
+          5000
+        ]);
+      }
       
+      // 트랜잭션 커밋
+      await pool.query('COMMIT');
+      
+      return newUser;
+
     } catch (error) {
       // 에러 발생 시 로그 출력
       // 가능한 에러:
       //   - UNIQUE 제약조건 위반 (username 또는 email 중복)
       //   - 데이터베이스 연결 오류
       //   - 기타 SQL 오류
+      // 에러 발생 시 롤백 추가 필요
+      await pool.query('ROLLBACK'); 
       console.error('Error creating user:', error);
       
       // 에러를 다시 throw하여 Service 계층에서 처리할 수 있도록 합니다.
