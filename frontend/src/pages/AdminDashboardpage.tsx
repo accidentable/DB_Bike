@@ -14,14 +14,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // Admin API 함수
-import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi";
+//import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi";
+// Admin API 함수
+import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates } from "../api/adminApi";
+import type { ActivityLog, DistrictStat, StationRentalRate } from "../api/adminApi";
+
 // Station API 함수
 import { getStations } from "../api/stationApi"; 
+
 
 // 목업 데이터
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B9D', '#C084FC', '#34D399', '#F59E0B', '#EF4444', '#3B82F6', '#10B981', '#F97316'];
 
-const districtData = [
+/*const districtData = [
   { name: '영등포구', value: 57, percent: 10.2 },
   { name: '강남구', value: 53, percent: 9.5 },
   { name: '서초구', value: 51, percent: 9.1 },
@@ -50,9 +55,9 @@ const rentalRateData = [
   { name: '118. 안국역 1번 출구 옆', percent: 84.21, color: '#FFCC66' },
   { name: '119. 종각역 1번출구 앞', percent: 83.33, color: '#FFD700' },
   { name: '1. 120. 종각역 3번출구 앞', percent: 82.76, color: '#FFE066' },
-];
+];*/
 
-
+/*
 const activityLogsData = [
   { time: '2025-11-11 08:30:15', user: 'hong@test.com', action: '로그인 시도 (성공)', status: 'success' },
   { time: '2025-11-11 08:25:42', user: 'kim@test.com', action: '자전거 대여 (1001번)', status: 'success' },
@@ -62,14 +67,18 @@ const activityLogsData = [
   { time: '2025-11-11 08:05:11', user: 'jung@test.com', action: '프로필 수정', status: 'success' },
   { time: '2025-11-11 08:00:03', user: 'kang@test.com', action: '대여소 조회', status: 'info' },
   { time: '2025-11-11 07:55:47', user: 'system', action: '자동 백업 시작', status: 'info' },
-];
+];*/
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>({totalUsers: 0, totalRentals: 0, activeRentals: 0, totalDistance: 0});
   const [users, setUsers] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
+  const [districtData, setDistrictData] = useState<DistrictStat[]>([]);  // 추가
+const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  // 추가
   const [isLoading, setIsLoading] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);  // 추가
+  const [isLoadingLogs, setIsLoadingLogs] = useState(true);  // 추가
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -88,22 +97,46 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, []); 
 
+  // Activity Logs 로드
+useEffect(() => {
+  const loadActivityLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const logs = await getActivityLogs(50);
+      setActivityLogs(logs);
+    } catch (error) {
+      console.error("Activity Log 로드 실패:", error);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+  loadActivityLogs();
+}, []);
+  
   // --- API 호출 로직 ---
   const loadData = async () => {
     setIsLoading(true);
     try {
       // Node.js 백엔드 API 호출
-      const [statsRes, usersRes, rentalsRes, stationsRes] = await Promise.all([
+      const [statsRes, usersRes, rentalsRes, stationsRes, districtStatsRes, rentalRatesRes] = await Promise.all([
         getDashboardStats(),
         getUsers(),
         getRentals(),
-        getStations()
+        getStations(),
+        getDistrictStats(),  // 추가
+        getStationRentalRates()  // 추가
       ]);
-
+  
       // 통계 데이터 설정
       setStats(statsRes);
+      
+      // 지역구별 통계 설정
+      setDistrictData(districtStatsRes);
+      
+      // 대여소별 대여율 설정
+      setRentalRateData(rentalRatesRes);
       
       // 사용자 데이터 변환 (백엔드 형식 -> 프론트엔드 형식)
       const transformedUsers = usersRes.map((user: any) => ({
@@ -128,6 +161,7 @@ export default function AdminDashboard() {
         returnStationName: rental.end_station_name,
         rentedAt: rental.start_time,
         returnedAt: rental.end_time,
+        distance: rental.distance_km ? Math.round(rental.distance_km * 10) / 10 : null,  // 추가
       }));
       setRentals(transformedRentals);
 
@@ -268,95 +302,120 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* 서울 따릉이 대여소 수 (목업 유지) */}
           <Card className="p-6">
-            <h3 className="mb-2">서울 따릉이 대여소 수</h3>
-            <div className="flex items-center justify-center h-48">
-              <p className="text-6xl text-pink-500">560</p>
-            </div>
-          </Card>
+  <h3 className="mb-2">서울 따릉이 대여소 수</h3>
+  <div className="flex items-center justify-center h-48">
+    <p className="text-6xl text-pink-500">{stats?.totalStations || 0}</p>
+  </div>
+</Card>
 
-          {/* 지역구별 대여소 현황 파이차트들 (목업 유지) */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3>지역구별 대여소 현황(TOP15)</h3>
-            </div>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={districtData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  animationBegin={0}
-                  animationDuration={800}
-                >
-                  {districtData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                          <p className="font-semibold">{payload[0].name}</p>
-                          <p className="text-sm text-gray-600">대여소: {payload[0].value}개</p>
-                          <p className="text-sm text-gray-600">비율: {payload[0].payload.percent}%</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-              {districtData.slice(0, 6).map((item, index) => (
-                <div key={index} className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
-                  <span className="text-gray-700">{item.name}</span>
+          {/* 지역구별 대여소 현황 파이차트들 */}
+<Card className="p-6">
+  <div className="flex items-center justify-between mb-4">
+    <h3>지역구별 대여소 현황(TOP15)</h3>
+  </div>
+  {isLoading ? (
+    <div className="flex items-center justify-center h-[300px] text-gray-500">
+      데이터를 불러오는 중...
+    </div>
+  ) : districtData.length > 0 ? (
+    <>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={districtData.map(item => ({
+              name: item.name,
+              value: item.value,
+              percent: parseFloat(item.percent)
+            }))}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={100}
+            fill="#8884d8"
+            dataKey="value"
+            animationBegin={0}
+            animationDuration={800}
+          >
+            {districtData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip 
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
+                    <p className="font-semibold">{payload[0].name}</p>
+                    <p className="text-sm text-gray-600">대여소: {payload[0].value}개</p>
+                    <p className="text-sm text-gray-600">비율: {payload[0].payload.percent}%</p>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+        {districtData.slice(0, 6).map((item, index) => (
+          <div key={index} className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
+            <span className="text-gray-700">{item.name}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  ) : (
+    <div className="flex items-center justify-center h-[300px] text-gray-500">
+      데이터가 없습니다.
+    </div>
+  )}
+</Card>
+
+          {/* 서울 따릉이 대여율 막대 그래프 */}
+<Card className="p-6 lg:col-span-2">
+  <h3 className="mb-4">서울 따릉이 대여율</h3>
+  {isLoading ? (
+    <div className="flex items-center justify-center h-[300px] text-gray-500">
+      데이터를 불러오는 중...
+    </div>
+  ) : rentalRateData.length > 0 ? (
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={rentalRateData} layout="vertical">
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis type="number" domain={[0, 100]} />
+        <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
+        <Tooltip 
+          content={({ active, payload }) => {
+            if (active && payload && payload.length) {
+              return (
+                <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
+                  <p className="font-semibold">{payload[0].payload.name}</p>
+                  <p className="text-sm text-gray-600">대여율: {payload[0].value?.toFixed(2)}%</p>
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* 서울 따릉이 대여율 막대 그래프 (목업 유지) */}
-          <Card className="p-6 lg:col-span-2">
-            <h3 className="mb-4">서울 따릉이 대여율</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={rentalRateData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                          <p className="font-semibold">{payload[0].payload.name}</p>
-                          <p className="text-sm text-gray-600">대여율: {payload[0].value}%</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar 
-                  dataKey="percent" 
-                  radius={[0, 8, 8, 0]}
-                  animationBegin={0}
-                  animationDuration={800}
-                >
-                  {rentalRateData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
+              );
+            }
+            return null;
+          }}
+        />
+        <Bar 
+          dataKey="percent" 
+          radius={[0, 8, 8, 0]}
+          animationBegin={0}
+          animationDuration={800}
+        >
+          {rentalRateData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  ) : (
+    <div className="flex items-center justify-center h-[300px] text-gray-500">
+      데이터가 없습니다.
+    </div>
+  )}
+</Card>
           {/* 대여소 정보 */}
           <Card className="p-6 lg:col-span-2">
             <h3 className="mb-4">대여소 정보</h3>
@@ -429,29 +488,56 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {activityLogsData.map((log, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600">{log.time}</td>
-                    <td className="px-4 py-3">{log.user}</td>
-                    <td className="px-4 py-3">{log.action}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Badge 
-                        className={
-                          log.status === 'success' ? 'bg-green-500' :
-                          log.status === 'error' ? 'bg-red-500' :
-                          log.status === 'warning' ? 'bg-yellow-500' :
-                          'bg-blue-500'
-                        }
-                      >
-                        {log.status === 'success' ? '● Success' :
-                         log.status === 'error' ? '● Error' :
-                         log.status === 'warning' ? '● Warning' :
-                         '● Info'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+  {isLoadingLogs ? (
+    <tr>
+      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+        로그를 불러오는 중...
+      </td>
+    </tr>
+  ) : activityLogs.length > 0 ? (
+    activityLogs.map((log, index) => {
+      // timestamp 포맷팅
+      const formattedTime = new Date(log.timestamp).toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(/,/g, '').replace(/\//g, '-');
+
+      return (
+        <tr key={index} className="hover:bg-gray-50">
+          <td className="px-4 py-3 text-gray-600">{formattedTime}</td>
+          <td className="px-4 py-3">{log.user}</td>
+          <td className="px-4 py-3">{log.action}</td>
+          <td className="px-4 py-3 text-right">
+            <Badge 
+              className={
+                log.status === 'success' ? 'bg-green-500' :
+                log.status === 'error' ? 'bg-red-500' :
+                log.status === 'warning' ? 'bg-yellow-500' :
+                'bg-blue-500'
+              }
+            >
+              {log.status === 'success' ? '● Success' :
+               log.status === 'error' ? '● Error' :
+               log.status === 'warning' ? '● Warning' :
+               '● Info'}
+            </Badge>
+          </td>
+        </tr>
+      );
+    })
+  ) : (
+    <tr>
+      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+        활동 로그가 없습니다.
+      </td>
+    </tr>
+  )}
+</tbody>
             </table>
           </div>
         </Card>

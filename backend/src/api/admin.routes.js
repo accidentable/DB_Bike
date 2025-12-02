@@ -56,5 +56,35 @@ router.get('/rentals', async (req, res, next) => {
     }
 });
 
+// Activity Log 조회
+router.get('/activity-logs', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const logs = await adminService.getActivityLogs(limit);
+    res.json(logs);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 지역구별 대여소 현황
+router.get('/district-stats', async (req, res, next) => {
+  try {
+    const stats = await adminService.getDistrictStats();
+    res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 대여소별 대여율
+router.get('/station-rental-rates', async (req, res, next) => {
+  try {
+    const rates = await adminService.getStationRentalRates();
+    res.json(rates);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

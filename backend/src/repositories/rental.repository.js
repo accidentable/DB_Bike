@@ -234,7 +234,8 @@ const rentalRepository = {
         TO_CHAR(r.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS"+09:00"') AS start_time,
         TO_CHAR(r.end_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD"T"HH24:MI:SS"+09:00"') AS end_time,
         s_start.name AS start_station_name,
-        s_end.name AS end_station_name
+        s_end.name AS end_station_name,
+        r.distance_km
       FROM rentals r
       JOIN members m ON r.member_id = m.member_id
       JOIN stations s_start ON r.start_station_id = s_start.station_id

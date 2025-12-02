@@ -26,10 +26,55 @@ export interface Station {
 }
 
 /**
+ * Activity Log 조회
+ */
+export interface ActivityLog {
+  timestamp: string;
+  user: string;
+  action: string;
+  status: 'success' | 'error' | 'warning' | 'info';
+}
+
+export async function getActivityLogs(limit: number = 50): Promise<ActivityLog[]> {
+  const response = await client.get('/api/admin/activity-logs', {
+    params: { limit }
+  });
+  return response.data;
+}
+
+/**
  * 대시보드 통계 가져오기
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
   const response = await client.get('/api/admin/stats');
+  return response.data;
+}
+
+/**
+ * 지역구별 대여소 현황 조회
+ */
+export interface DistrictStat {
+  name: string;
+  value: number;
+  percent: string;
+}
+
+export async function getDistrictStats(): Promise<DistrictStat[]> {
+  const response = await client.get('/api/admin/district-stats');
+  return response.data;
+}
+
+/**
+ * 대여소별 대여율 조회
+ */
+export interface StationRentalRate {
+  name: string;
+  percent: number;
+  color: string;
+}
+
+export async function getStationRentalRates(): Promise<StationRentalRate[]> {
+  const response = await client.get('/api/admin/station-rental-rates');
   return response.data;
 }
 
