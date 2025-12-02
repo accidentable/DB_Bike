@@ -204,21 +204,25 @@ const memberRepository = {
   /**
    * 모든 사용자 조회 (관리자용)
    * 
-   * @returns {Promise<Array>} - 모든 사용자 배열
+   * @returns {Promise<Array>} - 모든 사용자 배열 (대여 횟수 포함)
    */
   findAll: async () => {
     try {
       const query = `
         SELECT 
-          member_id, 
-          username, 
-          email, 
-          role, 
-          point_balance,
-          created_at,
-          last_bike_id
-        FROM members 
-        ORDER BY created_at DESC
+          m.member_id, 
+          m.username, 
+          m.email, 
+          m.role, 
+          m.point_balance,
+          m.created_at,
+          m.last_bike_id,
+          COALESCE(COUNT(r.rental_id), 0) as total_rides
+        FROM members m
+        LEFT JOIN rentals r ON m.member_id = r.member_id 
+          AND r.end_time IS NOT NULL
+        GROUP BY m.member_id, m.username, m.email, m.role, m.point_balance, m.created_at, m.last_bike_id
+        ORDER BY m.created_at DESC
       `;
       const { rows } = await pool.query(query);
       return rows;
@@ -286,6 +290,27 @@ const memberRepository = {
       await pool.query(query, [memberId]);
     } catch (error) {
       console.error('Error deleting user:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 비밀번호 업데이트
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @param {string} hashedPassword - 암호화된 새 비밀번호
+   * @returns {Promise<void>}
+   */
+  updatePassword: async (memberId, hashedPassword) => {
+    try {
+      const query = `
+        UPDATE members
+        SET password = $1
+        WHERE member_id = $2
+      `;
+      await pool.query(query, [hashedPassword, memberId]);
+    } catch (error) {
+      console.error('Error updating password:', error);
       throw error;
     }
   },

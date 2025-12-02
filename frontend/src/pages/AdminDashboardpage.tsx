@@ -144,7 +144,7 @@ useEffect(() => {
         name: user.username,
         email: user.email,
         createdAt: user.created_at,
-        totalRides: 0, // TODO: 대여 횟수 집계 필요
+        totalRides: parseInt(user.total_rides || 0, 10), // Backend에서 계산된 대여 횟수 사용
         currentTicket: null, // TODO: 이용권 정보 필요
         isAdmin: user.role === 'admin',
         role: user.role,

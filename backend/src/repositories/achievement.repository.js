@@ -11,7 +11,20 @@ const achievementRepository = {
    */
   getAllAchievements: async () => {
     try {
-      const query = 'SELECT * FROM achievements ORDER BY achievement_id';
+      // 업적을 조건 타입과 값으로 정렬하여 일관된 순서 보장
+      const query = `
+        SELECT * FROM achievements 
+        ORDER BY 
+          CASE condition_type
+            WHEN 'FIRST_RIDE' THEN 1
+            WHEN 'TOTAL_RIDES' THEN 2
+            WHEN 'CONSECUTIVE_DAYS' THEN 3
+            WHEN 'TOTAL_DISTANCE' THEN 4
+            WHEN 'TOTAL_STATIONS' THEN 5
+            ELSE 6
+          END,
+          condition_value ASC
+      `;
       const { rows } = await pool.query(query);
       return rows;
     } catch (error) {

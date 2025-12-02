@@ -229,6 +229,59 @@ const authService = {
       throw new Error(error.message || '카카오 로그인에 실패했습니다.');
     }
   },
+
+  /**
+   * 프로필 정보 수정
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @param {string} username - 새 사용자명
+   * @returns {Promise<Object>} - 수정된 사용자 정보
+   */
+  updateProfile: async (memberId, username) => {
+    // 사용자명 중복 확인
+    const existingUser = await memberRepository.findByUsername(username);
+    if (existingUser && existingUser.member_id !== memberId) {
+      throw new Error('이미 사용 중인 사용자명입니다.');
+    }
+
+    // 사용자 정보 업데이트
+    const updatedUser = await memberRepository.update(memberId, { username });
+
+    return {
+      member_id: updatedUser.member_id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      role: updatedUser.role
+    };
+  },
+
+  /**
+   * 비밀번호 변경
+   * 
+   * @param {number} memberId - 사용자 ID
+   * @param {string} currentPassword - 현재 비밀번호
+   * @param {string} newPassword - 새 비밀번호
+   * @returns {Promise<void>}
+   */
+  changePassword: async (memberId, currentPassword, newPassword) => {
+    // 사용자 조회
+    const user = await memberRepository.findById(memberId);
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    // 현재 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new Error('현재 비밀번호가 일치하지 않습니다.');
+    }
+
+    // 새 비밀번호 암호화
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 비밀번호 업데이트
+    await memberRepository.updatePassword(memberId, hashedPassword);
+  },
 };
 
 // 서비스 객체를 모듈로 내보내기 (routes에서 사용)

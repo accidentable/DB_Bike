@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Trash2, Edit, Download } from "lucide-react";
 
 // 1. (수정) API 경로 및 Context 경로 수정
-import { getPosts, createPost, getPost, updatePost, deletePost, getPinnedPosts, type Post } from "../api/postApi";
+import { getPosts, createPost, getPost, updatePost, deletePost, getPinnedPosts, downloadAttachment, type Post } from "../api/postApi";
 import { createComment, getComments, deleteComment, type Comment } from "../api/commentApi";
 import { toggleLike, getLikeInfo } from "../api/likeApi";
 import { useAuth } from "../contexts/AuthContext";
@@ -70,6 +70,7 @@ export default function CommunityPage() {
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
   const [deleteImages, setDeleteImages] = useState<string[]>([]);
   const [deleteAttachments, setDeleteAttachments] = useState<number[]>([]); // 삭제할 첨부파일 ID
+  const [existingAttachments, setExistingAttachments] = useState<Array<{attachment_id: number, file_name: string, file_path: string, file_size: number, file_type: string}>>([]); // 기존 첨부파일 목록
 
   // --- 5. (신규) API 호출 로직 ---
   const fetchPinnedPosts = async () => {
@@ -90,7 +91,7 @@ export default function CommunityPage() {
     try {
         const options = {
             category: selectedCategory === "전체" ? undefined : selectedCategory,
-            sortBy: sortBy,
+            sort_by: sortBy, // API는 sort_by를 기대함
             page: 1, // 페이지네이션은 추후 구현
             limit: 20,
             // searchQuery: undefined
@@ -249,12 +250,13 @@ export default function CommunityPage() {
       content: selectedPost.content,
       category: selectedPost.category,
     });
-    setAttachedFiles([]);
-    setFilePreviewUrls(selectedPost.images || []);
-    // (수정) 수정 시 기존 첨부파일 상태도 설정
-    setAttachedDocuments([]); // 새 파일만 관리
-    setDeleteImages([]);
+    setAttachedFiles([]); // 새로 추가할 이미지 파일
+    setFilePreviewUrls(selectedPost.images || []); // 기존 이미지 URL
+    setAttachedDocuments([]); // 새로 추가할 첨부파일
+    setExistingAttachments(selectedPost.attachments || []); // 기존 첨부파일 목록
+    setDeleteImages([]); // 삭제할 이미지 URL
     setDeleteAttachments([]); // 삭제할 첨부파일 ID
+    setIsEditing(true);
   };
 
   // 수정 제출
@@ -278,6 +280,13 @@ export default function CommunityPage() {
       if (response.success) {
         alert("게시글이 수정되었습니다.");
         setIsEditing(false);
+        // 상태 초기화
+        setAttachedFiles([]);
+        setAttachedDocuments([]);
+        setFilePreviewUrls([]);
+        setDeleteImages([]);
+        setDeleteAttachments([]);
+        setExistingAttachments([]);
         // 수정된 글 다시 불러오기
         const updatedResponse = await getPost(editPost.post_id);
         if (updatedResponse.success && updatedResponse.data) {
@@ -442,10 +451,15 @@ export default function CommunityPage() {
   };
 
   const handleFileRemove = (index: number) => {
+    // 새로 추가한 파일만 제거 (blob URL)
+    const blobUrls = filePreviewUrls.filter(url => url.startsWith('blob:'));
+    if (index >= blobUrls.length) return;
+    
+    const blobUrlToRemove = blobUrls[index];
+    URL.revokeObjectURL(blobUrlToRemove);
+    
     const newAttachedFiles = attachedFiles.filter((_, i) => i !== index);
-    const newPreviewUrls = filePreviewUrls.filter((_, i) => i !== index);
-
-    URL.revokeObjectURL(filePreviewUrls[index]);
+    const newPreviewUrls = filePreviewUrls.filter(url => url !== blobUrlToRemove);
 
     setAttachedFiles(newAttachedFiles);
     setFilePreviewUrls(newPreviewUrls);
@@ -456,43 +470,7 @@ export default function CommunityPage() {
     setAttachedDocuments(newDocuments);
   };
 
-  // *** (신규) 첨부파일 다운로드 함수 (PLACEHOLDER) ***
-  // TODO: 실제 API 엔드포인트로 교체해야 합니다.
-  const downloadAttachment = async (attachmentId: number, fileName: string) => {
-    console.log(`Downloading ${fileName} (ID: ${attachmentId})`);
-    alert(`'${fileName}' 다운로드를 시작합니다.\n\n(이 기능은 실제 API 연동이 필요합니다.)`);
-    
-    // --- 실제 구현 예시 (주석 처리) ---
-    // try {
-    //   // 1. API에 파일 요청 (인증 헤더 등이 필요할 수 있음)
-    //   const response = await fetch(`http://localhost:3000/api/attachments/${attachmentId}`); // GUESSED API PATH
-      
-    //   if (!response.ok) {
-    //     throw new Error('File download failed');
-    //   }
-
-    //   // 2. 응답을 Blob으로 변환
-    //   const blob = await response.blob();
-      
-    //   // 3. Blob을 URL로 변환
-    //   const url = window.URL.createObjectURL(blob);
-      
-    //   // 4. 임시 <a> 태그를 생성하여 다운로드 트리거
-    //   const link = document.createElement('a');
-    //   link.href = url;
-    //   link.setAttribute('download', fileName); // 다운로드될 파일명 설정
-    //   document.body.appendChild(link);
-    //   link.click();
-      
-    //   // 5. 임시 태그 및 URL 정리
-    //   link.parentNode?.removeChild(link);
-    //   window.URL.revokeObjectURL(url);
-      
-    // } catch (err) {
-    //   console.error("Download failed", err);
-    //   alert("파일을 다운로드하는 데 실패했습니다.");
-    // }
-  };
+  // 첨부파일 다운로드 함수는 postApi.ts에서 import하여 사용
   
   
   // --- 8. (수정) JSX 렌더링 ---
@@ -547,7 +525,10 @@ export default function CommunityPage() {
               <SortDesc className="w-4 h-4 text-gray-500" />
               <Select
                 value={sortBy}
-                onValueChange={(value) => setSortBy(value as "latest" | "views" | "likes")}
+                onValueChange={(value) => {
+                  setSortBy(value as "latest" | "views" | "likes");
+                  // 정렬 변경 시 즉시 목록 갱신 (useEffect가 자동으로 처리하지만 명시적으로 표시)
+                }}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="정렬 기준" />
@@ -832,55 +813,146 @@ export default function CommunityPage() {
                     />
                   </div>
 
-                  {/* 파일 첨부 (수정 모드) - TODO: 첨부파일(문서) 수정 로직 추가 필요 */}
+                  {/* 이미지 첨부 (수정 모드) */}
                   <div>
-                    <Label>파일 첨부 (최대 5개)</Label>
+                    <Label>이미지 첨부 (최대 5개)</Label>
                     <div className="mt-2">
                       <input
                         type="file"
-                        id="edit-file-input"
+                        id="edit-image-input"
                         multiple
-                        accept="image/*,.pdf,.doc,.docx,.hwp" // TODO: 여기도 이미지/문서 분리 필요
-                        onChange={handleFileAttach}
+                        accept="image/*"
+                        onChange={(e) => handleFileAttach(e, false)}
                         className="hidden"
                       />
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => document.getElementById('edit-file-input')?.click()}
+                        onClick={() => document.getElementById('edit-image-input')?.click()}
                         className="w-full"
                       >
                         <Paperclip className="w-4 h-4 mr-2" />
-                        파일 선택 ({(filePreviewUrls.length || 0)}/5)
+                        이미지 선택 ({(filePreviewUrls.length + attachedFiles.length)}/5)
                       </Button>
                     </div>
 
-                    {/* 첨부된 파일 목록 */}
-                    {filePreviewUrls.length > 0 && (
+                    {/* 기존 이미지 및 새로 추가한 이미지 목록 */}
+                    {(filePreviewUrls.length > 0 || attachedFiles.length > 0) && (
                       <div className="mt-3 space-y-2">
-                        {filePreviewUrls.map((url, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                            <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                              <img 
-                                src={url.startsWith('blob:') ? url : `http://localhost:3000/${url}`}
-                                alt={`preview ${index}`}
-                                className="w-full h-full object-cover"
-                              />
+                        {/* 기존 이미지 (서버에 저장된 이미지) */}
+                        {filePreviewUrls
+                          .filter(url => !url.startsWith('blob:'))
+                          .map((url, index) => (
+                            <div key={`existing-${index}`} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                              <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                                <img 
+                                  src={`http://localhost:3000/${url}`}
+                                  alt={`existing image ${index}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm truncate">기존 이미지</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setDeleteImages([...deleteImages, url]);
+                                  setFilePreviewUrls(filePreviewUrls.filter(u => u !== url));
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
                             </div>
+                          ))}
+                        {/* 새로 추가한 이미지 (blob URL) */}
+                        {attachedFiles.map((file, index) => {
+                          // blob URL 찾기 (filePreviewUrls에서 blob:로 시작하는 것 중 해당 인덱스)
+                          const blobUrls = filePreviewUrls.filter(url => url.startsWith('blob:'));
+                          const previewUrl = blobUrls[index];
+                          
+                          if (!previewUrl) return null;
+                          
+                          return (
+                            <div key={`new-${index}`} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                              <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                                <img 
+                                  src={previewUrl}
+                                  alt={`new image ${index}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm truncate">{file.name}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  // blob URL도 함께 제거
+                                  const blobIndex = filePreviewUrls.findIndex(url => url === previewUrl);
+                                  if (blobIndex !== -1) {
+                                    URL.revokeObjectURL(previewUrl);
+                                    setFilePreviewUrls(filePreviewUrls.filter((_, i) => i !== blobIndex));
+                                  }
+                                  handleFileRemove(index);
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 첨부파일 (문서) (수정 모드) */}
+                  <div>
+                    <Label>첨부파일 (문서) (최대 10개)</Label>
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        id="edit-document-input"
+                        multiple
+                        accept=".pdf,.doc,.docx,.hwp,.txt,.xls,.xlsx,.ppt,.pptx"
+                        onChange={(e) => handleFileAttach(e, true)}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('edit-document-input')?.click()}
+                        className="w-full"
+                      >
+                        <Paperclip className="w-4 h-4 mr-2" />
+                        첨부파일 선택 ({(existingAttachments.length + attachedDocuments.length)}/10)
+                      </Button>
+                    </div>
+
+                    {/* 기존 첨부파일 목록 */}
+                    {existingAttachments.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <Label className="text-sm text-gray-600">기존 첨부파일</Label>
+                        {existingAttachments.map((attachment) => (
+                          <div key={attachment.attachment_id} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                            <Paperclip className="w-5 h-5 text-gray-500 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm truncate">{attachedFiles[index]?.name || url}</p>
+                              <p className="text-sm font-medium truncate">{attachment.file_name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(attachment.file_size / 1024 / 1024).toFixed(2)} MB
+                              </p>
                             </div>
                             <Button
                               type="button"
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                if (url.startsWith('blob:')) {
-                                  handleFileRemove(index);
-                                } else {
-                                  setDeleteImages([...deleteImages, url]);
-                                  setFilePreviewUrls(filePreviewUrls.filter(u => u !== url));
-                                }
+                                setDeleteAttachments([...deleteAttachments, attachment.attachment_id]);
+                                setExistingAttachments(existingAttachments.filter(a => a.attachment_id !== attachment.attachment_id));
                               }}
                             >
                               <X className="w-4 h-4" />
@@ -889,8 +961,33 @@ export default function CommunityPage() {
                         ))}
                       </div>
                     )}
+
+                    {/* 새로 추가한 첨부파일 목록 */}
+                    {attachedDocuments.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <Label className="text-sm text-gray-600">새 첨부파일</Label>
+                        {attachedDocuments.map((file, index) => (
+                          <div key={`new-doc-${index}`} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
+                            <Paperclip className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDocumentRemove(index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {/* TODO: (수정 모드) 기존 첨부파일(문서) 목록 및 신규 첨부파일(문서) 로직 추가 */}
 
 
                   <div className="flex gap-2">
@@ -903,7 +1000,16 @@ export default function CommunityPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => {
+                        setIsEditing(false);
+                        // 상태 초기화
+                        setAttachedFiles([]);
+                        setAttachedDocuments([]);
+                        setFilePreviewUrls([]);
+                        setDeleteImages([]);
+                        setDeleteAttachments([]);
+                        setExistingAttachments([]);
+                      }}
                     >
                       취소
                     </Button>

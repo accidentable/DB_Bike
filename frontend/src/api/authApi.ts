@@ -196,14 +196,63 @@ export async function sendVerificationEmail(email: string): Promise<ApiResponse<
 /**
  * 이메일 인증 코드 검증
  */
-export async function verifyEmail(email: string, code: string): Promise<ApiResponse<void>> {
+export async function verifyEmail(email: string, code: string, purpose: 'signup' | 'password-change' = 'signup'): Promise<ApiResponse<void>> {
   try {
-    const response = await client.post('/api/auth/verify-email', { email, code });
+    const response = await client.post('/api/auth/verify-email', { email, code, purpose });
     return response.data;
   } catch (error: any) {
     return {
       success: false,
       message: error.response?.data?.message || '이메일 인증 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 프로필 정보 수정
+ */
+export async function updateProfile(username: string): Promise<ApiResponse<User>> {
+  try {
+    const response = await client.put('/api/auth/profile', { username });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '프로필 수정 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 비밀번호 변경용 이메일 인증 코드 발송
+ */
+export async function sendPasswordChangeEmail(): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.post('/api/auth/send-password-change-email');
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '이메일 발송 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 비밀번호 변경
+ */
+export async function changePassword(currentPassword: string, newPassword: string, verificationCode: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.put('/api/auth/change-password', {
+      currentPassword,
+      newPassword,
+      verificationCode,
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.',
     };
   }
 }

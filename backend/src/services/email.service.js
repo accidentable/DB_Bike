@@ -41,30 +41,42 @@ const emailService = {
   /**
    * 이메일 인증 코드 발송
    * @param {string} email - 수신자 이메일 주소
+   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
    * @returns {Promise<string>} - 생성된 인증 코드
    */
-  sendVerificationEmail: async (email) => {
+  sendVerificationEmail: async (email, purpose = 'signup') => {
     try {
       // 인증 코드 생성
       const code = emailService.generateVerificationCode();
       
       // 인증 코드 저장 (5분 유효)
-      emailVerificationCodes.set(email, {
+      const codeKey = `${email}_${purpose}`;
+      emailVerificationCodes.set(codeKey, {
         code,
         expiresAt: Date.now() + 5 * 60 * 1000, // 5분
-        verified: false
+        verified: false,
+        purpose
       });
+
+      // 이메일 제목과 내용 설정
+      const subject = purpose === 'password-change' 
+        ? '[자전거 대여 서비스] 비밀번호 변경 인증 코드'
+        : '[자전거 대여 서비스] 이메일 인증 코드';
+      
+      const purposeText = purpose === 'password-change'
+        ? '비밀번호 변경을 위한'
+        : '회원가입을 위한';
 
       // 이메일 내용
       const mailOptions = {
         from: process.env.EMAIL_USER || 'noreply@bike-rental.com',
         to: email,
-        subject: '[자전거 대여 서비스] 이메일 인증 코드',
+        subject,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #00A862;">이메일 인증</h2>
             <p>안녕하세요,</p>
-            <p>회원가입을 위한 이메일 인증 코드입니다.</p>
+            <p>${purposeText} 이메일 인증 코드입니다.</p>
             <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
               <h1 style="color: #00A862; font-size: 32px; letter-spacing: 5px; margin: 0;">${code}</h1>
             </div>
@@ -108,29 +120,39 @@ const emailService = {
    * 이메일 인증 코드 검증
    * @param {string} email - 이메일 주소
    * @param {string} code - 인증 코드
+   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
    * @returns {Promise<boolean>} - 검증 성공 여부
    */
-  verifyCode: (email, code) => {
-    const stored = emailVerificationCodes.get(email);
+  verifyCode: (email, code, purpose = 'signup') => {
+    const codeKey = `${email}_${purpose}`;
+    const stored = emailVerificationCodes.get(codeKey);
+    
+    // 디버깅 로그
+    console.log(`[이메일 인증] 검증 시도: email=${email}, purpose=${purpose}, codeKey=${codeKey}`);
+    console.log(`[이메일 인증] 저장된 키 목록:`, Array.from(emailVerificationCodes.keys()));
     
     if (!stored) {
-      return { success: false, message: '인증 코드가 존재하지 않습니다.' };
+      console.log(`[이메일 인증] 인증 코드를 찾을 수 없음: ${codeKey}`);
+      return { success: false, message: '인증 코드가 존재하지 않습니다. 인증 코드를 다시 발송해주세요.' };
     }
 
     // 만료 확인
     if (Date.now() > stored.expiresAt) {
-      emailVerificationCodes.delete(email);
-      return { success: false, message: '인증 코드가 만료되었습니다.' };
+      emailVerificationCodes.delete(codeKey);
+      console.log(`[이메일 인증] 인증 코드 만료: ${codeKey}`);
+      return { success: false, message: '인증 코드가 만료되었습니다. 인증 코드를 다시 발송해주세요.' };
     }
 
     // 코드 일치 확인
+    console.log(`[이메일 인증] 입력된 코드: ${code}, 저장된 코드: ${stored.code}`);
     if (stored.code !== code) {
       return { success: false, message: '인증 코드가 일치하지 않습니다.' };
     }
 
     // 인증 완료 표시
     stored.verified = true;
-    emailVerificationCodes.set(email, stored);
+    emailVerificationCodes.set(codeKey, stored);
+    console.log(`[이메일 인증] 인증 성공: ${codeKey}`);
     
     return { success: true, message: '인증이 완료되었습니다.' };
   },
@@ -138,19 +160,23 @@ const emailService = {
   /**
    * 이메일 인증 완료 여부 확인
    * @param {string} email - 이메일 주소
+   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
    * @returns {boolean} - 인증 완료 여부
    */
-  isEmailVerified: (email) => {
-    const stored = emailVerificationCodes.get(email);
+  isEmailVerified: (email, purpose = 'signup') => {
+    const codeKey = `${email}_${purpose}`;
+    const stored = emailVerificationCodes.get(codeKey);
     return stored && stored.verified === true;
   },
 
   /**
-   * 인증 코드 삭제 (회원가입 완료 후)
+   * 인증 코드 삭제
    * @param {string} email - 이메일 주소
+   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
    */
-  deleteVerificationCode: (email) => {
-    emailVerificationCodes.delete(email);
+  deleteVerificationCode: (email, purpose = 'signup') => {
+    const codeKey = `${email}_${purpose}`;
+    emailVerificationCodes.delete(codeKey);
   },
 
   /**

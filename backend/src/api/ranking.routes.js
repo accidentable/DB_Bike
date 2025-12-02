@@ -40,7 +40,15 @@ router.get('/weekly', async (req, res) => {
 router.get('/total', async (req, res) => {
     try {
       const memberId = req.query.memberId ? Number(req.query.memberId) : null;
-      const result = await rankingService.getTotalDistanceRanking(memberId);
+      const type = req.query.type || 'distance'; // 'distance' or 'rides'
+      
+      let result;
+      if (type === 'rides') {
+        result = await rankingService.getTotalRideRanking(memberId);
+      } else {
+        result = await rankingService.getTotalDistanceRanking(memberId);
+      }
+      
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       console.error('전체 랭킹 조회 에러:', error);

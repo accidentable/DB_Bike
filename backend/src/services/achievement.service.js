@@ -15,11 +15,12 @@ const achievementService = {
   },
 
   /**
-   * 회원의 업적 조회 (달성 여부 포함)
+   * 회원의 업적 조회 (달성 여부 및 진행도 포함)
    */
   getMemberAchievements: async (memberId) => {
     const allAchievements = await achievementRepository.getAllAchievements();
     const memberAchievements = await achievementRepository.getMemberAchievements(memberId);
+    const stats = await achievementRepository.getMemberStats(memberId);
     
     const memberAchievementIds = new Set(
       memberAchievements.map(ma => ma.achievement_id)
@@ -29,17 +30,58 @@ const achievementService = {
       const memberAchievement = memberAchievements.find(
         ma => ma.achievement_id === achievement.achievement_id
       );
+      
+      const earned = memberAchievement !== undefined;
+      
+      // 진행도 계산
+      let progress = null;
+      let total = null;
+      
+      if (!earned) {
+        switch (achievement.condition_type) {
+          case 'FIRST_RIDE':
+            progress = stats.has_first_ride ? 1 : 0;
+            total = 1;
+            break;
+          case 'TOTAL_RIDES':
+            progress = Math.min(stats.total_rides || 0, achievement.condition_value);
+            total = achievement.condition_value;
+            break;
+          case 'TOTAL_DISTANCE':
+            progress = Math.min(Math.round(stats.total_distance || 0), achievement.condition_value);
+            total = achievement.condition_value;
+            break;
+          case 'TOTAL_STATIONS':
+            progress = Math.min(stats.total_stations || 0, achievement.condition_value);
+            total = achievement.condition_value;
+            break;
+          case 'CONSECUTIVE_DAYS':
+            progress = Math.min(stats.consecutive_days || 0, achievement.condition_value);
+            total = achievement.condition_value;
+            break;
+        }
+      }
+      
       return {
         ...achievement,
-        earned: memberAchievement !== undefined,
+        earned,
         earned_at: memberAchievement?.earned_at || null,
-        points_awarded: memberAchievement?.points_awarded || false
+        points_awarded: memberAchievement?.points_awarded || false,
+        progress,
+        total
       };
     });
   },
 
   /**
-   * 업적 달성 체크 및 포인트 지급
+   * 업적 달성 여부 확인
+   */
+  hasAchievement: async (memberId, achievementId) => {
+    return await achievementRepository.hasAchievement(memberId, achievementId);
+  },
+
+  /**
+   * 업적 달성 체크 (포인트는 수동으로 받도록 변경)
    */
   checkAchievements: async (memberId) => {
     try {
@@ -76,26 +118,14 @@ const achievementService = {
         }
 
         if (conditionMet) {
-          // 업적 달성 기록
+          // 업적 달성 기록 (포인트는 수동으로 받도록 변경)
           const awarded = await achievementRepository.awardAchievement(
             memberId,
             achievement.achievement_id
           );
 
           if (awarded) {
-            // 포인트 지급
-            await pointService.addPoints(
-              memberId,
-              1000,
-              `업적 달성: ${achievement.name}`
-            );
-
-            // 포인트 지급 완료 표시
-            await achievementRepository.markPointsAwarded(
-              memberId,
-              achievement.achievement_id
-            );
-
+            // 포인트는 사용자가 수동으로 받도록 변경 (자동 지급 제거)
             newlyEarned.push(achievement);
           }
         }

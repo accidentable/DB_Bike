@@ -51,6 +51,8 @@ CREATE INDEX IF NOT EXISTS idx_rentals_distance ON rentals(distance_km);
 -- 업적 초기 데이터 삽입
 INSERT INTO achievements (name, description, icon, condition_type, condition_value) VALUES
 ('첫 걸음', '첫 따릉이 이용 완료', '🚴', 'FIRST_RIDE', 1),
+('초보 라이더', '10회 이용 달성', '🚲', 'TOTAL_RIDES', 10),
+('중급 라이더', '50회 이용 달성', '🚴', 'TOTAL_RIDES', 50),
 ('출퇴근 마스터', '10일 연속 이용', '🏆', 'CONSECUTIVE_DAYS', 10),
 ('장거리 라이더', '누적 100km 달성', '🎯', 'TOTAL_DISTANCE', 100),
 ('환경 지킴이', '누적 500km 달성', '🌿', 'TOTAL_DISTANCE', 500),

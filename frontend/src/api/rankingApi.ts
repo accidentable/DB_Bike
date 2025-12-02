@@ -31,7 +31,26 @@ export async function getTotalDistanceRanking(): Promise<ApiResponse<RankingResp
   try {
     const user = getCurrentUser();
     const memberId = user?.member_id;
-    const params = memberId ? { memberId } : {};
+    const params = memberId ? { memberId, type: 'distance' } : { type: 'distance' };
+    
+    const response = await client.get('/api/rankings/total', { params });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '랭킹 조회 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 전체 기간 이용 횟수 랭킹 조회
+ */
+export async function getTotalRideRanking(): Promise<ApiResponse<RankingResponse>> {
+  try {
+    const user = getCurrentUser();
+    const memberId = user?.member_id;
+    const params = memberId ? { memberId, type: 'rides' } : { type: 'rides' };
     
     const response = await client.get('/api/rankings/total', { params });
     return response.data;

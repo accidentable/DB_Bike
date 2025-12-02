@@ -45,7 +45,7 @@ const rankingRepository = {
   },
 
   /**
-   * 주별 랭킹 계산 및 저장
+   * 주별 랭킹 계산 및 저장 (거리 기준)
    */
   calculateWeeklyRanking: async (weekStartDate) => {
     try {
@@ -76,7 +76,7 @@ const rankingRepository = {
       `;
       await pool.query(calculateQuery, [weekStartDate, weekEndDate.toISOString()]);
 
-      // 랭킹 순위 업데이트
+      // 랭킹 순위 업데이트 (거리 기준)
       const rankQuery = `
         WITH ranked AS (
           SELECT 
@@ -101,10 +101,78 @@ const rankingRepository = {
     }
   },
 
+  /**
+   * 주별 이용 횟수 랭킹 계산 및 저장
+   */
+  calculateWeeklyRideRanking: async (weekStartDate) => {
+    try {
+      await pool.query('BEGIN');
+
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekEndDate.getDate() + 6);
+      weekEndDate.setHours(23, 59, 59, 999);
+
+      // 주별 이용 횟수 계산 (rentals 테이블에서 직접 계산)
+      const calculateQuery = `
+        SELECT 
+          member_id,
+          COUNT(*) as total_rides
+        FROM rentals
+        WHERE end_time IS NOT NULL
+          AND start_time >= $1::TIMESTAMP
+          AND start_time < $2::TIMESTAMP
+        GROUP BY member_id
+      `;
+      const { rows: rideData } = await pool.query(calculateQuery, [weekStartDate, weekEndDate.toISOString()]);
+
+      // weekly_rankings에 업데이트 (total_rides는 별도로 저장하지 않고 동적으로 계산)
+      // 대신 별도 테이블이나 컬럼이 필요하지만, 일단 메모리에서 처리
+      // 실제로는 weekly_rankings에 total_rides 컬럼을 추가하는 것이 좋음
+
+      await pool.query('COMMIT');
+      return rideData;
+    } catch (error) {
+      await pool.query('ROLLBACK');
+      console.error('Error calculating weekly ride ranking:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 주별 이용 횟수 Top 3 조회
+   */
+  getTop3RideMembers: async (weekStartDate) => {
+    try {
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekEndDate.getDate() + 6);
+      weekEndDate.setHours(23, 59, 59, 999);
+
+      const query = `
+        SELECT 
+          member_id,
+          COUNT(*) as total_rides,
+          ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) as rank_position
+        FROM rentals
+        WHERE end_time IS NOT NULL
+          AND start_time >= $1::TIMESTAMP
+          AND start_time < $2::TIMESTAMP
+        GROUP BY member_id
+        HAVING COUNT(*) > 0
+        ORDER BY total_rides DESC
+        LIMIT 3
+      `;
+      const { rows } = await pool.query(query, [weekStartDate, weekEndDate.toISOString()]);
+      return rows;
+    } catch (error) {
+      console.error('Error getting top 3 ride members:', error);
+      throw error;
+    }
+  },
+
   
 
   /**
-   * Top 3 회원 조회
+   * Top 3 회원 조회 (거리 기준)
    */
   getTop3Members: async (weekStartDate) => {
     try {
@@ -128,7 +196,7 @@ const rankingRepository = {
   },
 
   /**
-   * 랭킹 포인트 지급 완료 표시
+   * 랭킹 포인트 지급 완료 표시 (거리 기준)
    */
   markPointsAwarded: async (weekStartDate, memberId) => {
     try {
@@ -140,6 +208,85 @@ const rankingRepository = {
       await pool.query(query, [weekStartDate, memberId]);
     } catch (error) {
       console.error('Error marking ranking points awarded:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 전체 기간 이용 횟수 랭킹 조회
+   */
+  getTotalRideRanking: async (memberId = null) => {
+    try {
+      const query = `
+        SELECT 
+          m.member_id,
+          m.username,
+          COUNT(r.rental_id) as total_rides,
+          COALESCE(SUM(r.distance_km), 0) as total_distance_km,
+          ROW_NUMBER() OVER (ORDER BY COUNT(r.rental_id) DESC) as rank_position
+        FROM members m
+        LEFT JOIN rentals r ON m.member_id = r.member_id
+          AND r.end_time IS NOT NULL
+        GROUP BY m.member_id, m.username
+        HAVING COUNT(r.rental_id) > 0
+        ORDER BY total_rides DESC
+        LIMIT 100
+      `;
+      const { rows } = await pool.query(query);
+      
+      // 현재 사용자의 랭킹 정보 추가
+      if (memberId) {
+        const userRank = rows.findIndex(row => row.member_id === memberId);
+        if (userRank === -1) {
+          // 랭킹 100위 밖인 경우 별도 조회
+          const userQuery = `
+            SELECT 
+              m.member_id,
+              m.username,
+              COUNT(r.rental_id) as total_rides,
+              COALESCE(SUM(r.distance_km), 0) as total_distance_km,
+              (SELECT COUNT(*) + 1 
+               FROM (
+                 SELECT m2.member_id
+                 FROM members m2
+                 LEFT JOIN rentals r2 ON m2.member_id = r2.member_id
+                   AND r2.end_time IS NOT NULL
+                 GROUP BY m2.member_id
+                 HAVING COUNT(r2.rental_id) > (
+                   SELECT COUNT(r3.rental_id)
+                   FROM rentals r3
+                   WHERE r3.member_id = m.member_id
+                     AND r3.end_time IS NOT NULL
+                 )
+               ) sub
+              ) as rank_position
+            FROM members m
+            LEFT JOIN rentals r ON m.member_id = r.member_id
+              AND r.end_time IS NOT NULL
+            WHERE m.member_id = $1
+            GROUP BY m.member_id, m.username
+          `;
+          const { rows: userRows } = await pool.query(userQuery, [memberId]);
+          if (userRows.length > 0) {
+            return {
+              ranking: rows,
+              currentUser: userRows[0]
+            };
+          }
+        } else {
+          return {
+            ranking: rows,
+            currentUser: rows[userRank]
+          };
+        }
+      }
+      
+      return {
+        ranking: rows,
+        currentUser: null
+      };
+    } catch (error) {
+      console.error('Error getting total ride ranking:', error);
       throw error;
     }
   },

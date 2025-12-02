@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
 const emailService = require('../services/email.service');
+const { verifyToken } = require('../middleware/auth.middleware');
 
 /**
  * POST /api/auth/login
@@ -186,7 +187,7 @@ router.post('/send-verification-email', async (req, res) => {
  */
 router.post('/verify-email', async (req, res) => {
   try {
-    const { email, code } = req.body;
+    const { email, code, purpose } = req.body;
 
     if (!email || !code) {
       return res.status(400).json({
@@ -195,7 +196,8 @@ router.post('/verify-email', async (req, res) => {
       });
     }
 
-    const result = emailService.verifyCode(email, code);
+    const verifyPurpose = purpose || 'signup';
+    const result = emailService.verifyCode(email, code, verifyPurpose);
 
     if (result.success) {
       res.status(200).json({
@@ -213,6 +215,140 @@ router.post('/verify-email', async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || '이메일 인증에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * PUT /api/auth/profile
+ * 프로필 정보 수정 (로그인 필요)
+ * 
+ * 요청 본문:
+ *   - username: string (선택) - 사용자명
+ */
+router.put('/profile', verifyToken, async (req, res) => {
+  try {
+    const { username } = req.body;
+    const memberId = req.user.memberId;
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: '사용자명을 입력해주세요.'
+      });
+    }
+
+    const updatedUser = await authService.updateProfile(memberId, username.trim());
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+      message: '프로필이 수정되었습니다.'
+    });
+  } catch (error) {
+    console.error('프로필 수정 에러:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || '프로필 수정에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/send-password-change-email
+ * 비밀번호 변경용 이메일 인증 코드 발송 (로그인 필요)
+ */
+router.post('/send-password-change-email', verifyToken, async (req, res) => {
+  try {
+    const memberId = req.user.memberId;
+    const memberRepository = require('../repositories/member.repository');
+    const user = await memberRepository.findById(memberId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.'
+      });
+    }
+
+    // 사용자의 이메일로 인증 코드 발송
+    await emailService.sendVerificationEmail(user.email, 'password-change');
+
+    res.status(200).json({
+      success: true,
+      message: '인증 코드가 발송되었습니다.'
+    });
+  } catch (error) {
+    console.error('비밀번호 변경 이메일 발송 에러:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '이메일 발송에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * PUT /api/auth/change-password
+ * 비밀번호 변경 (로그인 필요, 이메일 인증 필요)
+ * 
+ * 요청 본문:
+ *   - currentPassword: string (필수) - 현재 비밀번호
+ *   - newPassword: string (필수) - 새 비밀번호
+ *   - verificationCode: string (필수) - 이메일 인증 코드
+ */
+router.put('/change-password', verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, verificationCode } = req.body;
+    const memberId = req.user.memberId;
+
+    if (!currentPassword || !newPassword || !verificationCode) {
+      return res.status(400).json({
+        success: false,
+        message: '현재 비밀번호, 새 비밀번호, 인증 코드를 모두 입력해주세요.'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: '새 비밀번호는 최소 6자 이상이어야 합니다.'
+      });
+    }
+
+    // 사용자 이메일 조회
+    const memberRepository = require('../repositories/member.repository');
+    const user = await memberRepository.findById(memberId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.'
+      });
+    }
+
+    // 이메일 인증 코드 검증
+    const verificationResult = emailService.verifyCode(user.email, verificationCode, 'password-change');
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message || '이메일 인증에 실패했습니다.'
+      });
+    }
+
+    // 비밀번호 변경
+    await authService.changePassword(memberId, currentPassword, newPassword);
+
+    // 인증 코드 삭제
+    emailService.deleteVerificationCode(user.email, 'password-change');
+
+    res.status(200).json({
+      success: true,
+      message: '비밀번호가 변경되었습니다.'
+    });
+  } catch (error) {
+    console.error('비밀번호 변경 에러:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || '비밀번호 변경에 실패했습니다.'
     });
   }
 });

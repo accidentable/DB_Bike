@@ -2,7 +2,7 @@
 // (모든 import 경로 수정)
 
 import { useState, useEffect } from "react";
-import { TrendingUp, MapPin, Bike } from "lucide-react";  // 사용하지 않는 import 제거
+import { TrendingUp, MapPin, Bike, Clock } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import {
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { getTotalDistanceRanking } from "../api/rankingApi";  // ApiRankingUser 제거
+import { getTotalDistanceRanking, getTotalRideRanking } from "../api/rankingApi";
 
 interface RankingPageProps {
   onClose?: () => void;
@@ -37,28 +37,78 @@ interface RankingUser {
   member_id?: number;  // 추가: 고유 키를 위해
 }
 
+// 다음 금요일 1시까지의 남은 시간 계산
+const getNextFriday1AM = (): Date => {
+  const now = new Date();
+  const nextFriday = new Date(now);
+  
+  // 현재 요일 (0=일요일, 5=금요일)
+  const currentDay = now.getDay();
+  
+  // 금요일까지 남은 일수 계산
+  let daysUntilFriday = 5 - currentDay;
+  
+  // 오늘이 금요일이고 1시 이전이면 오늘, 그렇지 않으면 다음 금요일
+  if (currentDay === 5 && now.getHours() < 1) {
+    daysUntilFriday = 0;
+  } else if (daysUntilFriday <= 0) {
+    daysUntilFriday += 7; // 다음 주 금요일
+  }
+  
+  nextFriday.setDate(now.getDate() + daysUntilFriday);
+  nextFriday.setHours(1, 0, 0, 0); // 금요일 1시
+  
+  return nextFriday;
+};
+
+// 남은 시간 포맷팅
+const formatTimeRemaining = (targetDate: Date): { days: number; hours: string; minutes: string; seconds: string } => {
+  const now = new Date();
+  const diff = targetDate.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    return { days: 0, hours: "00", minutes: "00", seconds: "00" };
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  return {
+    days,
+    hours: hours.toString().padStart(2, "0"),
+    minutes: minutes.toString().padStart(2, "0"),
+    seconds: seconds.toString().padStart(2, "0"),
+  };
+};
+
 export default function RankingPage(_props: RankingPageProps = {}) {
   const [rankingType, setRankingType] = useState<"distance" | "rides">("distance");
   const [period, setPeriod] = useState<"전체" | "이번달" | "이번주">("전체");
   const [rankingData, setRankingData] = useState<RankingUser[]>([]);
   const [currentUser, setCurrentUser] = useState<RankingUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState(formatTimeRemaining(getNextFriday1AM()));
 
   useEffect(() => {
     const loadRanking = async () => {
       setIsLoading(true);
       try {
-        const response = await getTotalDistanceRanking();
+        const response = rankingType === 'distance' 
+          ? await getTotalDistanceRanking()
+          : await getTotalRideRanking();
+          
         if (response.success && response.data) {
           // 데이터 변환
           const transformed: RankingUser[] = response.data.ranking.map((user, index) => ({
             rank: user.rank_position,
             name: user.username,
-            distance: Math.round(user.total_distance_km * 10) / 10,
-            rides: user.total_rides,
+            distance: Math.round((user.total_distance_km || 0) * 10) / 10,
+            rides: user.total_rides || 0,
             badge: index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : undefined,
             isCurrentUser: false,
-            member_id: user.member_id  // 추가: 고유 키를 위해
+            member_id: user.member_id
           }));
           
           setRankingData(transformed);
@@ -69,11 +119,13 @@ export default function RankingPage(_props: RankingPageProps = {}) {
             setCurrentUser({
               rank: user.rank_position,
               name: user.username,
-              distance: Math.round(user.total_distance_km * 10) / 10,
-              rides: user.total_rides,
+              distance: Math.round((user.total_distance_km || 0) * 10) / 10,
+              rides: user.total_rides || 0,
               isCurrentUser: true,
-              member_id: user.member_id  // 추가
+              member_id: user.member_id
             });
+          } else {
+            setCurrentUser(null);
           }
         }
       } catch (error) {
@@ -84,6 +136,22 @@ export default function RankingPage(_props: RankingPageProps = {}) {
     };
 
     loadRanking();
+  }, [rankingType]);
+
+  // 카운트다운 타이머
+  useEffect(() => {
+    const updateTimer = () => {
+      const nextFriday = getNextFriday1AM();
+      setTimeRemaining(formatTimeRemaining(nextFriday));
+    };
+
+    // 즉시 업데이트
+    updateTimer();
+
+    // 1초마다 업데이트
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const currentUserDisplay = currentUser;
@@ -144,6 +212,24 @@ export default function RankingPage(_props: RankingPageProps = {}) {
           </Select>
         </div>
 
+        {/* 보상까지 남은 시간 */}
+        <Card className="mb-6 p-4 bg-gradient-to-r from-[#00A862]/10 to-[#008F54]/10 border-[#00A862]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-[#00A862]" />
+              <div>
+                <div className="text-sm text-gray-600 mb-1">보상까지 남은 시간</div>
+                <div className="text-lg font-bold text-[#00A862]">
+                  D-{timeRemaining.days} / {timeRemaining.hours}:{timeRemaining.minutes}:{timeRemaining.seconds}
+                </div>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-[#00A862] text-[#00A862]">
+              매주 금요일 01:00 초기화
+            </Badge>
+          </div>
+        </Card>
+
         {/* Top 3 Podium */}
         {topRankers.length >= 3 && (  // 최소 3명이 있을 때만 표시
           <div className="mb-8">
@@ -164,13 +250,29 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                     <div className="text-5xl mb-3">{user.badge}</div>
                     <h3 className="mb-2">{user.name}</h3>
                     <div className="text-center space-y-1">
-                      <div className="flex items-center justify-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4" />
-                        <span>{user.distance}km</span>
-                      </div>
+                      {rankingType === 'distance' ? (
+                        <div className="flex items-center justify-center gap-2 text-sm">
+                          <MapPin className="w-4 h-4" />
+                          <span>{user.distance}km</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 text-sm">
+                          <Bike className="w-4 h-4" />
+                          <span>{user.rides}회</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                        <Bike className="w-4 h-4" />
-                        <span>{user.rides}회</span>
+                        {rankingType === 'distance' ? (
+                          <>
+                            <Bike className="w-4 h-4" />
+                            <span>{user.rides}회</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-4 h-4" />
+                            <span>{user.distance}km</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -192,14 +294,29 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                   <div>
                     <h3 className="mb-1">{currentUserDisplay.name}</h3>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {currentUserDisplay.distance}km
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Bike className="w-4 h-4" />
-                        {currentUserDisplay.rides}회
-                      </span>
+                      {rankingType === 'distance' ? (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {currentUserDisplay.distance}km
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Bike className="w-4 h-4" />
+                            {currentUserDisplay.rides}회
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <Bike className="w-4 h-4" />
+                            {currentUserDisplay.rides}회
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {currentUserDisplay.distance}km
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -236,14 +353,29 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                     <div className="flex-1">
                       <h3 className="mb-1">{user.name}</h3>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {user.distance}km
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Bike className="w-3 h-3" />
-                          {user.rides}회
-                        </span>
+                        {rankingType === 'distance' ? (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {user.distance}km
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Bike className="w-3 h-3" />
+                              {user.rides}회
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex items-center gap-1">
+                              <Bike className="w-3 h-3" />
+                              {user.rides}회
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {user.distance}km
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
