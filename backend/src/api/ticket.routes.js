@@ -2,11 +2,11 @@
  * src/api/ticket.routes.js
  * 이용권 관련 API 라우터
  * 
- * 엔드포인트:
- * GET    /api/tickets/types          - 이용권 종류 목록 조회 (공개)
- * POST   /api/tickets/purchase       - 이용권 구매 (로그인 필요)
- * GET    /api/tickets/my-tickets     - 내 활성 이용권 조회 (로그인 필요)
- * GET    /api/tickets/history        - 내 이용권 구매 이력 (로그인 필요)
+ * 주요 엔드포인트:
+ * - GET    /api/tickets/types                   - 이용권 종류 목록 조회 (공개)
+ * - POST   /api/tickets/purchase                 - 이용권 구매 (로그인 필요)
+ * - GET    /api/tickets/my-tickets               - 내 활성 이용권 조회 (로그인 필요)
+ * - GET    /api/tickets/history                  - 내 이용권 구매 이력 조회 (로그인 필요)
  */
 
 const express = require('express');

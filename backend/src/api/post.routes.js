@@ -1,17 +1,21 @@
 /**
  * src/api/post.routes.js
  * 게시글 관련 API 라우터
- * * 역할: HTTP 요청을 받아서 서비스 계층에 작업을 요청하고, 응답을 반환합니다.
- * - 클라이언트로부터 받은 요청 데이터 검증
- * - postService를 호출하여 비즈니스 로직 실행
- * - 적절한 HTTP 상태 코드와 함께 응답 반환
- * * 엔드포인트:
- * POST   /api/posts          - 게시글 작성
- * GET    /api/posts          - 게시글 목록 조회
- * GET    /api/posts/:id      - 게시글 상세 조회
- * PUT    /api/posts/:id      - 게시글 수정
- * DELETE /api/posts/:id      - 게시글 삭제
- * PATCH  /api/posts/:id/pin  - 게시글 고정/고정 해제 (관리자)
+ * 
+ * 주요 엔드포인트:
+ * - POST   /api/posts                            - 게시글 작성 (로그인 필요, 이미지/첨부파일 지원)
+ * - GET    /api/posts                             - 게시글 목록 조회 (공개, category, sort_by, page, limit, search 파라미터 지원)
+ * - GET    /api/posts/pinned                      - 고정된 게시글 목록 조회 (공개)
+ * - GET    /api/posts/:id                         - 게시글 상세 조회 (공개)
+ * - PUT    /api/posts/:id                         - 게시글 수정 (로그인 필요, 작성자 또는 관리자)
+ * - DELETE /api/posts/:id                         - 게시글 삭제 (로그인 필요, 작성자 또는 관리자)
+ * - PATCH  /api/posts/:id/pin                     - 게시글 고정/고정 해제 (관리자 전용)
+ * - POST   /api/posts/:id/comments                - 댓글 작성 (로그인 필요)
+ * - GET    /api/posts/:id/comments                - 게시글의 댓글 목록 조회 (공개)
+ * - DELETE /api/posts/:postId/comments/:commentId - 댓글 삭제 (로그인 필요, 작성자 또는 관리자)
+ * - POST   /api/posts/:id/like                    - 좋아요 토글 (로그인 필요)
+ * - GET    /api/posts/:id/like                    - 게시글의 좋아요 정보 조회 (공개)
+ * - GET    /api/posts/attachments/:attachmentId/download - 첨부파일 다운로드 (공개)
  */
 
 const express = require('express');

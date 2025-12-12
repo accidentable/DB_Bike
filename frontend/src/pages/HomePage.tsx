@@ -145,6 +145,19 @@ export default function HomePage() {
     }
   };
 
+  // 지도 드래그 종료 시 새로운 중심 좌표 기준으로 대여소 조회
+  const handleMapDragEnd = (map: any) => {
+    const center = map.getCenter();
+    const newLat = center.getLat();
+    const newLng = center.getLng();
+    
+    // 지도 중심 좌표 업데이트
+    setMapCenter({ lat: newLat, lng: newLng });
+    
+    // 검색어는 유지하되 새로운 위치 기준으로 대여소 조회
+    fetchStations(searchQuery, newLat, newLng);
+  };
+
   // --- 대여/반납 로직 ---
   const handleStationClick = async (station: Station) => {
     setSelectedStation(station);
@@ -426,6 +439,7 @@ export default function HomePage() {
               center={mapCenter}
               style={{ width: "100%", height: "100%"}}
               level={4} // 지도 확대 레벨
+              onDragEnd={(map) => handleMapDragEnd(map)}
             >
               {stations.map((station) => {
                 const isSelected = selectedStation?.station_id === station.station_id;
@@ -594,9 +608,8 @@ export default function HomePage() {
 // (신규) 카카오 지도 로딩 상태를 관리하는 별도 컴포넌트
 function KakaoMapLoader({ children }: { children: React.ReactNode }) {
   const [loading, error] = useKakaoLoader({
-    // 중요: 실제 서비스에서는 .env 파일을 사용하여 API 키를 관리해야 합니다.
-    // 예: appkey: process.env.REACT_APP_KAKAO_APP_KEY!
-    appkey: "0ddb80336b17ea45f9f7c27852fbea10", 
+    // Vite 환경 변수 사용 (VITE_ 접두사 필요)
+    appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY || "0ddb80336b17ea45f9f7c27852fbea10", 
   });
 
   if (loading) return <div className="text-center py-12">지도 로딩 중...</div>;

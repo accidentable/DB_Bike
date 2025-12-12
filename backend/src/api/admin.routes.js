@@ -1,3 +1,18 @@
+/**
+ * src/api/admin.routes.js
+ * 관리자 관련 API 라우터
+ * 
+ * 주요 엔드포인트 (모두 관리자 권한 필요):
+ * - GET    /api/admin/stats                     - 대시보드 통계 조회
+ * - GET    /api/admin/users                     - 모든 사용자 목록 조회
+ * - PUT    /api/admin/users/:userId             - 특정 사용자 정보 업데이트
+ * - DELETE /api/admin/users/:userId             - 특정 사용자 삭제
+ * - GET    /api/admin/rentals                   - 모든 대여 기록 조회
+ * - GET    /api/admin/activity-logs             - Activity Log 조회
+ * - GET    /api/admin/district-stats            - 지역구별 대여소 현황 조회
+ * - GET    /api/admin/station-rental-rates      - 대여소별 대여율 조회
+ */
+
 const express = require('express');
 const router = express.Router();
 const { verifyToken, isAdmin } = require('../middleware/auth.middleware');

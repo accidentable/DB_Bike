@@ -82,6 +82,7 @@ docker-compose down
 # (스키마(init.sql)를 변경했거나, 'node populateStations.js'를 다시 실행하고 싶을 때 사용)
 docker-compose down -v
 ```
-
+----
 ```
+ node .\seedRankingData.js 로 여러 유저 데이터 삽입 가능.
 ```

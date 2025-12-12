@@ -1,5 +1,13 @@
-// src/api/rental.routes.js
-// (대여, 반납)
+/**
+ * src/api/rental.routes.js
+ * 대여/반납 관련 API 라우터
+ * 
+ * 주요 엔드포인트 (모두 로그인 필요):
+ * - GET    /api/rentals/current                  - 현재 대여 중인 내역 조회
+ * - GET    /api/rentals/history                  - 내 대여 이력 조회
+ * - POST   /api/rentals/rent                     - 자전거 대여 (bikeId, startStationId 필요)
+ * - POST   /api/rentals/return                   - 자전거 반납 (endStationId 필요)
+ */
 
 const express = require('express');
 const router = express.Router();

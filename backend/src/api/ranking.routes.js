@@ -1,6 +1,10 @@
 /**
  * src/api/ranking.routes.js
  * 랭킹 관련 API 라우터
+ * 
+ * 주요 엔드포인트:
+ * - GET    /api/rankings/weekly                 - 주별 거리 랭킹 조회 (공개)
+ * - GET    /api/rankings/total                  - 전체 기간 누적 랭킹 조회 (공개, type: 'distance' | 'rides')
  */
 
 const express = require('express');

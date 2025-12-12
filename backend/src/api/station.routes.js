@@ -1,16 +1,21 @@
-// src/api/station.routes.js
-// (??) ??/?? ??, ????? ??? ??
+/**
+ * src/api/station.routes.js
+ * 대여소 관련 API 라우터
+ * 
+ * 주요 엔드포인트:
+ * - GET    /api/stations                        - 대여소 목록 조회 (공개, query, lat, lon 파라미터 지원)
+ * - GET    /api/stations/favorites/me          - 내 즐겨찾기 대여소 목록 조회 (로그인 필요)
+ * - POST   /api/stations/:stationId/favorite    - 대여소 즐겨찾기 추가 (로그인 필요)
+ * - DELETE /api/stations/:stationId/favorite    - 대여소 즐겨찾기 제거 (로그인 필요)
+ * - GET    /api/stations/:stationId/bikes       - 특정 대여소의 자전거 목록 조회 (공개)
+ */
 
 const express = require('express');
 const router = express.Router();
 const stationService = require('../services/station.service');
 const { verifyToken } = require('../middleware/auth.middleware');
 
-/**
- * GET /api/stations
- * (??) ??? ?? ??
- * ?? ????: ?query=??&lat=37.123&lon=127.123
- */
+
 router.get('/', async (req, res) => {
   try {
     const { query, lat, lon } = req.query;

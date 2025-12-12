@@ -1,3 +1,18 @@
+/**
+ * src/api/auth.routes.js
+ * 인증 관련 API 라우터
+ * 
+ * 주요 엔드포인트:
+ * - POST   /api/auth/login                      - 로그인
+ * - POST   /api/auth/signup                     - 회원가입
+ * - POST   /api/auth/kakao                      - 카카오 로그인/회원가입
+ * - POST   /api/auth/send-verification-email    - 이메일 인증 코드 발송
+ * - POST   /api/auth/verify-email               - 이메일 인증 코드 검증
+ * - PUT    /api/auth/profile                    - 프로필 정보 수정 (로그인 필요)
+ * - POST   /api/auth/send-password-change-email - 비밀번호 변경용 이메일 인증 코드 발송 (로그인 필요)
+ * - PUT    /api/auth/change-password            - 비밀번호 변경 (로그인 필요, 이메일 인증 필요)
+ */
+
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/auth.service');
@@ -8,7 +23,7 @@ const { verifyToken } = require('../middleware/auth.middleware');
  * POST /api/auth/login
  * 로그인 API 엔드포인트
  * 
- * 요청 본문 (req.body):
+
  *   - email: string (필수) - 사용자 이메일 주소
  *   - password: string (필수) - 사용자 비밀번호 (평문)
  * 

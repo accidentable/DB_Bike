@@ -251,10 +251,10 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                     <h3 className="mb-2">{user.name}</h3>
                     <div className="text-center space-y-1">
                       {rankingType === 'distance' ? (
-                        <div className="flex items-center justify-center gap-2 text-sm">
-                          <MapPin className="w-4 h-4" />
-                          <span>{user.distance}km</span>
-                        </div>
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        <MapPin className="w-4 h-4" />
+                        <span>{user.distance}km</span>
+                      </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2 text-sm">
                           <Bike className="w-4 h-4" />
@@ -264,8 +264,8 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                       <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                         {rankingType === 'distance' ? (
                           <>
-                            <Bike className="w-4 h-4" />
-                            <span>{user.rides}회</span>
+                        <Bike className="w-4 h-4" />
+                        <span>{user.rides}회</span>
                           </>
                         ) : (
                           <>
@@ -296,14 +296,14 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       {rankingType === 'distance' ? (
                         <>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {currentUserDisplay.distance}km
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Bike className="w-4 h-4" />
-                            {currentUserDisplay.rides}회
-                          </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {currentUserDisplay.distance}km
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Bike className="w-4 h-4" />
+                        {currentUserDisplay.rides}회
+                      </span>
                         </>
                       ) : (
                         <>
@@ -355,14 +355,14 @@ export default function RankingPage(_props: RankingPageProps = {}) {
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         {rankingType === 'distance' ? (
                           <>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {user.distance}km
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Bike className="w-3 h-3" />
-                              {user.rides}회
-                            </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {user.distance}km
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Bike className="w-3 h-3" />
+                          {user.rides}회
+                        </span>
                           </>
                         ) : (
                           <>

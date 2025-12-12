@@ -121,13 +121,13 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
         }
 
         // 대여 이력 가져오기
-        const historyResponse = await getRentalHistory();
-        let totalRides = 0;
-        let totalDistance = 0;
+const historyResponse = await getRentalHistory();
+let totalRides = 0;
+let totalDistance = 0;
         let totalRentalTime = 0; // 총 이용 시간 (밀리초)
 
-        if (historyResponse.success && historyResponse.data) {
-          totalRides = historyResponse.data.length;
+if (historyResponse.success && historyResponse.data) {
+  totalRides = historyResponse.data.length;
           // 거리 합계 및 총 이용 시간 계산
           historyResponse.data.forEach((rental) => {
             totalDistance += rental.distance_km || 0;
@@ -178,7 +178,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           const earnedCount = achievementsResponse.data.filter(a => a.earned).length;
           const totalCount = achievementsResponse.data.length;
           achievementRate = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0;
-        }
+}
 
         setUserData({
           name: user.username || "",
@@ -250,7 +250,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
         });
 
         alert("프로필이 수정되었습니다.");
-        setIsEditDialogOpen(false);
+    setIsEditDialogOpen(false);
         setEditForm({ name: response.data.username });
       } else {
         setError(response.message || "프로필 수정에 실패했습니다.");
@@ -346,7 +346,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
       setError("새 비밀번호가 일치하지 않습니다.");
       return;
     }
-
+    
     if (passwordForm.newPassword.length < 6) {
       setError("새 비밀번호는 최소 6자 이상이어야 합니다.");
       return;
@@ -369,7 +369,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
 
       if (response.success) {
         alert("비밀번호가 변경되었습니다.");
-        setIsPasswordDialogOpen(false);
+    setIsPasswordDialogOpen(false);
         setPasswordForm({
           currentPassword: "",
           newPassword: "",
@@ -759,48 +759,48 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                 <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
                   ✓ 이메일 인증이 완료되었습니다.
                 </div>
-                <div>
-                  <Label htmlFor="current-password">현재 비밀번호</Label>
-                  <Input
-                    id="current-password"
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new-password">새 비밀번호</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  />
+            <div>
+              <Label htmlFor="current-password">현재 비밀번호</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-password">새 비밀번호</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              />
                   <p className="text-xs text-gray-500 mt-1">
                     최소 6자 이상 입력해주세요.
                   </p>
-                </div>
-                <div>
-                  <Label htmlFor="confirm-password">새 비밀번호 확인</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  />
-                </div>
+            </div>
+            <div>
+              <Label htmlFor="confirm-password">새 비밀번호 확인</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              />
+            </div>
               </>
             )}
 
             <div className="flex gap-2">
               {emailVerified && (
-                <Button
-                  onClick={handleChangePassword}
-                  className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "변경 중..." : "변경"}
-                </Button>
+              <Button
+                onClick={handleChangePassword}
+                className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
+                disabled={isLoading}
+              >
+                {isLoading ? "변경 중..." : "변경"}
+              </Button>
               )}
               <Button
                 variant="outline"

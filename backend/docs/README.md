@@ -6,7 +6,7 @@
 현재 Supabase KV 스토어 기반의 프로토타입을 PostgreSQL 기반의 아키텍처로 마이그레이션하는 작업을 진행 중입니다.
 
 ### docker 실행 시 되지 않으면 
-1. netstat -ano | findstr :5432
+1. netstat -ano | findstr :5433
 2. taskkill /PID ---- /F
 3. taskkill /PID ---- /F
 ---
@@ -56,7 +56,7 @@ DB_USER=myadmin
 DB_PASSWORD=mypassword123
 DB_NAME=ddareungi
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=5433
 
 ```
 ---
@@ -73,7 +73,7 @@ docker-compose up -d
 
 - 최초 실행 시 db/init.sql 파일을 자동으로 읽어 테이블을 생성합니다.
 
-- 이제 localhost:5432로 DB에 접속할 수 있습니다.
+- 이제 localhost:5433로 DB에 접속할 수 있습니다.
 
 
 

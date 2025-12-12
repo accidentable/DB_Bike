@@ -1,11 +1,11 @@
 /**
  * src/api/point.routes.js
  * 포인트 관련 API 라우터
- *
- * 엔드포인트:
- * GET    /api/points/balance      - 포인트 잔액 조회 (로그인 필요)
- * POST   /api/points/charge       - 포인트 충전 (로그인 필요)
- * GET    /api/points/history      - 포인트 사용 내역 조회 (로그인 필요)
+ * 
+ * 주요 엔드포인트:
+ * - GET    /api/points/balance                 - 포인트 잔액 조회 (로그인 필요)
+ * - POST   /api/points/charge                   - 포인트 충전 (로그인 필요)
+ * - GET    /api/points/history                  - 포인트 사용 내역 조회 (로그인 필요, limit 파라미터 지원)
  */
 
 const express = require('express');

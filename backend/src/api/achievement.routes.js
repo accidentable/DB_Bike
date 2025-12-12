@@ -1,6 +1,11 @@
 /**
  * src/api/achievement.routes.js
  * 업적 관련 API 라우터
+ * 
+ * 주요 엔드포인트:
+ * - GET    /api/achievements                    - 내 업적 목록 조회 (로그인 필요)
+ * - GET    /api/achievements/all                 - 모든 업적 목록 조회 (공개)
+ * - POST   /api/achievements/:achievementId/claim - 업적 포인트 수령 (로그인 필요)
  */
 
 const express = require('express');
@@ -49,7 +54,7 @@ router.get('/all', async (req, res) => {
 
 /**
  * POST /api/achievements/:achievementId/claim
- * 업적 포인트 수령 (로그인 필요)
+ * 업적 포인트 수령 
  */
 router.post('/:achievementId/claim', verifyToken, async (req, res) => {
   try {
