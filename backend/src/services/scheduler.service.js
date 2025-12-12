@@ -1,4 +1,12 @@
-// src/services/scheduler.service.js
+/**
+ * src/services/scheduler.service.js
+ * 배치 스케줄러 서비스
+ * 
+ * 주요 함수:
+ * - fetchAllBikeCounts: 서울시 API에서 대여소 재고 정보 조회
+ * - updateBikeCounts: DB의 bike_count 최신화
+ * - initializeScheduler: 스케줄러 시작 (5분마다 재고 업데이트)
+ */
 
 require('dotenv').config();
 const axios = require('axios');
@@ -6,9 +14,7 @@ const pool = require('../config/db.config');
 
 const API_KEY = process.env.SEOUL_API_KEY;
 
-/**
- * 서울시 API에서 모든 대여소의 '최신 재고'를 가져오는 함수
- */
+// 서울시 API에서 대여소 재고 정보 조회
 async function fetchAllBikeCounts() {
   const ranges = [
     axios.get(`http://openapi.seoul.go.kr:8088/${API_KEY}/json/bikeList/1/1000/`),
@@ -18,7 +24,6 @@ async function fetchAllBikeCounts() {
 
   try {
     const responses = await Promise.all(ranges);
-    // 응답에서 'row' 데이터만 추출하여 하나의 배열로 합침
     const allStations = responses.map(res => res.data.rentBikeStatus.row || []).flat();
     return allStations;
   } catch (error) {
@@ -27,9 +32,7 @@ async function fetchAllBikeCounts() {
   }
 }
 
-/**
- * DB의 bike_count를 최신화하는 함수
- */
+// DB의 bike_count 최신화
 async function updateBikeCounts() {
   console.log('[스케줄러] 실시간 자전거 재고 업데이트를 시작합니다...');
   
@@ -39,7 +42,6 @@ async function updateBikeCounts() {
     return;
   }
 
-  // 모든 UPDATE 쿼리를 병렬로 실행
   try {
     const updatePromises = allStations.map(station => {
       const { stationName, parkingBikeTotCnt } = station;
@@ -59,16 +61,11 @@ async function updateBikeCounts() {
   }
 }
 
-/**
- * 스케줄러를 시작하는 함수
- */
+// 스케줄러 시작 (5분마다 재고 업데이트)
 function initializeScheduler() {
   console.log('🚀 배치 스케줄러가 활성화되었습니다. 5분마다 재고를 업데이트합니다.');
   
-  // 1. 서버 시작 시 즉시 1회 실행
   updateBikeCounts(); 
-  
-  // 2. 그 후 5분(300,000 밀리초)마다 반복 실행
   setInterval(updateBikeCounts, 300000); 
 }
 

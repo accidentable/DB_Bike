@@ -10,7 +10,8 @@
  * - DELETE /api/stations/:stationId/favorite    - 대여소 즐겨찾기 제거 (로그인 필요)
  * - GET    /api/stations/:stationId/bikes       - 특정 대여소의 자전거 목록 조회 (공개)
  * - POST   /api/stations                        - 대여소 추가 (관리자 전용)
- * - DELETE /api/stations/:stationId             - 대여소 삭제 (관리자 전용)
+ * - PUT    /api/stations/:stationId              - 대여소 수정 (관리자 전용)
+ * - DELETE /api/stations/:stationId              - 대여소 삭제 (관리자 전용)
  */
 
 const express = require('express');
@@ -137,6 +138,45 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     res.status(201).json({ success: true, data: station });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /api/stations/:stationId
+ * 대여소 수정 (관리자 전용)
+ * 
+ * 요청 본문:
+ * {
+ *   "name": "대여소 이름",
+ *   "latitude": 37.5665,
+ *   "longitude": 126.9780,
+ *   "status": "정상" (선택)
+ * }
+ */
+router.put('/:stationId', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const stationId = Number(req.params.stationId);
+    const { name, latitude, longitude, status } = req.body;
+
+    if (isNaN(stationId)) {
+      return res.status(400).json({
+        success: false,
+        message: '올바른 대여소 ID가 아닙니다.'
+      });
+    }
+
+    if (!name || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: '대여소 이름, 위도, 경도는 필수입니다.'
+      });
+    }
+
+    const station = await stationService.updateStation(stationId, name, latitude, longitude, status || '정상');
+    res.status(200).json({ success: true, data: station });
+  } catch (error) {
+    const statusCode = error.message.includes('찾을 수 없습니다') ? 404 : 400;
+    res.status(statusCode).json({ success: false, message: error.message });
   }
 });
 

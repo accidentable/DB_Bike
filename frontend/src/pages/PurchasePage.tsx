@@ -1,4 +1,13 @@
-// src/pages/PurchasePage.tsx
+/**
+ * src/pages/PurchasePage.tsx
+ * 이용권 구매 페이지
+ * 
+ * 사용된 API:
+ * - ticketApi: getTicketTypes, purchaseTicket
+ * - authApi: isAuthenticated, getCurrentUser
+ * - pointApi: getPointBalance, chargePoints
+ */
+
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import { Card } from "../components/ui/card";
@@ -10,7 +19,6 @@ import { useNavigate } from "react-router-dom";
 import { getPointBalance, chargePoints } from "../api/pointApi";
 import { useAuth } from "../contexts/AuthContext";
 
-// 기본 이용권 데이터 (서버 연결 실패시 사용)
 const defaultTickets: TicketType[] = [
   {
     ticket_type_id: 1,
@@ -84,7 +92,6 @@ export default function PurchasePage() {
     fetchTicketTypes();
   }, []);
 
-  // --- 포인트 잔액 가져오기 (회원가입 시 5000포인트 포함) ---
   const fetchPointBalance = async () => {
     if (!isLoggedIn) return;
     try {
@@ -101,9 +108,7 @@ export default function PurchasePage() {
     fetchPointBalance();
   }, [isLoggedIn]);
 
-  // --- 2. 이용권 구매 ---
   const handlePurchase = async (ticketTypeId: number, ticketName: string, price: number) => {
-    // 로그인 확인
     if (!isAuthenticated()) {
       alert('로그인이 필요합니다.');
       navigate('/login');
@@ -116,7 +121,6 @@ export default function PurchasePage() {
       return;
     }
 
-    // 포인트 잔액 확인
     if (pointBalance < price) {
       const wantToCharge = window.confirm(
         `포인트가 부족합니다.\n현재 잔액: ${pointBalance}P\n필요 금액: ${price}P\n\n포인트를 충전하시겠습니까?`
@@ -141,9 +145,7 @@ export default function PurchasePage() {
       
       if (response.success && response.data) {
         alert(`${response.message || '이용권 구매가 완료되었습니다!'}\n만료 시간: ${new Date(response.data.expiry_time).toLocaleString()}`);
-        // 포인트 잔액을 DB에서 다시 가져와서 업데이트
         await fetchPointBalance();
-        // 구매 완료 후 프로필 페이지로 이동 (이용권 확인)
         navigate('/profile');
       } else {
         alert(response.message || '이용권 구매에 실패했습니다.');

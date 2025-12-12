@@ -1,3 +1,11 @@
+/**
+ * src/pages/SignupPage.tsx
+ * 회원가입 페이지
+ * 
+ * 사용된 API:
+ * - authApi: signup, kakaoLogin, sendVerificationEmail, verifyEmail
+ */
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -177,14 +185,6 @@ export default function SignupPage() {
     }
   };
 
-  // (이하 유효성 검사 함수들은 동일하게 유지)
-  const validateEmail = (email: string) => { /* ... */ };
-  const validateName = (name: string) => { /* ... */ };
-  const validatePhone = (phone: string) => { /* ... */ };
-  const validatePassword = (password: string) => { /* ... */ };
-  const validateConfirmPassword = (confirmPassword: string) => { /* ... */ };
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => { /* ... */ };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex items-center justify-center p-4 py-12">
@@ -209,15 +209,9 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* 🚨 [수정] 이름 필드 - 아이콘 구조 및 클래스 변경 */}
             <div>
               <Label htmlFor="name">이름</Label>
               <div className="relative mt-1">
-                {/* - div 래퍼 제거
-                  - 'inset-y-0 pl-3 pointer-events-none' 대신
-                  - 'absolute left-3 top-1/2 -translate-y-1/2' 사용
-                */}
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="name"
@@ -227,7 +221,7 @@ export default function SignupPage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className="pl-10" // .pl-10은 index.css에 존재
+                  className="pl-10"
                   required
                 />
               </div>
@@ -309,7 +303,6 @@ export default function SignupPage() {
               )}
             </div>
 
-            {/* 🚨 [수정] 휴대폰 필드 - 아이콘 구조 및 클래스 변경 */}
             <div>
               <Label htmlFor="phone">휴대폰 번호</Label>
               <div className="relative mt-1">
@@ -328,13 +321,10 @@ export default function SignupPage() {
               {validationErrors.phone && <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>}
             </div>
 
-            {/* 🚨 [수정] 비밀번호 필드 - 아이콘/버튼 구조, 클래스, 패딩 변경 */}
             <div>
               <Label htmlFor="password">비밀번호</Label>
               <div className="relative mt-1">
-                {/* 왼쪽 아이콘 */}
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                
                 <Input
                   id="password"
                   name="password"
@@ -343,32 +333,25 @@ export default function SignupPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  // .pr-10 대신 .pr-8 사용
                   className="pl-10 pr-8"
                   minLength={8}
                   required
                 />
-                
-                {/* 오른쪽 버튼 (div 래퍼 제거) */}
                 <button
                   type="button"
-                  // .right-3 대신 .right-4 사용
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {/* .w-5 .h-5 대신 .w-4 .h-4 사용 (일관성) */}
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {validationErrors.password && <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>}
             </div>
 
-            {/* 🚨 [수정] 비밀번호 확인 필드 - 아이콘/버튼 구조, 클래스, 패딩 변경 */}
             <div>
               <Label htmlFor="confirmPassword">비밀번호 확인</Label>
               <div className="relative mt-1">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -377,7 +360,6 @@ export default function SignupPage() {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  // .pr-10 대신 .pr-8 사용
                   className="pl-10 pr-8"
                   minLength={8}
                   required
@@ -385,7 +367,6 @@ export default function SignupPage() {
                 
                 <button
                   type="button"
-                  // .right-3 대신 .right-4 사용
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
@@ -395,10 +376,7 @@ export default function SignupPage() {
               {validationErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>}
             </div>
 
-            {/* ... (이하 약관 동의, 버튼, 하단 링크 등은 동일) ... */}
-            
             <div className="border-t pt-4 mt-6">
-              {/* ... (약관 동의 JSX) ... */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                   <Checkbox

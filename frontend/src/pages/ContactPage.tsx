@@ -1,13 +1,19 @@
-// src/pages/ContactPage.tsx
+/**
+ * src/pages/ContactPage.tsx
+ * 문의하기 페이지
+ * 
+ * 사용된 API:
+ * (현재 API 미사용 - 추후 구현 예정)
+ */
 
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../components/ui/card"; // 경로 수정
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import { useNavigate } from "react-router-dom"; // useNavigate import
-import { ArrowLeft } from "lucide-react"; // ArrowLeft 아이콘 import
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export default function ContactPage() {
   const navigate = useNavigate();

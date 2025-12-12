@@ -129,6 +129,31 @@ const stationRepository = {
   },
 
   /**
+   * 대여소 수정
+   * @param {number} stationId - 대여소 ID
+   * @param {string} name - 대여소 이름
+   * @param {number} latitude - 위도
+   * @param {number} longitude - 경도
+   * @param {string} status - 상태
+   * @returns {Promise<Object>} - 수정된 대여소 정보
+   */
+  update: async (stationId, name, latitude, longitude, status) => {
+    try {
+      const query = `
+        UPDATE stations
+        SET name = $1, latitude = $2, longitude = $3, status = $4
+        WHERE station_id = $5
+        RETURNING station_id, name, latitude, longitude, status, bike_count, created_at;
+      `;
+      const { rows } = await pool.query(query, [name, latitude, longitude, status, stationId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error updating station:', error);
+      throw error;
+    }
+  },
+
+  /**
    * 대여소 삭제
    * @param {number} stationId - 대여소 ID
    * @returns {Promise<void>}

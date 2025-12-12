@@ -1,26 +1,27 @@
-// src/pages/CommunityPage.tsx
-// (API 연동 및 mock data 제거 완료)
+/**
+ * src/pages/CommunityPage.tsx
+ * 커뮤니티 게시판 페이지
+ * 
+ * 사용된 API:
+ * - postApi: getPosts, createPost, getPost, updatePost, deletePost, 
+ *            getPinnedPosts, downloadAttachment
+ * - commentApi: createComment, getComments, deleteComment
+ * - likeApi: toggleLike, getLikeInfo
+ */
 
 import { useState, useEffect } from "react";
 import { Calendar, Eye, MessageCircle, ThumbsUp, Edit3, Send, Filter, SortDesc, Pin, ArrowLeft, Paperclip, X, Trash2, Edit, Download } from "lucide-react";
-
-// 1. (수정) API 경로 및 Context 경로 수정
 import { getPosts, createPost, getPost, updatePost, deletePost, getPinnedPosts, downloadAttachment, type Post } from "../api/postApi";
 import { createComment, getComments, deleteComment, type Comment } from "../api/commentApi";
 import { toggleLike, getLikeInfo } from "../api/likeApi";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom"; // 페이지 이동을 위해 추가
-
-// 2. (수정) UI 컴포넌트 경로 수정
+import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-// Header는 App.tsx에서 렌더링되므로 여기서 import 제거 (주석 처리)
-
-// Select 컴포넌트 import (경로 수정)
 import {
   Select,
   SelectContent,
@@ -29,16 +30,9 @@ import {
   SelectValue,
 } from "../components/ui/select";
 
-// 4. (수정) 목업 데이터 삭제
-// const initialPosts: Post[] = [ ... ]; // 삭제
-
-// (props는 App.tsx에서 처리하므로 삭제)
-
 export default function CommunityPage() {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
-
-  // --- API 데이터 상태 ---
   const [posts, setPosts] = useState<Post[]>([]);
   const [pinnedPosts, setPinnedPosts] = useState<Post[]>([]); // 고정된 게시글 상태 추가
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -47,12 +41,10 @@ export default function CommunityPage() {
   const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // --- UI 상태 ---
   const [isWriting, setIsWriting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
-  const [sortBy, setSortBy] = useState<"latest" | "views" | "likes">("latest"); // (수정) date -> latest
+  const [sortBy, setSortBy] = useState<"latest" | "views" | "likes">("latest");
   const [newPost, setNewPost] = useState({
     title: "",
     content: "",
@@ -70,9 +62,8 @@ export default function CommunityPage() {
   const [filePreviewUrls, setFilePreviewUrls] = useState<string[]>([]);
   const [deleteImages, setDeleteImages] = useState<string[]>([]);
   const [deleteAttachments, setDeleteAttachments] = useState<number[]>([]); // 삭제할 첨부파일 ID
-  const [existingAttachments, setExistingAttachments] = useState<Array<{attachment_id: number, file_name: string, file_path: string, file_size: number, file_type: string}>>([]); // 기존 첨부파일 목록
+  const [existingAttachments, setExistingAttachments] = useState<Array<{attachment_id: number, file_name: string, file_path: string, file_size: number, file_type: string}>>([]);
 
-  // --- 5. (신규) API 호출 로직 ---
   const fetchPinnedPosts = async () => {
     setError(null);
     try {
@@ -96,9 +87,8 @@ export default function CommunityPage() {
             limit: 20,
             // searchQuery: undefined
         };
-        const response = await getPosts(options); // API 호출
+        const response = await getPosts(options);
         if (response.success && response.data && response.data.posts) {
-            // (수정) 고정글을 제외하고 일반 게시글만 상태에 저장
             const normalPosts = response.data.posts.filter(p => !p.is_pinned);
             setPosts(normalPosts);
         }
@@ -111,7 +101,6 @@ export default function CommunityPage() {
 
   const handlePostClick = async (postId: number) => {
     try {
-        // (수정) 상세 API 호출 (조회수 증가 로직 포함)
         const response = await getPost(postId);
         if (response.success && response.data) {
             console.log('게시글 상세 정보:', response.data);
@@ -240,7 +229,6 @@ export default function CommunityPage() {
     }
   };
 
-  // 수정 버튼 클릭 - 수정 모드로 전환
   const handleEditClick = () => {
     if (!selectedPost) return;
     
@@ -259,7 +247,6 @@ export default function CommunityPage() {
     setIsEditing(true);
   };
 
-  // 수정 제출
   const handleSubmitEdit = async () => {
     if (!editPost.title.trim() || !editPost.content.trim()) {
       alert("제목과 내용을 입력해주세요.");
@@ -287,7 +274,6 @@ export default function CommunityPage() {
         setDeleteImages([]);
         setDeleteAttachments([]);
         setExistingAttachments([]);
-        // 수정된 글 다시 불러오기
         const updatedResponse = await getPost(editPost.post_id);
         if (updatedResponse.success && updatedResponse.data) {
           setSelectedPost(updatedResponse.data);
@@ -384,22 +370,18 @@ export default function CommunityPage() {
     }
   };
   
-  // --- 6. (수정) useEffect 훅 ---
-  
-  // 카테고리나 정렬 기준 변경 시 목록 갱신
   useEffect(() => {
     fetchPosts();
-    fetchPinnedPosts(); // 고정 게시글도 함께 불러옴
-  }, [selectedCategory, sortBy]); // (수정) 의존성 배열에 filter/sort 상태 추가
+    fetchPinnedPosts();
+  }, [selectedCategory, sortBy]);
 
-  // 컴포넌트 마운트 시 고정 게시글 불러오기
   useEffect(() => {
     fetchPinnedPosts();
   }, []);
 
-  // --- 7. (유지) UI 헬퍼 함수 ---
+  //  UI 헬퍼 함수 ---
   const getCategoryColor = (category: string) => {
-    // ... (카테고리 색상 로직 유지) ...
+    // 카테고리 색상 로직 유지
     switch (category) {
         case "공지사항": return "bg-red-500 text-white";
         case "이벤트": return "bg-orange-500 text-white";
@@ -418,7 +400,6 @@ export default function CommunityPage() {
     const newFiles = Array.from(files);
     
     if (isDocument) {
-      // 일반 첨부파일 (PDF, DOCX, EXE 등)
       const totalFiles = attachedDocuments.length + newFiles.length;
       if (totalFiles > 10) {
         alert("최대 10개까지 첨부파일을 첨부할 수 있습니다.");
@@ -426,7 +407,6 @@ export default function CommunityPage() {
       }
       setAttachedDocuments([...attachedDocuments, ...newFiles]);
     } else {
-      // 이미지 파일
       const imageFiles = newFiles.filter(file => file.type.startsWith('image/'));
       const totalImages = attachedFiles.length + imageFiles.length;
       
@@ -451,7 +431,6 @@ export default function CommunityPage() {
   };
 
   const handleFileRemove = (index: number) => {
-    // 새로 추가한 파일만 제거 (blob URL)
     const blobUrls = filePreviewUrls.filter(url => url.startsWith('blob:'));
     if (index >= blobUrls.length) return;
     
@@ -470,13 +449,8 @@ export default function CommunityPage() {
     setAttachedDocuments(newDocuments);
   };
 
-  // 첨부파일 다운로드 함수는 postApi.ts에서 import하여 사용
-  
-  
-  // --- 8. (수정) JSX 렌더링 ---
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header는 App.tsx에서 렌더링되므로 제거 */}
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
@@ -527,7 +501,6 @@ export default function CommunityPage() {
                 value={sortBy}
                 onValueChange={(value) => {
                   setSortBy(value as "latest" | "views" | "likes");
-                  // 정렬 변경 시 즉시 목록 갱신 (useEffect가 자동으로 처리하지만 명시적으로 표시)
                 }}
               >
                 <SelectTrigger className="w-[180px]">
@@ -769,7 +742,6 @@ export default function CommunityPage() {
             </div>
 
             {isEditing ? (
-              // 수정 모드
               <Card className="p-8">
                 <h2 className="mb-6">게시글 수정</h2>
                 
@@ -844,21 +816,21 @@ export default function CommunityPage() {
                           .filter(url => !url.startsWith('blob:'))
                           .map((url, index) => (
                             <div key={`existing-${index}`} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                              <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                                <img 
+                            <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                              <img 
                                   src={`http://localhost:3000/${url}`}
                                   alt={`existing image ${index}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
                                 <p className="text-sm truncate">기존 이미지</p>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
                                   setDeleteImages([...deleteImages, url]);
                                   setFilePreviewUrls(filePreviewUrls.filter(u => u !== url));
                                 }}
@@ -869,7 +841,6 @@ export default function CommunityPage() {
                           ))}
                         {/* 새로 추가한 이미지 (blob URL) */}
                         {attachedFiles.map((file, index) => {
-                          // blob URL 찾기 (filePreviewUrls에서 blob:로 시작하는 것 중 해당 인덱스)
                           const blobUrls = filePreviewUrls.filter(url => url.startsWith('blob:'));
                           const previewUrl = blobUrls[index];
                           
@@ -974,7 +945,7 @@ export default function CommunityPage() {
                               <p className="text-xs text-gray-500">
                                 {(file.size / 1024 / 1024).toFixed(2)} MB
                               </p>
-                            </div>
+                  </div>
                             <Button
                               type="button"
                               size="sm"

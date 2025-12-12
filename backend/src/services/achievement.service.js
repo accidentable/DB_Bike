@@ -1,22 +1,24 @@
 /**
  * src/services/achievement.service.js
  * 업적 관련 비즈니스 로직
+ * 
+ * 주요 함수:
+ * - getAllAchievements: 모든 업적 조회
+ * - getMemberAchievements: 회원의 업적 조회 (달성 여부 및 진행도 포함)
+ * - hasAchievement: 업적 달성 여부 확인
+ * - checkAchievements: 업적 달성 체크 (포인트는 수동으로 받도록 변경)
  */
 
 const achievementRepository = require('../repositories/achievement.repository');
 const pointService = require('./point.service');
 
 const achievementService = {
-  /**
-   * 모든 업적 조회
-   */
+  // 모든 업적 조회
   getAllAchievements: async () => {
     return await achievementRepository.getAllAchievements();
   },
 
-  /**
-   * 회원의 업적 조회 (달성 여부 및 진행도 포함)
-   */
+  // 회원의 업적 조회 (달성 여부 및 진행도 포함)
   getMemberAchievements: async (memberId) => {
     const allAchievements = await achievementRepository.getAllAchievements();
     const memberAchievements = await achievementRepository.getMemberAchievements(memberId);
@@ -33,7 +35,6 @@ const achievementService = {
       
       const earned = memberAchievement !== undefined;
       
-      // 진행도 계산
       let progress = null;
       let total = null;
       
@@ -73,16 +74,12 @@ const achievementService = {
     });
   },
 
-  /**
-   * 업적 달성 여부 확인
-   */
+  // 업적 달성 여부 확인
   hasAchievement: async (memberId, achievementId) => {
     return await achievementRepository.hasAchievement(memberId, achievementId);
   },
 
-  /**
-   * 업적 달성 체크 (포인트는 수동으로 받도록 변경)
-   */
+  // 업적 달성 체크
   checkAchievements: async (memberId) => {
     try {
       const stats = await achievementRepository.getMemberStats(memberId);
@@ -90,7 +87,6 @@ const achievementService = {
       const newlyEarned = [];
 
       for (const achievement of allAchievements) {
-        // 이미 달성한 업적은 스킵
         const hasAchieved = await achievementRepository.hasAchievement(
           memberId,
           achievement.achievement_id
@@ -118,14 +114,12 @@ const achievementService = {
         }
 
         if (conditionMet) {
-          // 업적 달성 기록 (포인트는 수동으로 받도록 변경)
           const awarded = await achievementRepository.awardAchievement(
             memberId,
             achievement.achievement_id
           );
 
           if (awarded) {
-            // 포인트는 사용자가 수동으로 받도록 변경 (자동 지급 제거)
             newlyEarned.push(achievement);
           }
         }

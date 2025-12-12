@@ -1,15 +1,20 @@
-// src/pages/FAQPage.tsx
-// (모든 import 경로 수정)
+/**
+ * src/pages/FAQPage.tsx
+ * 자주 묻는 질문 페이지
+ * 
+ * 사용된 API:
+ * (현재 API 미사용 - 정적 데이터)
+ */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // useNavigate import
-import { ChevronDown, ChevronUp, Mail, MessageCircle, Send, X, ArrowLeft } from "lucide-react"; // ArrowLeft 추가
-import { Card } from "../components/ui/card"; // 경로 수정
-import { Button } from "../components/ui/button"; // 경로 수정
-import { Input } from "../components/ui/input"; // 경로 수정
-import { Textarea } from "../components/ui/textarea"; // 경로 수정
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion"; // 경로 수정
-import Header from "../components/layout/Header"; // 경로 수정 및 default import
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronUp, Mail, MessageCircle, Send, X, ArrowLeft } from "lucide-react";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../components/ui/accordion";
+import Header from "../components/layout/Header";
 
 interface FAQPageProps {
   onClose?: () => void;
@@ -24,7 +29,6 @@ interface FAQPageProps {
   onRankingClick?: () => void;
 }
 
-// ... (faqs, additionalFaqs 데이터는 원본과 동일하게 유지) ...
 const faqs = [
   {
     id: 1,

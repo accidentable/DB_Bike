@@ -85,6 +85,29 @@ export async function createStation(data: {
 }
 
 /**
+ * 대여소 수정 (관리자 전용)
+ */
+export async function updateStation(
+  stationId: number,
+  data: {
+    name: string;
+    latitude: number;
+    longitude: number;
+    status?: string;
+  }
+): Promise<ApiResponse<Station>> {
+  try {
+    const response = await client.put(`/api/stations/${stationId}`, data);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여소 수정 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
  * 대여소 삭제 (관리자 전용)
  */
 export async function deleteStation(stationId: number): Promise<ApiResponse<void>> {

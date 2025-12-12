@@ -1,64 +1,51 @@
-// src/services/email.service.js
-// 이메일 발송 서비스
+/**
+ * src/services/email.service.js
+ * 이메일 발송 서비스
+ * 
+ * 주요 함수:
+ * - generateVerificationCode: 6자리 인증 코드 생성
+ * - sendVerificationEmail: 이메일 인증 코드 발송
+ * - verifyCode: 이메일 인증 코드 검증
+ * - isEmailVerified: 이메일 인증 완료 여부 확인
+ * - deleteVerificationCode: 인증 코드 삭제
+ * - cleanupExpiredCodes: 만료된 인증 코드 정리
+ */
 
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// 이메일 인증 코드 저장소 (인메모리, 실제 운영에서는 Redis 등 사용 권장)
 const emailVerificationCodes = new Map();
 
-// Nodemailer 트랜스포터 설정 (EMAIL_USER와 EMAIL_PASS가 있을 때만 생성)
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS // Gmail 앱 비밀번호 사용
+      pass: process.env.EMAIL_PASS
     }
   });
 }
 
-// SMTP 직접 설정 예시 (Gmail 외 다른 서비스 사용 시)
-// const transporter = nodemailer.createTransport({
-//   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-//   port: process.env.SMTP_PORT || 587,
-//   secure: false,
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS
-//   }
-// });
-
 const emailService = {
-  /**
-   * 6자리 인증 코드 생성
-   */
+  // 6자리 인증 코드 생성
   generateVerificationCode: () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   },
 
-  /**
-   * 이메일 인증 코드 발송
-   * @param {string} email - 수신자 이메일 주소
-   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
-   * @returns {Promise<string>} - 생성된 인증 코드
-   */
+  // 이메일 인증 코드 발송
   sendVerificationEmail: async (email, purpose = 'signup') => {
     try {
-      // 인증 코드 생성
       const code = emailService.generateVerificationCode();
       
-      // 인증 코드 저장 (5분 유효)
       const codeKey = `${email}_${purpose}`;
       emailVerificationCodes.set(codeKey, {
         code,
-        expiresAt: Date.now() + 5 * 60 * 1000, // 5분
+        expiresAt: Date.now() + 5 * 60 * 1000,
         verified: false,
         purpose
       });
 
-      // 이메일 제목과 내용 설정
       const subject = purpose === 'password-change' 
         ? '[자전거 대여 서비스] 비밀번호 변경 인증 코드'
         : '[자전거 대여 서비스] 이메일 인증 코드';
@@ -67,7 +54,6 @@ const emailService = {
         ? '비밀번호 변경을 위한'
         : '회원가입을 위한';
 
-      // 이메일 내용
       const mailOptions = {
         from: process.env.EMAIL_USER || 'noreply@bike-rental.com',
         to: email,
@@ -89,23 +75,14 @@ const emailService = {
         text: `이메일 인증 코드: ${code}\n이 코드는 5분간 유효합니다.`
       };
 
-      // 개발 환경에서는 항상 콘솔에 출력 (실제 이메일 발송 안 함)
-      // 운영 환경에서만 실제 이메일 발송
       const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
       const shouldSendEmail = !isDevelopment && transporter && process.env.USE_EMAIL_SERVICE === 'true';
       
       if (!shouldSendEmail) {
-        console.log('='.repeat(50));
-        console.log(`[개발 모드] 이메일 인증 코드 발송 (실제 이메일 미발송)`);
-        console.log(`수신자: ${email}`);
-        console.log(`인증 코드: ${code}`);
-        console.log('='.repeat(50));
-        console.log(`💡 실제 이메일을 발송하려면 .env에 USE_EMAIL_SERVICE=true를 추가하세요.`);
-        console.log('='.repeat(50));
+        console.log(`[개발 모드] 이메일 인증 코드: ${code} (수신자: ${email})`);
         return code;
       }
 
-      // 운영 환경에서 실제 이메일 발송
       await transporter.sendMail(mailOptions);
       console.log(`✅ 인증 코드 이메일 발송 완료: ${email}`);
       
@@ -116,72 +93,44 @@ const emailService = {
     }
   },
 
-  /**
-   * 이메일 인증 코드 검증
-   * @param {string} email - 이메일 주소
-   * @param {string} code - 인증 코드
-   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
-   * @returns {Promise<boolean>} - 검증 성공 여부
-   */
+  // 이메일 인증 코드 검증
   verifyCode: (email, code, purpose = 'signup') => {
     const codeKey = `${email}_${purpose}`;
     const stored = emailVerificationCodes.get(codeKey);
     
-    // 디버깅 로그
-    console.log(`[이메일 인증] 검증 시도: email=${email}, purpose=${purpose}, codeKey=${codeKey}`);
-    console.log(`[이메일 인증] 저장된 키 목록:`, Array.from(emailVerificationCodes.keys()));
-    
     if (!stored) {
-      console.log(`[이메일 인증] 인증 코드를 찾을 수 없음: ${codeKey}`);
       return { success: false, message: '인증 코드가 존재하지 않습니다. 인증 코드를 다시 발송해주세요.' };
     }
 
-    // 만료 확인
     if (Date.now() > stored.expiresAt) {
       emailVerificationCodes.delete(codeKey);
-      console.log(`[이메일 인증] 인증 코드 만료: ${codeKey}`);
       return { success: false, message: '인증 코드가 만료되었습니다. 인증 코드를 다시 발송해주세요.' };
     }
 
-    // 코드 일치 확인
-    console.log(`[이메일 인증] 입력된 코드: ${code}, 저장된 코드: ${stored.code}`);
     if (stored.code !== code) {
       return { success: false, message: '인증 코드가 일치하지 않습니다.' };
     }
 
-    // 인증 완료 표시
     stored.verified = true;
     emailVerificationCodes.set(codeKey, stored);
-    console.log(`[이메일 인증] 인증 성공: ${codeKey}`);
     
     return { success: true, message: '인증이 완료되었습니다.' };
   },
 
-  /**
-   * 이메일 인증 완료 여부 확인
-   * @param {string} email - 이메일 주소
-   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
-   * @returns {boolean} - 인증 완료 여부
-   */
+  // 이메일 인증 완료 여부 확인
   isEmailVerified: (email, purpose = 'signup') => {
     const codeKey = `${email}_${purpose}`;
     const stored = emailVerificationCodes.get(codeKey);
     return stored && stored.verified === true;
   },
 
-  /**
-   * 인증 코드 삭제
-   * @param {string} email - 이메일 주소
-   * @param {string} purpose - 인증 목적 ('signup' 또는 'password-change')
-   */
+  // 인증 코드 삭제
   deleteVerificationCode: (email, purpose = 'signup') => {
     const codeKey = `${email}_${purpose}`;
     emailVerificationCodes.delete(codeKey);
   },
 
-  /**
-   * 만료된 인증 코드 정리 (주기적으로 실행)
-   */
+  // 만료된 인증 코드 정리
   cleanupExpiredCodes: () => {
     const now = Date.now();
     for (const [email, data] of emailVerificationCodes.entries()) {
@@ -192,7 +141,6 @@ const emailService = {
   }
 };
 
-// 10분마다 만료된 코드 정리
 setInterval(() => {
   emailService.cleanupExpiredCodes();
 }, 10 * 60 * 1000);

@@ -1,17 +1,25 @@
-// src/pages/ProfilePage.tsx
-// (모든 import 경로 수정)
+/**
+ * src/pages/ProfilePage.tsx
+ * 사용자 프로필 페이지
+ * 
+ * 사용된 API:
+ * - authApi: getCurrentUser, isAuthenticated, updateProfile, changePassword, 
+ *            sendPasswordChangeEmail, verifyEmail
+ * - ticketApi: getMyActiveTickets
+ * - rentalApi: getRentalHistory
+ * - achievementApi: getMyAchievements, claimAchievementPoints
+ * - rankingApi: getTotalDistanceRanking
+ */
 
 import { useState, useEffect } from "react";
 import { User, Award, MapPin, Trophy, Star, Bike, Edit, Lock } from "lucide-react";
-import { Card } from "../components/ui/card"; // 경로 수정
-import { Button } from "../components/ui/button"; // 경로 수정
-import { Badge } from "../components/ui/badge"; // 경로 수정
-import { Progress } from "../components/ui/progress"; // 경로 수정
-import { Input } from "../components/ui/input"; // 경로 수정
-import { Label } from "../components/ui/label"; // 경로 수정
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"; // 경로 수정
-
-// API 함수 import
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { getCurrentUser as getUser, isAuthenticated, updateProfile, changePassword, sendPasswordChangeEmail, verifyEmail } from "../api/authApi";
 import { getMyActiveTickets } from "../api/ticketApi";
 import { getRentalHistory } from "../api/rentalApi";
@@ -77,12 +85,10 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
     ticketExpiry: "",
   });
 
-  // 수정 폼 데이터
   const [editForm, setEditForm] = useState({
     name: "",
   });
 
-  // 비밀번호 변경 폼
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -108,7 +114,6 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           return;
         }
 
-        // 이용권 정보 가져오기
         const ticketsResponse = await getMyActiveTickets();
         let ticketInfo = { name: "이용권 없음", expiry: "" };
         
@@ -120,18 +125,15 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           };
         }
 
-        // 대여 이력 가져오기
-const historyResponse = await getRentalHistory();
-let totalRides = 0;
-let totalDistance = 0;
-        let totalRentalTime = 0; // 총 이용 시간 (밀리초)
+        const historyResponse = await getRentalHistory();
+        let totalRides = 0;
+        let totalDistance = 0;
+        let totalRentalTime = 0;
 
-if (historyResponse.success && historyResponse.data) {
-  totalRides = historyResponse.data.length;
-          // 거리 합계 및 총 이용 시간 계산
+        if (historyResponse.success && historyResponse.data) {
+          totalRides = historyResponse.data.length;
           historyResponse.data.forEach((rental) => {
             totalDistance += rental.distance_km || 0;
-            // 이용 시간 계산 (start_time과 end_time의 차이)
             if (rental.start_time && rental.end_time) {
               const startTime = new Date(rental.start_time).getTime();
               const endTime = new Date(rental.end_time).getTime();
@@ -140,13 +142,11 @@ if (historyResponse.success && historyResponse.data) {
           });
         }
 
-        // 랭킹 정보 가져오기 (누적 거리 기준)
         let userRank = 0;
         let totalUsersCount = 0;
         try {
           const rankingResponse = await getTotalDistanceRanking();
           if (rankingResponse.success && rankingResponse.data) {
-            // 랭킹에 포함된 사용자 수 (최소 100명)
             totalUsersCount = rankingResponse.data.ranking?.length || 0;
             if (rankingResponse.data.currentUser) {
               userRank = rankingResponse.data.currentUser.rank_position || 0;
@@ -156,21 +156,17 @@ if (historyResponse.success && historyResponse.data) {
           console.error("랭킹 조회 실패:", rankError);
         }
 
-        // 평균 이용 시간 계산 (분 단위)
         const avgRentalTime = totalRides > 0 && totalRentalTime > 0 
-          ? Math.round(totalRentalTime / totalRides / 1000 / 60) // 밀리초를 분으로 변환
+          ? Math.round(totalRentalTime / totalRides / 1000 / 60)
           : 0;
 
-        // 탄소 배출 절감량 계산 (자전거 1km당 약 0.234kg CO2 절감)
         const carbonReduction = Math.round(totalDistance * 0.234 * 10) / 10;
 
-        // 상위 % 계산 (랭킹에 포함된 사용자 기준)
         const topPercent = totalUsersCount > 0 && userRank > 0
           ? Math.round((userRank / totalUsersCount) * 100 * 10) / 10
           : 0;
         const topPercentText = topPercent > 0 ? `상위 ${topPercent}%` : "랭킹 없음";
 
-        // 업적 데이터 로드 및 달성률 계산
         const achievementsResponse = await getMyAchievements();
         let achievementRate = 0;
         if (achievementsResponse.success && achievementsResponse.data) {
@@ -214,7 +210,6 @@ if (historyResponse.success && historyResponse.data) {
     loadUserData();
   }, [navigate]);
 
-  // 정보 수정 핸들러
   const handleEditProfile = async () => {
     if (!editForm.name.trim()) {
       setError("이름을 입력해주세요.");
@@ -552,7 +547,6 @@ if (historyResponse.success && historyResponse.data) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {achievements
                 .sort((a, b) => {
-                  // 업적을 조건 타입과 값으로 정렬
                   const typeOrder = ['FIRST_RIDE', 'TOTAL_RIDES', 'CONSECUTIVE_DAYS', 'TOTAL_DISTANCE', 'TOTAL_STATIONS'];
                   const aTypeIndex = typeOrder.indexOf(a.condition_type);
                   const bTypeIndex = typeOrder.indexOf(b.condition_type);
@@ -582,7 +576,6 @@ if (historyResponse.success && historyResponse.data) {
                               const response = await claimAchievementPoints(achievement.achievement_id);
                               if (response.success) {
                                 alert('500포인트가 지급되었습니다!');
-                                // 업적 목록 새로고침
                                 const achievementsResponse = await getMyAchievements();
                                 if (achievementsResponse.success && achievementsResponse.data) {
                                   setAchievements(achievementsResponse.data);

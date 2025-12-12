@@ -1,5 +1,10 @@
-// src/pages/RankingPage.tsx
-// (모든 import 경로 수정)
+/**
+ * src/pages/RankingPage.tsx
+ * 랭킹 페이지
+ * 
+ * 사용된 API:
+ * - rankingApi: getTotalDistanceRanking, getTotalRideRanking
+ */
 
 import { useState, useEffect } from "react";
 import { TrendingUp, MapPin, Bike, Clock } from "lucide-react";
@@ -41,11 +46,7 @@ interface RankingUser {
 const getNextFriday1AM = (): Date => {
   const now = new Date();
   const nextFriday = new Date(now);
-  
-  // 현재 요일 (0=일요일, 5=금요일)
   const currentDay = now.getDay();
-  
-  // 금요일까지 남은 일수 계산
   let daysUntilFriday = 5 - currentDay;
   
   // 오늘이 금요일이고 1시 이전이면 오늘, 그렇지 않으면 다음 금요일

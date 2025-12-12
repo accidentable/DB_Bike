@@ -1,5 +1,13 @@
-// src/pages/AdminDashboard.tsx
-// (Supabase API 호출 로직 제거 및 Node.js API 호출 뼈대로 대체)
+/**
+ * src/pages/AdminDashboardpage.tsx
+ * 관리자 대시보드 페이지
+ * 
+ * 사용된 API:
+ * - adminApi: getDashboardStats, getUsers, getRentals, updateUser, deleteUser, 
+ *             getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser
+ * - ticketApi: getTicketTypes
+ * - stationApi: getAllStations, createStation, updateStation, deleteStation
+ */
 
 import { useState, useEffect } from "react";
 import { Users, Bike, TrendingUp, Activity, Edit, Trash2, Search, Ticket, Plus } from "lucide-react";
@@ -10,67 +18,16 @@ import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-// (수정) supabase 관련 import 제거
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-// Admin API 함수
-//import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi";
-// Admin API 함수
 import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser } from "../api/adminApi";
 import type { ActivityLog, DistrictStat, StationRentalRate } from "../api/adminApi";
-// Ticket API 함수
 import { getTicketTypes } from "../api/ticketApi";
 import type { TicketType } from "../api/ticketApi";
+import { getAllStations, createStation, updateStation, deleteStation } from "../api/stationApi";
 
-// Station API 함수
-import { getAllStations, createStation, deleteStation } from "../api/stationApi"; 
-
-
-// 목업 데이터
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF6B9D', '#C084FC', '#34D399', '#F59E0B', '#EF4444', '#3B82F6', '#10B981', '#F97316'];
 
-/*const districtData = [
-  { name: '영등포구', value: 57, percent: 10.2 },
-  { name: '강남구', value: 53, percent: 9.5 },
-  { name: '서초구', value: 51, percent: 9.1 },
-  { name: '마포구', value: 48, percent: 8.6 },
-  { name: '용산구', value: 44, percent: 7.9 },
-  { name: '종로구', value: 41, percent: 7.3 },
-  { name: '성동구', value: 39, percent: 7.0 },
-  { name: '광진구', value: 36, percent: 6.4 },
-  { name: '송파구', value: 33, percent: 5.9 },
-  { name: '중구', value: 31, percent: 5.5 },
-  { name: '동작구', value: 28, percent: 5.0 },
-  { name: '은평구', value: 26, percent: 4.6 },
-  { name: '강서구', value: 24, percent: 4.3 },
-  { name: '관악구', value: 22, percent: 3.9 },
-  { name: '노원구', value: 20, percent: 3.6 },
-];
-
-const rentalRateData = [
-  { name: '101. 순화동주민센터 앞', percent: 96.55, color: '#FF0000' },
-  { name: '102. 시청역 1번출구 앞', percent: 95.24, color: '#FF4500' },
-  { name: '2. 103. 을지로입구역 4번 출구 앞', percent: 94.44, color: '#FF6347' },
-  { name: '104. 광화문역 7번출구 옆', percent: 89.66, color: '#FF8C00' },
-  { name: '105. 광화문역 5번출구 옆', percent: 87.5, color: '#FFA500' },
-  { name: '106. 서울역사박물관 옆', percent: 86.67, color: '#FFB347' },
-  { name: '117. 삼청파출소 앞', percent: 85.71, color: '#FFC04D' },
-  { name: '118. 안국역 1번 출구 옆', percent: 84.21, color: '#FFCC66' },
-  { name: '119. 종각역 1번출구 앞', percent: 83.33, color: '#FFD700' },
-  { name: '1. 120. 종각역 3번출구 앞', percent: 82.76, color: '#FFE066' },
-];*/
-
-/*
-const activityLogsData = [
-  { time: '2025-11-11 08:30:15', user: 'hong@test.com', action: '로그인 시도 (성공)', status: 'success' },
-  { time: '2025-11-11 08:25:42', user: 'kim@test.com', action: '자전거 대여 (1001번)', status: 'success' },
-  { time: '2025-11-11 08:20:33', user: 'lee@test.com', action: '이용권 구매 (30일권)', status: 'success' },
-  { time: '2025-11-11 08:15:28', user: 'park@test.com', action: '로그인 시도 (실패 - 비밀번호 오류)', status: 'error' },
-  { time: '2025-11-11 08:10:19', user: 'choi@test.com', action: '자전거 반납 (1002번)', status: 'success' },
-  { time: '2025-11-11 08:05:11', user: 'jung@test.com', action: '프로필 수정', status: 'success' },
-  { time: '2025-11-11 08:00:03', user: 'kang@test.com', action: '대여소 조회', status: 'info' },
-  { time: '2025-11-11 07:55:47', user: 'system', action: '자동 백업 시작', status: 'info' },
-];*/
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>({totalUsers: 0, totalRentals: 0, activeRentals: 0, totalDistance: 0});
@@ -98,9 +55,17 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
   });
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isStationDialogOpen, setIsStationDialogOpen] = useState(false);
+  const [isEditStationDialogOpen, setIsEditStationDialogOpen] = useState(false);
   const [isDeleteStationDialogOpen, setIsDeleteStationDialogOpen] = useState(false);
+  const [selectedStationForEdit, setSelectedStationForEdit] = useState<any>(null);
   const [selectedStationForDelete, setSelectedStationForDelete] = useState<any>(null);
   const [stationForm, setStationForm] = useState({
+    name: "",
+    latitude: "",
+    longitude: "",
+    status: "정상",
+  });
+  const [editStationForm, setEditStationForm] = useState({
     name: "",
     latitude: "",
     longitude: "",
@@ -143,7 +108,6 @@ useEffect(() => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Node.js 백엔드 API 호출
       const [statsRes, usersRes, rentalsRes, stationsRes, districtStatsRes, rentalRatesRes] = await Promise.all([
         getDashboardStats(),
         getUsers(),
@@ -175,7 +139,6 @@ useEffect(() => {
       }));
       setUsers(transformedUsers);
       
-      // 대여 데이터 변환 (백엔드 형식 -> 프론트엔드 형식)
       const transformedRentals = rentalsRes.map((rental: any) => ({
         id: rental.rental_id,
         userName: rental.username,
@@ -310,6 +273,55 @@ useEffect(() => {
     }
   };
 
+  const handleEditStation = (station: any) => {
+    setSelectedStationForEdit(station);
+    setEditStationForm({
+      name: station.name,
+      latitude: station.latitude.toString(),
+      longitude: station.longitude.toString(),
+      status: station.status || "정상",
+    });
+    setIsEditStationDialogOpen(true);
+  };
+
+  const handleUpdateStation = async () => {
+    if (!selectedStationForEdit) return;
+    if (!editStationForm.name || !editStationForm.latitude || !editStationForm.longitude) {
+      alert("대여소 이름, 위도, 경도를 모두 입력해주세요.");
+      return;
+    }
+
+    try {
+      const latitude = parseFloat(editStationForm.latitude);
+      const longitude = parseFloat(editStationForm.longitude);
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        alert("올바른 좌표를 입력해주세요.");
+        return;
+      }
+
+      const response = await updateStation(selectedStationForEdit.station_id, {
+        name: editStationForm.name,
+        latitude: latitude,
+        longitude: longitude,
+        status: editStationForm.status,
+      });
+
+      if (response.success) {
+        alert("대여소가 수정되었습니다.");
+        setIsEditStationDialogOpen(false);
+        setSelectedStationForEdit(null);
+        setEditStationForm({ name: "", latitude: "", longitude: "", status: "정상" });
+        loadData();
+      } else {
+        alert(response.message || "대여소 수정에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Error updating station:", error);
+      alert("대여소 수정 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleDeleteStation = (station: any) => {
     setSelectedStationForDelete(station);
     setIsDeleteStationDialogOpen(true);
@@ -337,15 +349,6 @@ useEffect(() => {
 
   const handleDeleteUser = async (email: string) => {
     if (!confirm("정말로 이 사용자를 삭제하시겠습니까?")) return;
-    // (신규) Node.js API 호출로 대체
-    // try {
-    //   await deleteUser(email);
-    //   alert("사용자가 삭제되었습니다.");
-    //   loadData();
-    // } catch (error) {
-    //   console.error("Error deleting user:", error);
-    //   alert("삭제 중 오류가 발생했습니다.");
-    // }
   };
 
   const filteredUsers = users.filter(user =>
@@ -575,7 +578,6 @@ useEffect(() => {
                         )
                         .slice(0, 20)
                         .map((station) => {
-                          // 현재 대여중인 자전거 수 계산 (end_time이 null인 rentals 중에서 해당 대여소에서 시작한 것들)
                           const rentedCount = rentals.filter(
                             (rental) => rental.returnedAt === null && rental.stationName === station.name
                           ).length;
@@ -589,14 +591,24 @@ useEffect(() => {
                               <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
                               <td className="px-4 py-3 text-right">{rentedCount}</td>
                               <td className="px-4 py-3 text-center">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteStation(station)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditStation(station)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteStation(station)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1033,6 +1045,82 @@ useEffect(() => {
                 취소
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 대여소 수정 다이얼로그 */}
+      <Dialog open={isEditStationDialogOpen} onOpenChange={setIsEditStationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>대여소 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-station-name">대여소 이름</Label>
+              <Input
+                id="edit-station-name"
+                type="text"
+                value={editStationForm.name}
+                onChange={(e) => setEditStationForm({ ...editStationForm, name: e.target.value })}
+                placeholder="대여소 이름을 입력하세요"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-station-latitude">위도 (Latitude)</Label>
+              <Input
+                id="edit-station-latitude"
+                type="number"
+                step="any"
+                value={editStationForm.latitude}
+                onChange={(e) => setEditStationForm({ ...editStationForm, latitude: e.target.value })}
+                placeholder="37.5665"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-station-longitude">경도 (Longitude)</Label>
+              <Input
+                id="edit-station-longitude"
+                type="number"
+                step="any"
+                value={editStationForm.longitude}
+                onChange={(e) => setEditStationForm({ ...editStationForm, longitude: e.target.value })}
+                placeholder="126.9780"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-station-status">상태</Label>
+              <select
+                id="edit-station-status"
+                value={editStationForm.status}
+                onChange={(e) => setEditStationForm({ ...editStationForm, status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="정상">정상</option>
+                <option value="점검중">점검중</option>
+                <option value="폐쇄">폐쇄</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditStationDialogOpen(false);
+                setSelectedStationForEdit(null);
+                setEditStationForm({ name: "", latitude: "", longitude: "", status: "정상" });
+              }}
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateStation}
+              className="bg-blue-600 hover:bg-blue-700 text-black"
+            >
+              수정
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

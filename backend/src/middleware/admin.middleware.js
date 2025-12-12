@@ -1,15 +1,13 @@
 /**
  * src/middleware/admin.middleware.js
- * 관리자 관련 미들웨어
+ * 관리자 권한 확인 미들웨어
+ * 
+ * 주요 함수:
+ * - checkAdminRole: DB에서 사용자 역할을 재확인하여 관리자 권한 검증
  */
 
 const memberRepository = require('../repositories/member.repository');
 
-/**
- * 관리자 권한 확인 미들웨어
- * req.user.memberId를 사용하여 DB에서 사용자 역할을 다시 확인합니다.
- * 이는 JWT 토큰이 탈취되거나 변조되었을 경우를 대비한 추가적인 보안 계층입니다.
- */
 const checkAdminRole = async (req, res, next) => {
   if (!req.user || !req.user.memberId) {
     return res.status(401).json({ message: '인증 정보가 없습니다.' });
@@ -26,7 +24,6 @@ const checkAdminRole = async (req, res, next) => {
       return res.status(403).json({ message: '관리자 권한이 필요합니다.' });
     }
 
-    // DB에서 가져온 최신 역할 정보를 req.user에 업데이트
     req.user.role = member.role;
     next();
   } catch (error) {

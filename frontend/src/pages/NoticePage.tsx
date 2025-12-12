@@ -1,10 +1,15 @@
-// src/pages/NoticePage.tsx
-// (모든 import 경로 수정)
+/**
+ * src/pages/NoticePage.tsx
+ * 공지사항 페이지
+ * 
+ * 사용된 API:
+ * (현재 API 미사용 - 정적 데이터)
+ */
 
-import { Calendar, Eye, Pin, Filter, SortDesc, ArrowLeft } from "lucide-react"; // ArrowLeft 추가
-import { Card } from "../components/ui/card"; // 경로 수정
-import { Badge } from "../components/ui/badge"; // 경로 수정
-import { Button } from "../components/ui/button"; // 경로 수정
+import { Calendar, Eye, Pin, Filter, SortDesc, ArrowLeft } from "lucide-react";
+import { Card } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import { useState } from "react";
 import {
   Select,
@@ -12,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select"; // 경로 수정
+} from "../components/ui/select";
 
 interface NoticePageProps {
   onClose?: () => void;
@@ -36,7 +41,6 @@ interface Notice {
 }
 
 const notices: Notice[] = [
-  // ... (목업 데이터는 원본과 동일하게 유지) ...
   { id: 1, title: "강남역 4번 출구 대여소 신규 개설 안내", content: `...`, date: "2025-11-01", views: 1234, isPinned: true, category: "개설" },
   { id: 2, title: "잠실역 7번 출구 대여소 임시 폐쇄 안내", content: `...`, date: "2025-10-30", views: 892, isPinned: true, category: "폐쇄" },
   { id: 3, title: "홍대입구역 3번 출구 대여소 신규 개설", content: `...`, date: "2025-10-28", views: 756, isPinned: false, category: "개설" },

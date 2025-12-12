@@ -1,3 +1,11 @@
+/**
+ * src/pages/LoginPage.tsx
+ * 로그인 페이지
+ * 
+ * 사용된 API:
+ * - authApi: login, kakaoLogin
+ */
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -64,7 +72,6 @@ export default function LoginPage() {
         // 로그인 성공 메시지와 함께 홈으로 이동
         alert(`환영합니다, ${user.username}님!`);
 
-        // 잠시 대기 후 페이지 이동 (상태 업데이트를 위해)
         setTimeout(() => {
           console.log("홈으로 이동");
           navigate('/');
@@ -90,7 +97,6 @@ export default function LoginPage() {
     if (typeof window !== 'undefined' && (window as any).Kakao) {
       const Kakao = (window as any).Kakao;
       
-      // 카카오 SDK 초기화 (이미 초기화되어 있으면 무시)
       if (!Kakao.isInitialized()) {
         Kakao.init(process.env.REACT_APP_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
       }

@@ -1,19 +1,19 @@
-// src/pages/HomePage.tsx
-// (모든 import 경로 수정 완료)
+/**
+ * src/pages/HomePage.tsx
+ * 대여소 찾기 및 자전거 대여/반납 페이지
+ * 
+ * 사용된 API:
+ * - stationApi: getStations, getAvailableBikes
+ * - rentalApi: rentBike, returnBike, getCurrentRental
+ */
 
-import { useState, useEffect, useRef } from "react"; // useRef 추가
+import { useState, useEffect, useRef } from "react";
 import { MapPin, Search, Navigation, Bike, Clock, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-// (수정) ../api/ (O)
 import { getStations, getAvailableBikes } from "../api/stationApi";
 import { rentBike, returnBike, getCurrentRental } from "../api/rentalApi";
-// (수정) ../contexts/ (O)
 import { useAuth } from "../contexts/AuthContext";
-// (신규) react-kakao-maps-sdk import
 import { Map, MapMarker, useKakaoLoader } from "react-kakao-maps-sdk";
-
-// (수정) ../components/ui/ (O)
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -30,8 +30,6 @@ import {
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
 
-// (Interface 정의는 동일)
-// ... (Station, Bike, RentedBikeInfo interface) ...
 interface Station {
   station_id: number;
   name: string;
@@ -51,15 +49,9 @@ interface RentedBikeInfo {
   bike_id: number;
 }
 
-
-// (수정) export default function
 export default function HomePage() {
   const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
-
-  // ... (이하 모든 코드는 이전 답변의 수정본과 동일합니다) ...
-  // ... (API 연동 로직, JSX 렌더링 부분) ...
-  // --- API 데이터 상태 ---
   const [stations, setStations] = useState<Station[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [rentedBike, setRentedBike] = useState<RentedBikeInfo | null>(null);
@@ -75,8 +67,6 @@ export default function HomePage() {
   const [returnDialog, setReturnDialog] = useState<{ open: boolean; station: Station | null }>({ open: false, station: null });
   const [returning, setReturning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // (신규) 지도 중심 좌표 상태 추가 (광운대학교 위치로 초기화)
   const [mapCenter, setMapCenter] = useState({
     lat: 37.619662,
     lng: 127.060001,
@@ -319,9 +309,7 @@ export default function HomePage() {
     }
   }, [rentedBike]);
 
-  // --- JSX 렌더링 ---
   return (
-    // (신규) useKakaoLoader 훅을 사용하는 로더 컴포넌트로 감싸기
     <KakaoMapLoader>
     <div className="min-h-screen bg-gray-50">
       {isLoggedIn && rentedBike && (
@@ -605,10 +593,8 @@ export default function HomePage() {
   );
 }
 
-// (신규) 카카오 지도 로딩 상태를 관리하는 별도 컴포넌트
 function KakaoMapLoader({ children }: { children: React.ReactNode }) {
   const [loading, error] = useKakaoLoader({
-    // Vite 환경 변수 사용 (VITE_ 접두사 필요)
     appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY || "0ddb80336b17ea45f9f7c27852fbea10", 
   });
 

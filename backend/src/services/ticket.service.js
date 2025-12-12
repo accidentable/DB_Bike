@@ -1,14 +1,21 @@
 /**
  * src/services/ticket.service.js
  * 이용권 관련 비즈니스 로직
+ * 
+ * 주요 함수:
+ * - getAllTicketTypes: 모든 이용권 종류 조회
+ * - purchaseTicket: 이용권 구매 (포인트 차감)
+ * - getMyActiveTickets, getMyTicketHistory: 이용권 조회
+ * - hasValidTicket: 유효한 이용권 보유 여부 확인
+ * - useTicket: 이용권 사용 (대여 시)
+ * - cleanupExpiredTickets: 만료된 이용권 정리
+ * - grantTicketByAdmin: 관리자 이용권 부여 (포인트 차감 없음)
  */
 
 const ticketRepository = require('../repositories/ticket.repository');
 const pointService = require('./point.service');
 
-/**
- * 모든 이용권 종류 조회
- */
+// 모든 이용권 종류 조회
 async function getAllTicketTypes() {
   try {
     const ticketTypes = await ticketRepository.getAllTicketTypes();
@@ -19,62 +26,41 @@ async function getAllTicketTypes() {
   }
 }
 
-/**
- * 이용권 구매
- */
+// 이용권 구매
 async function purchaseTicket(memberId, ticketTypeId) {
   try {
-    console.log('=== 이용권 구매 시작 ===');
-    console.log('회원 ID:', memberId, '타입:', typeof memberId);
-    console.log('이용권 타입 ID:', ticketTypeId);
-    
-    // 0. memberId 유효성 검증
     if (!memberId || isNaN(parseInt(memberId, 10))) {
       throw new Error('유효하지 않은 사용자 ID입니다.');
     }
     
     const numericMemberId = parseInt(memberId, 10);
-    
-    // 1. 이용권 종류가 존재하는지 확인
     const ticketType = await ticketRepository.getTicketTypeById(ticketTypeId);
     
     if (!ticketType) {
       throw new Error('존재하지 않는 이용권입니다.');
     }
 
-    console.log('이용권 정보:', ticketType.name);
-
-    // 2. 포인트 잔액 확인 및 차감
     try {
       await pointService.deductPoints(
         numericMemberId, 
         ticketType.price, 
         `${ticketType.name} 구매`
       );
-      console.log(`${ticketType.price}포인트 차감 완료`);
     } catch (pointError) {
       console.error('포인트 차감 오류:', pointError);
       throw new Error(pointError.message || '포인트 차감 중 오류가 발생했습니다.');
     }
 
-    // 3. 만료 시간 계산
     const now = new Date();
     const expiryTime = new Date(now.getTime() + ticketType.duration_hours * 60 * 60 * 1000);
-    console.log('만료 시간:', expiryTime);
 
-    // 4. 이용권 구매 처리
     const purchasedTicket = await ticketRepository.purchaseTicket(
       numericMemberId,
       ticketTypeId,
       expiryTime
     );
 
-    console.log('구매 완료:', purchasedTicket);
-
-    // 5. 구매한 이용권 상세 정보 조회
     const ticketDetail = await ticketRepository.getMemberTicketById(purchasedTicket.member_ticket_id);
-
-    console.log('=== 이용권 구매 완료 ===');
 
     return {
       message: `${ticketType.name} 구매가 완료되었습니다.`,
@@ -90,9 +76,7 @@ async function purchaseTicket(memberId, ticketTypeId) {
   }
 }
 
-/**
- * 회원의 활성 이용권 조회
- */
+// 활성 이용권 조회
 async function getMyActiveTickets(memberId) {
   try {
     // 만료된 이용권 자동 업데이트
@@ -106,12 +90,9 @@ async function getMyActiveTickets(memberId) {
   }
 }
 
-/**
- * 회원의 모든 이용권 이력 조회
- */
+// 이용권 이력 조회
 async function getMyTicketHistory(memberId) {
   try {
-    // 만료된 이용권 자동 업데이트
     await ticketRepository.expireOldTickets();
     
     const tickets = await ticketRepository.getAllMemberTickets(memberId);
@@ -122,21 +103,11 @@ async function getMyTicketHistory(memberId) {
   }
 }
 
-/**
- * 회원이 유효한 이용권을 가지고 있는지 확인
- */
+// 유효한 이용권 보유 여부 확인
 async function hasValidTicket(memberId) {
   try {
-    console.log('=== 이용권 확인 시작 ===');
-    console.log('회원 ID:', memberId);
-    
-    // 만료된 이용권 자동 업데이트
     await ticketRepository.expireOldTickets();
-    
     const hasTicket = await ticketRepository.hasValidTicket(memberId);
-    console.log('이용권 보유 여부:', hasTicket);
-    console.log('=== 이용권 확인 완료 ===');
-    
     return hasTicket;
   } catch (error) {
     console.error('Error in hasValidTicket:', error);
@@ -144,22 +115,16 @@ async function hasValidTicket(memberId) {
   }
 }
 
-/**
- * 이용권 사용 (대여 시 호출)
- */
+// 이용권 사용
 async function useTicket(memberId) {
   try {
-    // 1. 활성 이용권 조회
     const activeTickets = await ticketRepository.getActiveMemberTickets(memberId);
     
     if (activeTickets.length === 0) {
       throw new Error('사용 가능한 이용권이 없습니다.');
     }
 
-    // 2. 가장 먼저 만료되는 이용권 선택 (FIFO)
     const ticketToUse = activeTickets[activeTickets.length - 1];
-
-    // 3. 이용권 정보 반환 (상태 변경은 하지 않음, 대여 완료 시에만 처리)
     return ticketToUse;
   } catch (error) {
     console.error('Error in useTicket:', error);
@@ -167,9 +132,7 @@ async function useTicket(memberId) {
   }
 }
 
-/**
- * 만료된 이용권 자동 정리 (스케줄러에서 호출)
- */
+// 만료된 이용권 정리
 async function cleanupExpiredTickets() {
   try {
     const expiredCount = await ticketRepository.expireOldTickets();
@@ -181,19 +144,15 @@ async function cleanupExpiredTickets() {
   }
 }
 
-/**
- * 관리자가 이용권 부여 (포인트 차감 없이)
- */
+// 관리자 이용권 부여
 async function grantTicketByAdmin(memberId, ticketTypeId, expiryTime = null) {
   try {
-    // 1. 이용권 종류가 존재하는지 확인
     const ticketType = await ticketRepository.getTicketTypeById(ticketTypeId);
     
     if (!ticketType) {
       throw new Error('존재하지 않는 이용권입니다.');
     }
 
-    // 2. 만료 시간 계산 (지정되지 않으면 기본값 사용)
     let expiry;
     if (expiryTime) {
       expiry = new Date(expiryTime);
@@ -202,14 +161,12 @@ async function grantTicketByAdmin(memberId, ticketTypeId, expiryTime = null) {
       expiry = new Date(now.getTime() + ticketType.duration_hours * 60 * 60 * 1000);
     }
 
-    // 3. 이용권 부여 (포인트 차감 없이)
     const grantedTicket = await ticketRepository.purchaseTicket(
       memberId,
       ticketTypeId,
       expiry
     );
 
-    // 4. 부여한 이용권 상세 정보 조회
     const ticketDetail = await ticketRepository.getMemberTicketById(grantedTicket.member_ticket_id);
 
     return {
