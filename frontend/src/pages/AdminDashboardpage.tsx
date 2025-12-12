@@ -2,7 +2,7 @@
 // (Supabase API 호출 로직 제거 및 Node.js API 호출 뼈대로 대체)
 
 import { useState, useEffect } from "react";
-import { Users, Bike, TrendingUp, Activity, Edit, Trash2, Search, Ticket } from "lucide-react";
+import { Users, Bike, TrendingUp, Activity, Edit, Trash2, Search, Ticket, Plus } from "lucide-react";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -16,11 +16,14 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Admin API 함수
 //import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser } from "../api/adminApi";
 // Admin API 함수
-import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates } from "../api/adminApi";
+import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser } from "../api/adminApi";
 import type { ActivityLog, DistrictStat, StationRentalRate } from "../api/adminApi";
+// Ticket API 함수
+import { getTicketTypes } from "../api/ticketApi";
+import type { TicketType } from "../api/ticketApi";
 
 // Station API 함수
-import { getStations } from "../api/stationApi"; 
+import { getAllStations, createStation, deleteStation } from "../api/stationApi"; 
 
 
 // 목업 데이터
@@ -80,6 +83,7 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);  // 추가
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);  // 추가
   const [searchTerm, setSearchTerm] = useState("");
+  const [stationSearchTerm, setStationSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isTicketDialogOpen, setIsTicketDialogOpen] = useState(false);
@@ -89,15 +93,35 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
     isAdmin: false,
   });
   const [ticketForm, setTicketForm] = useState({
+    ticketTypeId: null as number | null,
+    expiryTime: "",
+  });
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [isStationDialogOpen, setIsStationDialogOpen] = useState(false);
+  const [isDeleteStationDialogOpen, setIsDeleteStationDialogOpen] = useState(false);
+  const [selectedStationForDelete, setSelectedStationForDelete] = useState<any>(null);
+  const [stationForm, setStationForm] = useState({
     name: "",
-    duration: 30,
-    remainingRides: null as number | null,
-    expiresAt: "",
+    latitude: "",
+    longitude: "",
+    status: "정상",
   });
 
   useEffect(() => {
     loadData();
-  }, []); 
+    loadTicketTypes();
+  }, []);
+
+  const loadTicketTypes = async () => {
+    try {
+      const response = await getTicketTypes();
+      if (response.success && response.data) {
+        setTicketTypes(response.data);
+      }
+    } catch (error) {
+      console.error("이용권 종류 로드 실패:", error);
+    }
+  }; 
 
   // Activity Logs 로드
 useEffect(() => {
@@ -124,7 +148,7 @@ useEffect(() => {
         getDashboardStats(),
         getUsers(),
         getRentals(),
-        getStations(),
+        getAllStations(), // 관리자 페이지에서는 모든 대여소 조회
         getDistrictStats(),  // 추가
         getStationRentalRates()  // 추가
       ]);
@@ -190,42 +214,125 @@ useEffect(() => {
 
   const handleEditTicket = (user: any) => {
     setSelectedUser(user);
-    const ticket = user.currentTicket;
     setTicketForm({
-      name: ticket?.name || "1일권",
-      duration: 30,
-      remainingRides: ticket?.remainingRides || null,
-      expiresAt: ticket?.expiresAt ? new Date(ticket.expiresAt).toISOString().split('T')[0] : "",
+      ticketTypeId: null,
+      expiryTime: "",
     });
     setIsTicketDialogOpen(true);
   };
 
   const handleSaveUser = async () => {
     if (!selectedUser) return;
-    // (신규) Node.js API 호출로 대체
-    // try {
-    //   await updateUser(selectedUser.email, editForm);
-    //   alert("사용자 정보가 업데이트되었습니다.");
-    //   setIsEditDialogOpen(false);
-    //   loadData();
-    // } catch (error) {
-    //   console.error("Error updating user:", error);
-    //   alert("업데이트 중 오류가 발생했습니다.");
-    // }
+    
+    try {
+      const updateData: any = {
+        username: editForm.name,
+      };
+      
+      if (editForm.isAdmin !== undefined) {
+        updateData.role = editForm.isAdmin ? 'admin' : 'user';
+      }
+
+      await updateUser(selectedUser.id, updateData);
+      alert("사용자 정보가 업데이트되었습니다.");
+      setIsEditDialogOpen(false);
+      await loadData();
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      alert(error.response?.data?.message || "업데이트 중 오류가 발생했습니다.");
+    }
   };
 
   const handleSaveTicket = async () => {
-    if (!selectedUser) return;
-    // (신규) Node.js API 호출로 대체
-    // try {
-    //   await updateUser(selectedUser.email, {currentTicket: ticketForm});
-    //   alert("이용권이 업데이트되었습니다.");
-    //   setIsTicketDialogOpen(false);
-    //   loadData();
-    // } catch (error) {
-    //   console.error("Error updating ticket:", error);
-    //   alert("업데이트 중 오류가 발생했습니다.");
-    // }
+    if (!selectedUser || !ticketForm.ticketTypeId) {
+      alert("이용권 종류를 선택해주세요.");
+      return;
+    }
+
+    try {
+      const expiryTime = ticketForm.expiryTime 
+        ? new Date(ticketForm.expiryTime).toISOString()
+        : undefined;
+
+      const response = await grantTicketToUser(
+        selectedUser.id,
+        ticketForm.ticketTypeId,
+        expiryTime
+      );
+
+      if (response.success) {
+        alert(response.message || "이용권이 부여되었습니다.");
+        setIsTicketDialogOpen(false);
+        setTicketForm({ ticketTypeId: null, expiryTime: "" });
+        await loadData();
+      } else {
+        alert(response.message || "이용권 부여에 실패했습니다.");
+      }
+    } catch (error: any) {
+      console.error("Error granting ticket:", error);
+      alert(error.response?.data?.message || "이용권 부여 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleAddStation = async () => {
+    if (!stationForm.name || !stationForm.latitude || !stationForm.longitude) {
+      alert("대여소 이름, 위도, 경도를 모두 입력해주세요.");
+      return;
+    }
+
+    try {
+      const latitude = parseFloat(stationForm.latitude);
+      const longitude = parseFloat(stationForm.longitude);
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        alert("위도와 경도는 숫자여야 합니다.");
+        return;
+      }
+
+      const response = await createStation({
+        name: stationForm.name,
+        latitude,
+        longitude,
+        status: stationForm.status,
+      });
+
+      if (response.success) {
+        alert("대여소가 추가되었습니다.");
+        setIsStationDialogOpen(false);
+        setStationForm({ name: "", latitude: "", longitude: "", status: "정상" });
+        await loadData();
+      } else {
+        alert(response.message || "대여소 추가에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Error adding station:", error);
+      alert("대여소 추가 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDeleteStation = (station: any) => {
+    setSelectedStationForDelete(station);
+    setIsDeleteStationDialogOpen(true);
+  };
+
+  const handleConfirmDeleteStation = async () => {
+    if (!selectedStationForDelete) return;
+
+    try {
+      const response = await deleteStation(selectedStationForDelete.station_id);
+
+      if (response.success) {
+        alert("대여소가 삭제되었습니다.");
+        setIsDeleteStationDialogOpen(false);
+        setSelectedStationForDelete(null);
+        await loadData();
+      } else {
+        alert(response.message || "대여소 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Error deleting station:", error);
+      alert("대여소 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleDeleteUser = async (email: string) => {
@@ -418,58 +525,99 @@ useEffect(() => {
 </Card>
           {/* 대여소 정보 */}
           <Card className="p-6 lg:col-span-2">
-            <h3 className="mb-4">대여소 정보</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-800 text-white">
-                  <tr>
-                    <th className="px-4 py-3 text-left">대여소명 ▼</th>
-                    <th className="px-4 py-3 text-left">위치 (좌표) ▼</th>
-                    <th className="px-4 py-3 text-right">대여가능 ▼</th>
-                    <th className="px-4 py-3 text-right">대여중 ▼</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y bg-gray-700 text-white">
-                  {isLoading && stations.length === 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">대여소 정보</h3>
+              <Button
+                onClick={() => setIsStationDialogOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-black px-4 py-2 rounded-md font-medium flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                대여소 추가
+              </Button>
+            </div>
+            {/* 대여소 검색 */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="대여소 이름으로 검색..."
+                  value={stationSearchTerm}
+                  onChange={(e) => setStationSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="border border-gray-300 rounded-md overflow-hidden">
+              <div className="overflow-y-auto max-h-[500px]">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-800 text-white">
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">대여소 정보를 불러오는 중...</td>
+                      <th className="px-4 py-3 text-left">대여소명 ▼</th>
+                      <th className="px-4 py-3 text-left">위치 (좌표) ▼</th>
+                      <th className="px-4 py-3 text-right">대여가능 ▼</th>
+                      <th className="px-4 py-3 text-right">대여중 ▼</th>
+                      <th className="px-4 py-3 text-center">작업</th>
                     </tr>
-                  ) : stations.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">대여소 정보가 없습니다.</td>
-                    </tr>
-                  ) : (
-                    stations.map((station) => {
-                      // 현재 대여중인 자전거 수 계산 (end_time이 null인 rentals 중에서 해당 대여소에서 시작한 것들)
-                      const rentedCount = rentals.filter(
-                        (rental) => rental.returnedAt === null && rental.stationName === station.name
-                      ).length;
-                      
-                      return (
-                        <tr key={station.station_id} className="hover:bg-gray-600 transition-colors">
-                          <td className="px-4 py-3">{station.name}</td>
-                          <td className="px-4 py-3 text-gray-300">
-                            {station.latitude.toFixed(6)}, {station.longitude.toFixed(6)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
-                          <td className="px-4 py-3 text-right">{rentedCount}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-                <tfoot className="bg-gray-800 text-white">
-                  <tr>
-                    <td colSpan={2} className="px-4 py-3 font-semibold">Total</td>
-                    <td className="px-4 py-3 text-right text-blue-400 font-semibold">
-                      {stations.reduce((sum, station) => sum + (station.bike_count || 0), 0)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold">
-                      {rentals.filter((rental) => rental.returnedAt === null).length}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody className="divide-y bg-gray-700 text-white">
+                    {isLoading && stations.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400">대여소 정보를 불러오는 중...</td>
+                      </tr>
+                    ) : stations.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400">대여소 정보가 없습니다.</td>
+                      </tr>
+                    ) : (
+                      stations
+                        .filter((station) =>
+                          station.name.toLowerCase().includes(stationSearchTerm.toLowerCase())
+                        )
+                        .slice(0, 20)
+                        .map((station) => {
+                          // 현재 대여중인 자전거 수 계산 (end_time이 null인 rentals 중에서 해당 대여소에서 시작한 것들)
+                          const rentedCount = rentals.filter(
+                            (rental) => rental.returnedAt === null && rental.stationName === station.name
+                          ).length;
+                          
+                          return (
+                            <tr key={station.station_id} className="hover:bg-gray-600 transition-colors">
+                              <td className="px-4 py-3">{station.name}</td>
+                              <td className="px-4 py-3 text-gray-300">
+                                {station.latitude.toFixed(6)}, {station.longitude.toFixed(6)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
+                              <td className="px-4 py-3 text-right">{rentedCount}</td>
+                              <td className="px-4 py-3 text-center">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteStation(station)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-gray-800 text-white border-t border-gray-700">
+                <div className="px-4 py-3 flex justify-between items-center">
+                  <span className="font-semibold">Total</span>
+                  <div className="flex gap-6">
+                    <span className="text-blue-400 font-semibold">
+                      대여가능: {stations.reduce((sum, station) => sum + (station.bike_count || 0), 0)}
+                    </span>
+                    <span className="font-semibold">
+                      대여중: {rentals.filter((rental) => rental.returnedAt === null).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
         </div>
@@ -738,10 +886,10 @@ useEffect(() => {
               />
               <Label htmlFor="edit-admin">관리자 권한 부여</Label>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end">
               <Button
                 onClick={handleSaveUser}
-                className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
+                className="bg-blue-600 hover:bg-blue-700 text-black"
               >
                 저장
               </Button>
@@ -760,66 +908,162 @@ useEffect(() => {
       <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>이용권 관리</DialogTitle>
+            <DialogTitle>이용권 부여</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>사용자</Label>
-              <Input value={selectedUser?.name || ""} disabled />
+              <Input value={`${selectedUser?.name || ""} (${selectedUser?.email || ""})`} disabled />
             </div>
             <div>
-              <Label htmlFor="ticket-name">이용권 종류</Label>
+              <Label htmlFor="ticket-type">이용권 종류</Label>
               <select
-                id="ticket-name"
-                value={ticketForm.name}
-                onChange={(e) => setTicketForm({ ...ticketForm, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
+                id="ticket-type"
+                value={ticketForm.ticketTypeId || ""}
+                onChange={(e) => setTicketForm({ ...ticketForm, ticketTypeId: parseInt(e.target.value) || null })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="1일권">1일권</option>
-                <option value="7일권">7일권</option>
-                <option value="30일권">30일권</option>
-                <option value="90일권">90일권</option>
-                <option value="365일권">365일권</option>
+                <option value="">이용권을 선택하세요</option>
+                {ticketTypes.map((ticketType) => (
+                  <option key={ticketType.ticket_type_id} value={ticketType.ticket_type_id}>
+                    {ticketType.name} ({ticketType.duration_hours}시간, {ticketType.price.toLocaleString()}P)
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="ticket-duration">기간 (일)</Label>
+              <Label htmlFor="ticket-expiry">만료 시간 (선택사항)</Label>
               <Input
-                id="ticket-duration"
-                type="number"
-                value={ticketForm.duration}
-                onChange={(e) => setTicketForm({ ...ticketForm, duration: parseInt(e.target.value) || 0 })}
+                id="ticket-expiry"
+                type="datetime-local"
+                value={ticketForm.expiryTime}
+                onChange={(e) => setTicketForm({ ...ticketForm, expiryTime: e.target.value })}
+                placeholder="지정하지 않으면 기본 기간 적용"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                만료 시간을 지정하지 않으면 선택한 이용권의 기본 기간이 적용됩니다.
+              </p>
             </div>
-            <div>
-              <Label htmlFor="ticket-rides">남은 이용 횟수 (null = 무제한)</Label>
-              <Input
-                id="ticket-rides"
-                type="number"
-                placeholder="무제한은 비워두세요"
-                value={ticketForm.remainingRides || ""}
-                onChange={(e) => setTicketForm({ ...ticketForm, remainingRides: e.target.value ? parseInt(e.target.value) : null })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="ticket-expires">만료일</Label>
-              <Input
-                id="ticket-expires"
-                type="date"
-                value={ticketForm.expiresAt}
-                onChange={(e) => setTicketForm({ ...ticketForm, expiresAt: e.target.value })}
-              />
-            </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end">
               <Button
                 onClick={handleSaveTicket}
-                className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
+                className="bg-blue-600 hover:bg-blue-700 text-black"
               >
-                저장
+                부여
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setIsTicketDialogOpen(false)}
+                onClick={() => {
+                  setIsTicketDialogOpen(false);
+                  setTicketForm({ ticketTypeId: null, expiryTime: "" });
+                }}
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 대여소 추가 다이얼로그 */}
+      <Dialog open={isStationDialogOpen} onOpenChange={setIsStationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>대여소 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="station-name">대여소 이름</Label>
+              <Input
+                id="station-name"
+                value={stationForm.name}
+                onChange={(e) => setStationForm({ ...stationForm, name: e.target.value })}
+                placeholder="예: 강남역 1번 출구"
+              />
+            </div>
+            <div>
+              <Label htmlFor="station-latitude">위도 (Latitude)</Label>
+              <Input
+                id="station-latitude"
+                type="number"
+                step="any"
+                value={stationForm.latitude}
+                onChange={(e) => setStationForm({ ...stationForm, latitude: e.target.value })}
+                placeholder="예: 37.5665"
+              />
+            </div>
+            <div>
+              <Label htmlFor="station-longitude">경도 (Longitude)</Label>
+              <Input
+                id="station-longitude"
+                type="number"
+                step="any"
+                value={stationForm.longitude}
+                onChange={(e) => setStationForm({ ...stationForm, longitude: e.target.value })}
+                placeholder="예: 126.9780"
+              />
+            </div>
+            <div>
+              <Label htmlFor="station-status">상태</Label>
+              <select
+                id="station-status"
+                value={stationForm.status}
+                onChange={(e) => setStationForm({ ...stationForm, status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="정상">정상</option>
+                <option value="점검중">점검중</option>
+                <option value="폐쇄">폐쇄</option>
+              </select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                onClick={handleAddStation}
+                className="bg-blue-600 hover:bg-blue-700 text-black"
+              >
+                추가
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsStationDialogOpen(false);
+                  setStationForm({ name: "", latitude: "", longitude: "", status: "정상" });
+                }}
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 대여소 삭제 확인 다이얼로그 */}
+      <Dialog open={isDeleteStationDialogOpen} onOpenChange={setIsDeleteStationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>대여소 삭제 확인</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              정말로 <strong>{selectedStationForDelete?.name}</strong> 대여소를 삭제하시겠습니까?
+            </p>
+            <p className="text-sm text-gray-500">
+              이 작업은 되돌릴 수 없으며, 관련된 자전거 및 대여 기록도 함께 처리됩니다.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleConfirmDeleteStation}
+                variant="destructive"
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                삭제
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteStationDialogOpen(false);
+                  setSelectedStationForDelete(null);
+                }}
               >
                 취소
               </Button>

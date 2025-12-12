@@ -181,6 +181,47 @@ async function cleanupExpiredTickets() {
   }
 }
 
+/**
+ * 관리자가 이용권 부여 (포인트 차감 없이)
+ */
+async function grantTicketByAdmin(memberId, ticketTypeId, expiryTime = null) {
+  try {
+    // 1. 이용권 종류가 존재하는지 확인
+    const ticketType = await ticketRepository.getTicketTypeById(ticketTypeId);
+    
+    if (!ticketType) {
+      throw new Error('존재하지 않는 이용권입니다.');
+    }
+
+    // 2. 만료 시간 계산 (지정되지 않으면 기본값 사용)
+    let expiry;
+    if (expiryTime) {
+      expiry = new Date(expiryTime);
+    } else {
+      const now = new Date();
+      expiry = new Date(now.getTime() + ticketType.duration_hours * 60 * 60 * 1000);
+    }
+
+    // 3. 이용권 부여 (포인트 차감 없이)
+    const grantedTicket = await ticketRepository.purchaseTicket(
+      memberId,
+      ticketTypeId,
+      expiry
+    );
+
+    // 4. 부여한 이용권 상세 정보 조회
+    const ticketDetail = await ticketRepository.getMemberTicketById(grantedTicket.member_ticket_id);
+
+    return {
+      message: `${ticketType.name}이(가) 부여되었습니다.`,
+      ticket: ticketDetail
+    };
+  } catch (error) {
+    console.error('Error in grantTicketByAdmin:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getAllTicketTypes,
   purchaseTicket,
@@ -188,6 +229,7 @@ module.exports = {
   getMyTicketHistory,
   hasValidTicket,
   useTicket,
-  cleanupExpiredTickets
+  cleanupExpiredTickets,
+  grantTicketByAdmin
 };
 

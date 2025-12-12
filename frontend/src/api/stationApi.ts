@@ -63,3 +63,53 @@ export async function getAvailableBikes(stationId: number): Promise<ApiResponse<
     };
   }
 }
+
+/**
+ * 대여소 추가 (관리자 전용)
+ */
+export async function createStation(data: {
+  name: string;
+  latitude: number;
+  longitude: number;
+  status?: string;
+}): Promise<ApiResponse<Station>> {
+  try {
+    const response = await client.post('/api/stations', data);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여소 추가 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 대여소 삭제 (관리자 전용)
+ */
+export async function deleteStation(stationId: number): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.delete(`/api/stations/${stationId}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여소 삭제 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 모든 대여소 목록 조회 (관리자 전용, LIMIT 없음)
+ */
+export async function getAllStations(query?: string): Promise<ApiResponse<Station[]>> {
+  try {
+    const response = await client.get('/api/stations/all', { params: { query } });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '대여소 목록을 불러오는 중 오류가 발생했습니다.',
+    };
+  }
+}

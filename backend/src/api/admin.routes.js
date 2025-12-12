@@ -102,4 +102,30 @@ router.get('/station-rental-rates', async (req, res, next) => {
   }
 });
 
+// 관리자가 이용권 부여
+router.post('/users/:userId/tickets', async (req, res, next) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const { ticketTypeId, expiryTime } = req.body;
+    
+    if (!ticketTypeId) {
+      return res.status(400).json({
+        success: false,
+        message: '이용권 종류를 선택해주세요.'
+      });
+    }
+
+    const ticketService = require('../services/ticket.service');
+    const result = await ticketService.grantTicketByAdmin(userId, ticketTypeId, expiryTime);
+    
+    res.status(201).json({
+      success: true,
+      message: result.message,
+      data: result.ticket
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

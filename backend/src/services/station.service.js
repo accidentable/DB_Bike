@@ -60,6 +60,54 @@ const stationService = {
    */
   isFavorited: async (memberId, stationId) => {
     return stationFavoriteRepository.isFavorited(memberId, stationId);
+  },
+
+  /**
+   * 대여소 생성 (관리자용)
+   */
+  createStation: async (name, latitude, longitude, status = '정상') => {
+    try {
+      // 이름 중복 확인
+      const existingStations = await stationRepository.findStations({ query: name });
+      if (existingStations.some(s => s.name === name)) {
+        throw new Error('이미 존재하는 대여소 이름입니다.');
+      }
+
+      const station = await stationRepository.create(name, latitude, longitude, status);
+      return station;
+    } catch (error) {
+      throw new Error(error.message || '대여소 생성 중 오류가 발생했습니다.');
+    }
+  },
+
+  /**
+   * 대여소 삭제 (관리자용)
+   */
+  deleteStation: async (stationId) => {
+    try {
+      // 대여소 존재 확인
+      const station = await stationRepository.findById(stationId);
+      if (!station) {
+        throw new Error('대여소를 찾을 수 없습니다.');
+      }
+
+      await stationRepository.delete(stationId);
+      return { success: true, message: '대여소가 삭제되었습니다.' };
+    } catch (error) {
+      throw new Error(error.message || '대여소 삭제 중 오류가 발생했습니다.');
+    }
+  },
+
+  /**
+   * 모든 대여소 조회 (관리자용, LIMIT 없음)
+   */
+  getAllStations: async (query = null) => {
+    try {
+      const stations = await stationRepository.findAllStations(query);
+      return stations;
+    } catch (error) {
+      throw new Error('대여소 조회 중 오류가 발생했습니다.');
+    }
   }
 };
 

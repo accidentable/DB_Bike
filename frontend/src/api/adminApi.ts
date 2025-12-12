@@ -95,6 +95,17 @@ export async function updateUser(userId: number, userData: Partial<User>): Promi
 }
 
 /**
+ * 관리자가 이용권 부여
+ */
+export async function grantTicketToUser(userId: number, ticketTypeId: number, expiryTime?: string): Promise<{ success: boolean; message: string; data: any }> {
+  const response = await client.post(`/api/admin/users/${userId}/tickets`, {
+    ticketTypeId,
+    expiryTime
+  });
+  return response.data;
+}
+
+/**
  * 사용자 삭제
  */
 export async function deleteUser(userId: number): Promise<void> {

@@ -103,6 +103,82 @@ const stationRepository = {
       console.error('Error finding available bikes:', error);
       throw error;
     }
+  },
+
+  /**
+   * 대여소 생성
+   * @param {string} name - 대여소 이름
+   * @param {number} latitude - 위도
+   * @param {number} longitude - 경도
+   * @param {string} status - 상태 (기본값: '정상')
+   * @returns {Promise<Object>} - 생성된 대여소 정보
+   */
+  create: async (name, latitude, longitude, status = '정상') => {
+    try {
+      const query = `
+        INSERT INTO stations (name, latitude, longitude, status, bike_count)
+        VALUES ($1, $2, $3, $4, 0)
+        RETURNING station_id, name, latitude, longitude, status, bike_count, created_at;
+      `;
+      const { rows } = await pool.query(query, [name, latitude, longitude, status]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error creating station:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 대여소 삭제
+   * @param {number} stationId - 대여소 ID
+   * @returns {Promise<void>}
+   */
+  delete: async (stationId) => {
+    try {
+      // CASCADE로 인해 관련된 bikes, rentals 등도 자동으로 처리됨
+      const query = 'DELETE FROM stations WHERE station_id = $1';
+      await pool.query(query, [stationId]);
+    } catch (error) {
+      console.error('Error deleting station:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 모든 대여소 조회 (관리자용, LIMIT 없음)
+   * @param {string} query - 검색어 (선택)
+   * @returns {Promise<Array>} - 모든 대여소 배열
+   */
+  findAllStations: async (query = null) => {
+    let sql = `
+      SELECT 
+        station_id, 
+        name,
+        latitude, 
+        longitude, 
+        status, 
+        bike_count,
+        created_at
+      FROM stations
+    `;
+    
+    const params = [];
+
+    // 검색어가 있으면 필터링
+    if (query) {
+      sql += ' WHERE name LIKE $1';
+      params.push(`%${query}%`);
+    }
+
+    sql += ' ORDER BY station_id ASC';
+
+    try {
+      const { rows } = await pool.query(sql, params);
+      return rows;
+    } catch (error) {
+      console.error('Error finding all stations:', error);
+      throw error;
+    }
   }
 };
 
