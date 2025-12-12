@@ -348,7 +348,7 @@ export default function HomePage() {
         </div>
       )}
 
-       <div className="container mlpx-9 py-7 max-w-full">
+       <div className=" w-full py-4 pl-2 pr-7 ">
         {error && (
           <div className="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
             {error}
@@ -360,13 +360,13 @@ export default function HomePage() {
             <div className="whitespace-pre-line">{successMessage}</div>
           </div>
         )}
-        <div className="mb-8 pl-10 ">
-          <h1 className="mb-2">대여소 찾기</h1>
-          <p className="text-gray-600">가까운 대여소를 찾아 자전거를 대여하세요</p>
-        </div>
-         <div className="flex flex-row gap-5 h-[700px] pl-10 w-full">
+         <div className="flex flex-row gap-3 h-[800px] pl-2 w-full">
           <div className="w-56 flex-shrink-0 flex flex-col">
-            <div className="mb-4 flex gap-2 flex-shrink-0">
+            <div className="mb-3 flex-shrink-0">
+              <h1 className="mb-1 text-xl font-bold">대여소 찾기</h1>
+              <p className="text-sm text-gray-600 mb-3">가까운 대여소를 찾아 자전거를 대여하세요</p>
+            </div>
+            <div className="mb-3 flex gap-2 flex-shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -380,20 +380,20 @@ export default function HomePage() {
                 <Navigation className="w-4 h-4" />
               </Button>
             </div>
-            <div className="space-y-3 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
+            <div className="space-y-2 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
               {isLoading && stations.length === 0 && <p>대여소 목록을 불러오는 중...</p>}
               {stations.map((station) => (
                 <Card
                   key={station.station_id}
-                  className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                  className={`p-3 cursor-pointer transition-all hover:shadow-md ${
                     selectedStation?.station_id === station.station_id ? "border-[#00A862] bg-green-50" : ""
                   }`}
                   onClick={() => handleStationClick(station)}
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-1.5">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base">{station.name}</h3>
+                        <h3 className="text-sm">{station.name}</h3>
                         {station.distance_km && (
                           <Badge variant="outline" className="text-xs">
                             {station.distance_km.toFixed(1)}km
@@ -454,11 +454,7 @@ export default function HomePage() {
                         offset: { x: 24, y: 56 }
                       }
                     }}
-                  >
-                    <div style={{padding: '5px', color: '#000', textAlign: 'center', fontSize: '10px'}}>
-                      {station.name.replace(/^\d+\.\s*/, '')}
-                    </div>
-                  </MapMarker>
+                  />
                 );
               })}
             </Map>

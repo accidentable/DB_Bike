@@ -59,6 +59,62 @@ export default function SignupPage() {
     });
   };
 
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newErrors = { ...validationErrors };
+
+    switch (name) {
+      case "name":
+        if (!value.trim()) {
+          newErrors.name = "이름을 입력해주세요.";
+        } else if (value.trim().length < 2) {
+          newErrors.name = "이름은 2자 이상 입력해주세요.";
+        } else {
+          newErrors.name = "";
+        }
+        break;
+      case "email":
+        if (!value.trim()) {
+          newErrors.email = "이메일을 입력해주세요.";
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            newErrors.email = "올바른 이메일 형식이 아닙니다.";
+          } else {
+            newErrors.email = "";
+          }
+        }
+        break;
+      case "phone":
+        if (value && !/^010-\d{4}-\d{4}$/.test(value)) {
+          newErrors.phone = "올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)";
+        } else {
+          newErrors.phone = "";
+        }
+        break;
+      case "password":
+        if (!value) {
+          newErrors.password = "비밀번호를 입력해주세요.";
+        } else if (value.length < 8) {
+          newErrors.password = "비밀번호는 8자 이상 입력해주세요.";
+        } else {
+          newErrors.password = "";
+        }
+        break;
+      case "confirmPassword":
+        if (!value) {
+          newErrors.confirmPassword = "비밀번호 확인을 입력해주세요.";
+        } else if (value !== formData.password) {
+          newErrors.confirmPassword = "비밀번호가 일치하지 않습니다.";
+        } else {
+          newErrors.confirmPassword = "";
+        }
+        break;
+    }
+
+    setValidationErrors(newErrors);
+  };
+
   const handleAllAgreements = (checked: boolean) => {
     setAgreements({
       all: checked,

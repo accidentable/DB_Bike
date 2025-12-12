@@ -838,8 +838,12 @@
     height: 600px;
   }
 
-  .h-\[700px\] {
-    height: 700px;
+  .h-\[800px\] {
+    height: 900px;
+  }
+
+  .h-\[1000px\] {
+    height: 1000px;
   }
 
   .h-\[calc\(100\%-1px\)\] {
@@ -1653,6 +1657,10 @@
 
   .pt-8 {
     padding-top: calc(var(--spacing) * 8);
+  }
+
+ .pr-7 {
+    padding-right: calc(var(--spacing) * 4);
   }
 
   .pr-8 {
