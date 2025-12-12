@@ -87,4 +87,115 @@ router.get('/station-rental-rates', async (req, res, next) => {
   }
 });
 
+// 자전거 관리
+router.get('/bikes', async (req, res, next) => {
+  try {
+    const bikes = await adminService.getBikes();
+    res.json(bikes);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/bikes/:bikeId', async (req, res, next) => {
+  try {
+    const bike = await adminService.getBikeById(req.params.bikeId);
+    if (!bike) {
+      return res.status(404).json({ message: '자전거를 찾을 수 없습니다.' });
+    }
+    res.json(bike);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/bikes', async (req, res, next) => {
+  try {
+    const bike = await adminService.createBike(req.body);
+    res.status(201).json(bike);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/bikes/:bikeId', async (req, res, next) => {
+  try {
+    const bike = await adminService.updateBike(req.params.bikeId, req.body);
+    res.json(bike);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/bikes/:bikeId', async (req, res, next) => {
+  try {
+    await adminService.deleteBike(req.params.bikeId);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 대여소 관리
+router.get('/stations', async (req, res, next) => {
+  try {
+    const stations = await adminService.getStations();
+    res.json(stations);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/stations/:stationId', async (req, res, next) => {
+  try {
+    const station = await adminService.getStationById(req.params.stationId);
+    if (!station) {
+      return res.status(404).json({ message: '대여소를 찾을 수 없습니다.' });
+    }
+    res.json(station);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/stations', async (req, res, next) => {
+  try {
+    const station = await adminService.createStation(req.body);
+    res.status(201).json(station);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/stations/:stationId', async (req, res, next) => {
+  try {
+    const station = await adminService.updateStation(req.params.stationId, req.body);
+    res.json(station);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/stations/:stationId', async (req, res, next) => {
+  try {
+    await adminService.deleteStation(req.params.stationId);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/stations/:stationId/status', async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ message: '상태 값이 필요합니다.' });
+    }
+    const station = await adminService.updateStationStatus(req.params.stationId, status);
+    res.json(station);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

@@ -103,6 +103,119 @@ const stationRepository = {
       console.error('Error finding available bikes:', error);
       throw error;
     }
+  },
+
+  /**
+   * 모든 대여소 조회 (관리자용 - 상태 필터 없음)
+   */
+  findAll: async () => {
+    try {
+      const query = `
+        SELECT 
+          station_id,
+          name,
+          latitude,
+          longitude,
+          bike_count,
+          status,
+          created_at
+        FROM stations
+        ORDER BY created_at DESC
+      `;
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('Error finding all stations:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 대여소 생성
+   */
+  create: async (name, latitude, longitude, bikeCount = 0, status = '정상') => {
+    try {
+      const query = `
+        INSERT INTO stations (name, latitude, longitude, bike_count, status)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING station_id, name, latitude, longitude, bike_count, status, created_at
+      `;
+      const { rows } = await pool.query(query, [name, latitude, longitude, bikeCount, status]);
+      return rows[0];
+    } catch (error) {
+      console.error('Error creating station:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 대여소 정보 업데이트
+   */
+  update: async (stationId, updateData) => {
+    try {
+      const { name, latitude, longitude, bike_count, status } = updateData;
+      
+      const updateFields = [];
+      const values = [];
+      let paramIndex = 1;
+
+      if (name !== undefined) {
+        updateFields.push(`name = $${paramIndex}`);
+        values.push(name);
+        paramIndex++;
+      }
+      if (latitude !== undefined) {
+        updateFields.push(`latitude = $${paramIndex}`);
+        values.push(latitude);
+        paramIndex++;
+      }
+      if (longitude !== undefined) {
+        updateFields.push(`longitude = $${paramIndex}`);
+        values.push(longitude);
+        paramIndex++;
+      }
+      if (bike_count !== undefined) {
+        updateFields.push(`bike_count = $${paramIndex}`);
+        values.push(bike_count);
+        paramIndex++;
+      }
+      if (status !== undefined) {
+        updateFields.push(`status = $${paramIndex}`);
+        values.push(status);
+        paramIndex++;
+      }
+
+      if (updateFields.length === 0) {
+        return await stationRepository.findById(stationId);
+      }
+
+      values.push(stationId);
+      const query = `
+        UPDATE stations
+        SET ${updateFields.join(', ')}
+        WHERE station_id = $${paramIndex}
+        RETURNING station_id, name, latitude, longitude, bike_count, status, created_at
+      `;
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Error updating station:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 대여소 삭제
+   */
+  delete: async (stationId) => {
+    try {
+      const query = 'DELETE FROM stations WHERE station_id = $1';
+      await pool.query(query, [stationId]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting station:', error);
+      throw error;
+    }
   }
 };
 

@@ -3,7 +3,8 @@ const memberRepository = require('../repositories/member.repository');
 const rentalRepository = require('../repositories/rental.repository');
 const statsRepository = require('../repositories/stats.repository');
 const activityLogRepository = require('../repositories/activityLog.repository');  // 추가
-
+const bikeRepository = require('../repositories/bike.repository');
+const stationRepository = require('../repositories/station.repository');
 
 /*exports.getDashboardStats = async () => {
   // statsRepository를 사용하여 실제 통계 데이터 가져오기
@@ -114,4 +115,133 @@ exports.getDistrictStats = async () => {
  */
 exports.getStationRentalRates = async () => {
   return await statsRepository.getStationRentalRates();
+};
+
+/**
+ * 자전거 관리
+ */
+exports.getBikes = async () => {
+  return await bikeRepository.findAll();
+};
+
+exports.getBikeById = async (bikeId) => {
+  return await bikeRepository.findById(bikeId);
+};
+
+exports.createBike = async (bikeData) => {
+  const { station_id, status, lock_status } = bikeData;
+  
+  // 대여소 존재 확인
+  if (station_id) {
+    const station = await stationRepository.findById(station_id);
+    if (!station) {
+      throw new Error('대여소를 찾을 수 없습니다.');
+    }
+  }
+  
+  return await bikeRepository.create(
+    station_id || null,
+    status || '정상',
+    lock_status || 'LOCKED'
+  );
+};
+
+exports.updateBike = async (bikeId, bikeData) => {
+  // 자전거 존재 확인
+  const bike = await bikeRepository.findById(bikeId);
+  if (!bike) {
+    throw new Error('자전거를 찾을 수 없습니다.');
+  }
+  
+  // 대여소 존재 확인 (station_id가 변경되는 경우)
+  if (bikeData.station_id !== undefined && bikeData.station_id !== null) {
+    const station = await stationRepository.findById(bikeData.station_id);
+    if (!station) {
+      throw new Error('대여소를 찾을 수 없습니다.');
+    }
+  }
+  
+  return await bikeRepository.update(bikeId, bikeData);
+};
+
+exports.deleteBike = async (bikeId) => {
+  const bike = await bikeRepository.findById(bikeId);
+  if (!bike) {
+    throw new Error('자전거를 찾을 수 없습니다.');
+  }
+  
+  // 대여 중인 자전거는 삭제 불가
+  if (bike.lock_status === 'IN_USE') {
+    throw new Error('대여 중인 자전거는 삭제할 수 없습니다.');
+  }
+  
+  return await bikeRepository.delete(bikeId);
+};
+
+/**
+ * 대여소 관리
+ */
+exports.getStations = async () => {
+  return await stationRepository.findAll();
+};
+
+exports.getStationById = async (stationId) => {
+  return await stationRepository.findById(stationId);
+};
+
+exports.createStation = async (stationData) => {
+  const { name, latitude, longitude, bike_count, status } = stationData;
+  
+  if (!name) {
+    throw new Error('대여소 이름은 필수입니다.');
+  }
+  
+  // 상태 유효성 검사
+  if (status && !['정상', '점검중', '폐쇄'].includes(status)) {
+    throw new Error('유효하지 않은 상태입니다. (정상, 점검중, 폐쇄)');
+  }
+  
+  return await stationRepository.create(
+    name,
+    latitude,
+    longitude,
+    bike_count || 0,
+    status || '정상'
+  );
+};
+
+exports.updateStation = async (stationId, stationData) => {
+  const station = await stationRepository.findById(stationId);
+  if (!station) {
+    throw new Error('대여소를 찾을 수 없습니다.');
+  }
+  
+  // 상태 유효성 검사
+  if (stationData.status && !['정상', '점검중', '폐쇄'].includes(stationData.status)) {
+    throw new Error('유효하지 않은 상태입니다. (정상, 점검중, 폐쇄)');
+  }
+  
+  return await stationRepository.update(stationId, stationData);
+};
+
+exports.deleteStation = async (stationId) => {
+  const station = await stationRepository.findById(stationId);
+  if (!station) {
+    throw new Error('대여소를 찾을 수 없습니다.');
+  }
+  
+  // 대여소에 자전거가 있으면 삭제 불가
+  if (station.bike_count > 0) {
+    throw new Error('대여소에 자전거가 있어 삭제할 수 없습니다.');
+  }
+  
+  return await stationRepository.delete(stationId);
+};
+
+exports.updateStationStatus = async (stationId, status) => {
+  if (!['정상', '점검중', '폐쇄'].includes(status)) {
+    throw new Error('유효하지 않은 상태입니다. (정상, 점검중, 폐쇄)');
+  }
+  
+  return await stationRepository.update(stationId, { status });
 };
