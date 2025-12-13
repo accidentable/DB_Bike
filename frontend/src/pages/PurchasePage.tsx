@@ -25,7 +25,7 @@ const defaultTickets: TicketType[] = [
     name: "1시간권",
     duration_hours: 1,
     price: 1000,
-    description: "1시간 동안 자유롭게 이용,2시간 이내 반납 시 추가요금 없음,전국 2500개 대여소 이용 가능",
+    description: "1시간 동안 자유롭게 이용,1시간 이내 반납 시 추가요금 없음,전국 2500개 대여소 이용 가능",
     ride_limit_minutes: 60,
     created_at: new Date().toISOString()
   },
@@ -291,11 +291,9 @@ export default function PurchasePage() {
                   )}
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-bold mb-2">{ticket.name}</h3>
-                    {!(isLoggedIn && ticket.name === '1시간권') && (
-                      <div className="text-3xl font-bold text-[#00A862] mb-1">
-                        {ticket.price.toLocaleString()}원
-                      </div>
-                    )}
+                    <div className="text-3xl font-bold text-[#00A862] mb-1">
+                      {ticket.price.toLocaleString()}원
+                    </div>
                     <p className="text-sm text-gray-600">{formatDuration(ticket.duration_hours)}</p>
                   </div>
                   <ul className="space-y-3 mb-6">

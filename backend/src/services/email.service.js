@@ -16,6 +16,13 @@ require('dotenv').config();
 
 const emailVerificationCodes = new Map();
 
+// 환경 변수 디버그
+console.log('📧 이메일 설정 확인:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - EMAIL_USER:', process.env.EMAIL_USER ? '설정됨' : '미설정');
+console.log('  - EMAIL_PASS:', process.env.EMAIL_PASS ? '설정됨' : '미설정');
+console.log('  - USE_EMAIL_SERVICE:', process.env.USE_EMAIL_SERVICE);
+
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   transporter = nodemailer.createTransport({
@@ -25,6 +32,9 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       pass: process.env.EMAIL_PASS
     }
   });
+  console.log('✅ Gmail SMTP 설정 완료');
+} else {
+  console.log('❌ Gmail SMTP 설정 실패 - 환경변수 누락');
 }
 
 const emailService = {
@@ -76,10 +86,11 @@ const emailService = {
       };
 
       const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-      const shouldSendEmail = !isDevelopment && transporter && process.env.USE_EMAIL_SERVICE === 'true';
+      const useEmailService = process.env.USE_EMAIL_SERVICE === 'true';
+      const shouldSendEmail = !isDevelopment && transporter && useEmailService;
       
       if (!shouldSendEmail) {
-        console.log(`[개발 모드] 이메일 인증 코드: ${code} (수신자: ${email})`);
+        console.log(`[개발 모드 또는 이메일 미설정] 인증 코드: ${code} (수신자: ${email})`);
         return code;
       }
 

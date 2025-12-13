@@ -279,17 +279,18 @@ const memberRepository = {
   },
 
   /**
-   * 사용자 삭제
+   * 사용자 삭제 (회원탈퇴)
    * 
    * @param {number} memberId - 삭제할 사용자 ID
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} - 삭제 성공 여부
    */
   delete: async (memberId) => {
     try {
-      const query = 'DELETE FROM members WHERE member_id = $1';
-      await pool.query(query, [memberId]);
+      const query = 'DELETE FROM members WHERE member_id = $1 RETURNING member_id;';
+      const { rows } = await pool.query(query, [memberId]);
+      return rows.length > 0;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Error deleting member:', error);
       throw error;
     }
   },
@@ -339,7 +340,7 @@ const memberRepository = {
   }
 
   // 향후 추가될 수 있는 함수들:
-  // - updatePassword: 비밀번호 변경
+  // - 기타 함수들
 };
 
 // Repository 객체를 모듈로 내보내기 (services에서 사용)

@@ -229,7 +229,7 @@ export default function LoginPage() {
             </div>
             <button
               type="button"
-              onClick={() => alert('비밀번호 찾기 기능은 준비 중입니다.')}
+              onClick={() => navigate('/forgot-password')}
               className="text-sm text-[#00A862] hover:underline"
             >
               비밀번호 찾기

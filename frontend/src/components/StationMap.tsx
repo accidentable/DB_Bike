@@ -274,7 +274,7 @@ export function StationMap() {
                 <MapMarker
                   position={{ lat: userLocation.lat, lng: userLocation.lng }}
                   image={{
-                    src: "/my-location.svg",
+                    src: "/my-location-red.svg",
                     size: { width: 35, height: 35 },
                   }}
                 />

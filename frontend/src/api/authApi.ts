@@ -209,11 +209,16 @@ export async function verifyEmail(email: string, code: string, purpose: 'signup'
 }
 
 /**
- * 프로필 정보 수정
+ * 프로필 정보 수정 (사용자명, 전화번호, 비밀번호)
  */
-export async function updateProfile(username: string): Promise<ApiResponse<User>> {
+export async function updateProfile(data: {
+  username?: string;
+  phone?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}): Promise<ApiResponse<User>> {
   try {
-    const response = await client.put('/api/auth/profile', { username });
+    const response = await client.put('/api/auth/profile', data);
     return response.data;
   } catch (error: any) {
     return {
@@ -253,6 +258,53 @@ export async function changePassword(currentPassword: string, newPassword: strin
     return {
       success: false,
       message: error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 비밀번호 찾기 - 이메일로 재설정 코드 발송
+ */
+export async function forgotPassword(email: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.post('/api/auth/forgot-password', { email });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '비밀번호 찾기 요청 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 비밀번호 재설정
+ */
+export async function resetPassword(email: string, code: string, newPassword: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.post('/api/auth/reset-password', { email, code, newPassword });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '비밀번호 재설정 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 회원 탈퇴
+ */
+export async function deleteAccount(password: string): Promise<ApiResponse<void>> {
+  try {
+    const response = await client.delete('/api/auth/account', {
+      data: { password }
+    });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '회원 탈퇴 중 오류가 발생했습니다.',
     };
   }
 }

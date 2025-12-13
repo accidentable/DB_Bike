@@ -173,20 +173,46 @@ const authService = {
   },
 
   // 프로필 정보 수정
-  updateProfile: async (memberId, username) => {
-    // 사용자명 중복 확인
-    const existingUser = await memberRepository.findByUsername(username);
-    if (existingUser && existingUser.member_id !== memberId) {
-      throw new Error('이미 사용 중인 사용자명입니다.');
+  updateProfile: async (memberId, profileData) => {
+    const { username, phone, currentPassword, newPassword } = profileData;
+
+    // 사용자 조회
+    const user = await memberRepository.findById(memberId);
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
     }
 
+    // 사용자명 중복 확인
+    if (username) {
+      const existingUser = await memberRepository.findByUsername(username);
+      if (existingUser && existingUser.member_id !== memberId) {
+        throw new Error('이미 사용 중인 사용자명입니다.');
+      }
+    }
+
+    // 비밀번호 변경 처리
+    if (currentPassword && newPassword) {
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isPasswordValid) {
+        throw new Error('현재 비밀번호가 일치하지 않습니다.');
+      }
+      var hashedPassword = await bcrypt.hash(newPassword, 10);
+    }
+
+    // 업데이트할 데이터 구성
+    const updateData = {};
+    if (username) updateData.username = username;
+    if (phone) updateData.phone = phone;
+    if (hashedPassword) updateData.password = hashedPassword;
+
     // 사용자 정보 업데이트
-    const updatedUser = await memberRepository.update(memberId, { username });
+    const updatedUser = await memberRepository.update(memberId, updateData);
 
     return {
       member_id: updatedUser.member_id,
       username: updatedUser.username,
       email: updatedUser.email,
+      phone: updatedUser.phone,
       role: updatedUser.role
     };
   },
@@ -206,6 +232,39 @@ const authService = {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await memberRepository.updatePassword(memberId, hashedPassword);
+  },
+
+  // 이메일로 사용자 조회
+  findUserByEmail: async (email) => {
+    return await memberRepository.findByEmail(email);
+  },
+
+  // 비밀번호 재설정
+  resetPassword: async (email, newPassword) => {
+    const user = await memberRepository.findByEmail(email);
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await memberRepository.updatePassword(user.member_id, hashedPassword);
+  },
+
+  // 회원 탈퇴
+  deleteAccount: async (memberId, password) => {
+    const user = await memberRepository.findById(memberId);
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    // 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error('비밀번호가 일치하지 않습니다.');
+    }
+
+    // 사용자 삭제
+    await memberRepository.delete(memberId);
   },
 };
 

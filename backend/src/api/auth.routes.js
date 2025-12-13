@@ -240,20 +240,54 @@ router.post('/verify-email', async (req, res) => {
  * 
  * 요청 본문:
  *   - username: string (선택) - 사용자명
+ *   - phone: string (선택) - 전화번호
+ *   - currentPassword: string (선택) - 현재 비밀번호 (비밀번호 변경 시 필수)
+ *   - newPassword: string (선택) - 새 비밀번호
  */
 router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const { username } = req.body;
+    const { username, phone, currentPassword, newPassword } = req.body;
     const memberId = req.user.memberId;
 
-    if (!username || !username.trim()) {
+    // 최소 하나의 필드는 필수
+    if (!username && !phone && !currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '수정할 정보를 입력해주세요.'
+      });
+    }
+
+    // 사용자명 수정
+    if (username && !username.trim()) {
       return res.status(400).json({
         success: false,
         message: '사용자명을 입력해주세요.'
       });
     }
 
-    const updatedUser = await authService.updateProfile(memberId, username.trim());
+    // 비밀번호 변경 검증
+    if (currentPassword || newPassword) {
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: '비밀번호 변경을 위해 현재 비밀번호와 새 비밀번호를 모두 입력해주세요.'
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: '새 비밀번호는 최소 6자 이상이어야 합니다.'
+        });
+      }
+    }
+
+    const updatedUser = await authService.updateProfile(memberId, {
+      username: username ? username.trim() : undefined,
+      phone: phone || undefined,
+      currentPassword: currentPassword || undefined,
+      newPassword: newPassword || undefined
+    });
 
     res.status(200).json({
       success: true,
@@ -364,6 +398,126 @@ router.put('/change-password', verifyToken, async (req, res) => {
     res.status(400).json({
       success: false,
       message: error.message || '비밀번호 변경에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/forgot-password
+ * 비밀번호 찾기 - 이메일로 재설정 링크 발송
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일을 입력해주세요.'
+      });
+    }
+
+    // 사용자 존재 확인
+    const user = await authService.findUserByEmail(email);
+    if (!user) {
+      // 보안상 등록되지 않은 이메일도 성공 메시지 반환
+      return res.status(200).json({
+        success: true,
+        message: '등록된 이메일이면 비밀번호 재설정 링크를 보냈습니다.'
+      });
+    }
+
+    // 인증 코드 발송
+    const code = await emailService.sendVerificationEmail(email, 'password-reset');
+
+    res.status(200).json({
+      success: true,
+      message: '비밀번호 재설정 링크를 이메일로 발송했습니다.',
+      data: { code } // 개발 모드에서만 사용
+    });
+  } catch (error) {
+    console.error('비밀번호 찾기 에러:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || '비밀번호 찾기 요청에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * 비밀번호 재설정
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '이메일, 인증 코드, 새 비밀번호를 모두 입력해주세요.'
+      });
+    }
+
+    // 인증 코드 검증
+    const verificationResult = emailService.verifyCode(email, code, 'password-reset');
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message
+      });
+    }
+
+    // 비밀번호 재설정
+    await authService.resetPassword(email, newPassword);
+
+    // 인증 코드 삭제
+    emailService.deleteVerificationCode(email, 'password-reset');
+
+    res.status(200).json({
+      success: true,
+      message: '비밀번호가 성공적으로 재설정되었습니다.'
+    });
+  } catch (error) {
+    console.error('비밀번호 재설정 에러:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || '비밀번호 재설정에 실패했습니다.'
+    });
+  }
+});
+
+/**
+ * DELETE /api/auth/account
+ * 회원 탈퇴 (로그인 필요)
+ * 
+ * 요청 본문:
+ *   - password: string (필수) - 확인용 비밀번호
+ */
+router.delete('/account', verifyToken, async (req, res) => {
+  try {
+    const memberId = req.user.memberId;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: '비밀번호를 입력해주세요.'
+      });
+    }
+
+    // 회원 탈퇴 처리
+    await authService.deleteAccount(memberId, password);
+
+    res.status(200).json({
+      success: true,
+      message: '계정이 삭제되었습니다. 안녕히 가세요!'
+    });
+  } catch (error) {
+    console.error('회원 탈퇴 에러:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || '회원 탈퇴에 실패했습니다.'
     });
   }
 });
