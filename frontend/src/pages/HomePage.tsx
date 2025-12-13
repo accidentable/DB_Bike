@@ -8,9 +8,9 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Search, Navigation, Bike, Clock, CheckCircle2 } from "lucide-react";
+import { MapPin, Search, Navigation, Bike, Clock, CheckCircle2, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getStations, getAvailableBikes } from "../api/stationApi";
+import { getStations, getAvailableBikes, addFavoriteStation, removeFavoriteStation, getFavoriteStations } from "../api/stationApi";
 import { rentBike, returnBike, getCurrentRental } from "../api/rentalApi";
 import { useAuth } from "../contexts/AuthContext";
 import { Map, MapMarker, useKakaoLoader } from "react-kakao-maps-sdk";
@@ -60,6 +60,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
+  const [favoriteStationIds, setFavoriteStationIds] = useState<Set<number>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +148,38 @@ export default function HomePage() {
     
     // 검색어는 유지하되 새로운 위치 기준으로 대여소 조회
     fetchStations(searchQuery, newLat, newLng);
+  };
+
+  const handleToggleFavorite = async (stationId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // 대여소 카드 클릭 이벤트 방지
+    
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const isFavorited = favoriteStationIds.has(stationId);
+      const response = isFavorited
+        ? await removeFavoriteStation(stationId)
+        : await addFavoriteStation(stationId);
+
+      if (response.success) {
+        const newFavorites = new Set(favoriteStationIds);
+        if (isFavorited) {
+          newFavorites.delete(stationId);
+        } else {
+          newFavorites.add(stationId);
+        }
+        setFavoriteStationIds(newFavorites);
+      } else {
+        alert(response.message || "작업 실패");
+      }
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+      alert("작업 중 오류가 발생했습니다.");
+    }
   };
 
   // --- 대여/반납 로직 ---
@@ -279,6 +313,24 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
+  // 로그인된 사용자의 즐겨찾기 목록 불러오기
+  useEffect(() => {
+    if (isLoggedIn) {
+      const fetchFavorites = async () => {
+        try {
+          const response = await getFavoriteStations();
+          if (response.success && response.data) {
+            const favoriteIds = new Set(response.data.map((station: any) => station.station_id));
+            setFavoriteStationIds(favoriteIds);
+          }
+        } catch (err) {
+          console.error("Error fetching favorites:", err);
+        }
+      };
+      fetchFavorites();
+    }
+  }, [isLoggedIn]);
+
   useEffect(() => {
     if (rentedBike && rentedBike.start_time) {
       // 즉시 경과 시간 계산
@@ -363,7 +415,23 @@ export default function HomePage() {
          <div className="flex flex-row gap-3 h-[800px] pl-2 w-full">
           <div className="w-56 flex-shrink-0 flex flex-col">
             <div className="mb-3 flex-shrink-0">
-              <h1 className="mb-1 text-xl font-bold">대여소 찾기</h1>
+              <div className="flex items-center justify-between mb-1">
+                <h1 className="text-xl font-bold">대여소 찾기</h1>
+                <button
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`p-1.5 rounded-full transition ${
+                    showFavoritesOnly
+                      ? "bg-yellow-100 text-yellow-600"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                  title="즐겨찾기만 보기"
+                >
+                  <Star className="w-5 h-5" style={{
+                    fill: showFavoritesOnly ? "#FFD700" : "none",
+                    color: showFavoritesOnly ? "#FFD700" : "currentColor",
+                  }} />
+                </button>
+              </div>
               <p className="text-sm text-gray-600 mb-3">가까운 대여소를 찾아 자전거를 대여하세요</p>
             </div>
             <div className="mb-3 flex gap-2 flex-shrink-0">
@@ -382,7 +450,9 @@ export default function HomePage() {
             </div>
             <div className="space-y-2 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
               {isLoading && stations.length === 0 && <p>대여소 목록을 불러오는 중...</p>}
-              {stations.map((station) => (
+              {stations
+                .filter(station => showFavoritesOnly ? favoriteStationIds.has(station.station_id) : true)
+                .map((station) => (
                 <Card
                   key={station.station_id}
                   className={`p-3 cursor-pointer transition-all hover:shadow-md ${
@@ -404,7 +474,22 @@ export default function HomePage() {
                         이용 가능: <span className="text-[#00A862]">{station.bike_count}대</span>
                       </p>
                     </div>
-                    <MapPin className="w-5 h-5 text-[#00A862]" />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleToggleFavorite(station.station_id, e)}
+                        className="p-1 hover:bg-gray-100 rounded-full transition"
+                        title={favoriteStationIds.has(station.station_id) ? "즐겨찾기 제거" : "즐겨찾기 추가"}
+                      >
+                        <Star
+                          className="w-4 h-4 transition"
+                          style={{
+                            fill: favoriteStationIds.has(station.station_id) ? "#FFD700" : "none",
+                            color: favoriteStationIds.has(station.station_id) ? "#FFD700" : "#999",
+                          }}
+                        />
+                      </button>
+                      <MapPin className="w-5 h-5 text-[#00A862]" />
+                    </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -429,7 +514,9 @@ export default function HomePage() {
               level={4} // 지도 확대 레벨
               onDragEnd={(map) => handleMapDragEnd(map)}
             >
-              {stations.map((station) => {
+              {stations
+                .filter(station => showFavoritesOnly ? favoriteStationIds.has(station.station_id) : true)
+                .map((station) => {
                 const isSelected = selectedStation?.station_id === station.station_id;
                 const bikeCount = station.bike_count;
                 const markerColor = bikeCount > 10 ? '#00A862' : bikeCount > 3 ? '#F59E0B' : '#EF4444';

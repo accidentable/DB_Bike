@@ -25,7 +25,7 @@ const defaultTickets: TicketType[] = [
     name: "1시간권",
     duration_hours: 1,
     price: 1000,
-    description: "1시간 동안 자유롭게 이용,1시간 이내 반납 시 추가요금 없음,전국 2500개 대여소 이용 가능",
+    description: "1시간 동안 이용 가능,추가 시간당 1000원",
     ride_limit_minutes: 60,
     created_at: new Date().toISOString()
   },
@@ -33,8 +33,8 @@ const defaultTickets: TicketType[] = [
     ticket_type_id: 2,
     name: "1일권",
     duration_hours: 24,
-    price: 3000,
-    description: "24시간 동안 자유롭게 이용,2시간 이내 반납 시 추가요금 없음,전국 2500개 대여소 이용 가능",
+    price: 2000,
+    description: "24시간 무제한 이용,1회 이용시간 2시간까지",
     ride_limit_minutes: 120,
     created_at: new Date().toISOString()
   },
@@ -42,8 +42,8 @@ const defaultTickets: TicketType[] = [
     ticket_type_id: 3,
     name: "정기권",
     duration_hours: 720,
-    price: 15000,
-    description: "30일 동안 무제한 이용,2시간 이내 반납 시 무료 재대여,전국 2500개 대여소 이용 가능",
+    price: 5000,
+    description: "30일간 무제한 이용,1회 이용시간 2시간까지",
     ride_limit_minutes: 120,
     created_at: new Date().toISOString()
   },
@@ -52,7 +52,7 @@ const defaultTickets: TicketType[] = [
     name: "연간권",
     duration_hours: 8760,
     price: 30000,
-    description: "365일 동안 무제한 이용,2시간 이내 반납 시 무료 재대여,전국 2500개 대여소 이용 가능",
+    description: "1년간 무제한 이용,1회 이용시간 2시간까지",
     ride_limit_minutes: 120,
     created_at: new Date().toISOString()
   }

@@ -136,3 +136,48 @@ export async function getAllStations(query?: string): Promise<ApiResponse<Statio
     };
   }
 }
+
+/**
+ * 대여소를 즐겨찾기에 추가 (로그인 필요)
+ */
+export async function addFavoriteStation(stationId: number): Promise<ApiResponse<any>> {
+  try {
+    const response = await client.post(`/api/stations/${stationId}/favorite`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '즐겨찾기 추가 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 대여소를 즐겨찾기에서 제거 (로그인 필요)
+ */
+export async function removeFavoriteStation(stationId: number): Promise<ApiResponse<any>> {
+  try {
+    const response = await client.delete(`/api/stations/${stationId}/favorite`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '즐겨찾기 제거 중 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * 내 즐겨찾기 대여소 목록 조회 (로그인 필요)
+ */
+export async function getFavoriteStations(): Promise<ApiResponse<Station[]>> {
+  try {
+    const response = await client.get('/api/stations/favorites/me');
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || '즐겨찾기 목록을 불러오는 중 오류가 발생했습니다.',
+    };
+  }
+}

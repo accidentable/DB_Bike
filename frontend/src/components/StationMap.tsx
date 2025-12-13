@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { MapPin, Search, Navigation, Bike } from "lucide-react";
+import { MapPin, Search, Navigation, Bike, Star } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -15,91 +15,55 @@ import {
   DEFAULT_LEVEL,
   isWithinRadius
 } from "../api/mapApi";
+import { addFavoriteStation, removeFavoriteStation, getFavoriteStations, getStations } from "../api/stationApi";
+import { useAuth } from "../contexts/AuthContext";
 
 const SEARCH_RADIUS_KM = 3.0; // 검색 반경 3km
 
-const stations: Station[] = [
-  { 
-    id: 1, 
-    name: "강남역 1번 출구", 
-    available: 12, 
-    total: 20,
-    latitude: 37.498095,
-    longitude: 127.027610
-  },
-  { 
-    id: 2, 
-    name: "역삼역 2번 출구", 
-    available: 8, 
-    total: 15,
-    latitude: 37.500622,
-    longitude: 127.036456
-  },
-  { 
-    id: 3, 
-    name: "선릉역 3번 출구", 
-    available: 15, 
-    total: 25,
-    latitude: 37.504479,
-    longitude: 127.049008
-  },
-  { 
-    id: 4, 
-    name: "삼성역 4번 출구", 
-    available: 3, 
-    total: 18,
-    latitude: 37.508844,
-    longitude: 127.063130
-  },
-  { 
-    id: 5, 
-    name: "잠실역 5번 출구", 
-    available: 20, 
-    total: 30,
-    latitude: 37.513251,
-    longitude: 127.099935
-  },
-  { 
-    id: 6, 
-    name: "종로3가역 6번 출구", 
-    available: 7, 
-    total: 12,
-    latitude: 37.571607,
-    longitude: 126.991806
-  },
-  { 
-    id: 7, 
-    name: "시청역 1번 출구", 
-    available: 10, 
-    total: 20,
-    latitude: 37.565443,
-    longitude: 126.977063
-  },
-  { 
-    id: 8, 
-    name: "광화문역 2번 출구", 
-    available: 5, 
-    total: 15,
-    latitude: 37.571026,
-    longitude: 126.976669
-  },
-];
-
 interface Station {
-  id: number;
+  id?: number;
+  station_id?: number;
   name: string;
-  available: number;
-  total: number;
+  available?: number;
+  bike_count?: number;
+  total?: number;
   latitude?: number;
   longitude?: number;
+  distance?: string;
+  distanceValue?: number;
 }
 
 export function StationMap() {
+  const [stations, setStations] = useState<Station[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStation, setSelectedStation] = useState<number | null>(null);
   const [userLocation, setUserLocation] = useState<KakaoMapPosition | null>(null);
   const [mapCenter, setMapCenter] = useState<KakaoMapPosition>(DEFAULT_CENTER);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteStationIds, setFavoriteStationIds] = useState<Set<number>>(new Set());
+  const { isLoggedIn } = useAuth();
+
+  console.log('StationMap mounted, stations:', stations);
+
+  // 대여소 목록 로드
+  useEffect(() => {
+    console.log('StationMap useEffect fired - fetching stations');
+    const fetchStations = async () => {
+      try {
+        const response = await getStations();
+        console.log('Stations API response:', response);
+        if (response.success && response.data) {
+          console.log('Loaded stations:', response.data);
+          setStations(response.data);
+        } else {
+          console.log('API response not successful or no data');
+        }
+      } catch (err) {
+        console.error("Error fetching stations:", err);
+      }
+    };
+    fetchStations();
+  }, []);
 
   useEffect(() => {
     const initializeLocation = async () => {
@@ -115,6 +79,24 @@ export function StationMap() {
 
     initializeLocation();
   }, []);
+
+  // 로그인된 사용자의 즐겨찾기 목록 불러오기
+  useEffect(() => {
+    if (isLoggedIn) {
+      const fetchFavorites = async () => {
+        try {
+          const response = await getFavoriteStations();
+          if (response.success && response.data) {
+            const favoriteIds = new Set(response.data.map((station: any) => station.station_id));
+            setFavoriteStationIds(favoriteIds);
+          }
+        } catch (err) {
+          console.error("Error fetching favorites:", err);
+        }
+      };
+      fetchFavorites();
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -196,6 +178,40 @@ export function StationMap() {
 
   }, [searchQuery, userLocation]);
 
+  console.log('filteredStations:', filteredStations, 'stations:', stations, 'searchQuery:', searchQuery);
+
+  const handleToggleFavorite = async (stationId: number | undefined, e: React.MouseEvent) => {
+    if (!stationId) return;
+    e.stopPropagation(); // 대여소 카드 클릭 이벤트 방지
+    
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      const isFavorited = favoriteStationIds.has(stationId);
+      const response = isFavorited
+        ? await removeFavoriteStation(stationId)
+        : await addFavoriteStation(stationId);
+
+      if (response.success) {
+        const newFavorites = new Set(favoriteStationIds);
+        if (isFavorited) {
+          newFavorites.delete(stationId);
+        } else {
+          newFavorites.add(stationId);
+        }
+        setFavoriteStationIds(newFavorites);
+      } else {
+        alert(response.message || "작업 실패");
+      }
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+      alert("작업 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
@@ -226,22 +242,24 @@ export function StationMap() {
                 lng: map.getCenter().getLng()
               })}
             >
-              {stations.map((station) => station.latitude && station.longitude && (
-                <React.Fragment key={station.id}>
+              {stations.map((station) => {
+                const stationId = station.station_id || station.id;
+                return station.latitude && station.longitude && (
+                <React.Fragment key={stationId}>
                   <MapMarker
                     position={{
                       lat: station.latitude,
                       lng: station.longitude
                     }}
-                    onClick={() => setSelectedStation(station.id)}
+                    onClick={() => setSelectedStation(stationId || null)}
                     image={{
-                      src: selectedStation === station.id 
+                      src: selectedStation === stationId 
                         ? "/marker-selected.svg" 
                         : "/marker-default.svg",
                       size: { width: 45, height: 45 },
                     }}
                   />
-                  {selectedStation === station.id && (
+                  {selectedStation === stationId && (
                     <CustomOverlayMap
                       position={{
                         lat: station.latitude,
@@ -252,7 +270,7 @@ export function StationMap() {
                       <div className="bg-white p-4 rounded-lg shadow-lg">
                         <h3 className="text-lg font-semibold mb-2">{station.name}</h3>
                         <div className="space-y-2">
-                          {Array.from({ length: station.available }).map((_, i) => (
+                          {Array.from({ length: station.available || station.bike_count || 0 }).map((_, i) => (
                             <div
                               key={i}
                               className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-green-50 cursor-pointer"
@@ -263,13 +281,15 @@ export function StationMap() {
                           ))}
                         </div>
                         <div className="mt-3 text-sm text-gray-500">
-                          이용 가능: {station.available}/{station.total}
+                          이용 가능: {station.available || station.bike_count || 0}/{station.total || 20}
                         </div>
                       </div>
                     </CustomOverlayMap>
                   )}
                 </React.Fragment>
-              ))}
+              );
+              })}
+
               {userLocation && (
                 <MapMarker
                   position={{ lat: userLocation.lat, lng: userLocation.lng }}
@@ -314,44 +334,70 @@ export function StationMap() {
             </div>
 
             <div className="space-y-3 h-[440px] overflow-y-auto">
-              {filteredStations.map((station) => (
-                <Card
-                  key={station.id}
-                  className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                    selectedStation === station.id ? "border-[#00A862] bg-green-50" : ""
-                  }`}
-                  onClick={() => setSelectedStation(station.id)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base">{station.name}</h3>
-                        <Badge variant="outline" className="text-xs">
-                          {station.distance}
-                        </Badge>
+              {filteredStations && filteredStations.length > 0 ? (
+                filteredStations.map((station) => {
+                  const stationId = station.station_id || station.id;
+                  const available = station.available || station.bike_count || 0;
+                  const total = station.total || 20;
+                  return (
+                  <Card
+                    key={stationId}
+                    className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                      selectedStation === stationId ? "border-[#00A862] bg-green-50" : ""
+                    }`}
+                    onClick={() => setSelectedStation(stationId || null)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-base">{station.name}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {station.distance}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          이용 가능 자전거: {available}대 / {total}대
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        이용 가능 자전거: {station.available}대 / {station.total}대
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => handleToggleFavorite(stationId, e)}
+                          className="p-2 hover:bg-gray-100 rounded-full transition"
+                          title={stationId && favoriteStationIds.has(stationId) ? "즐겨찾기 제거" : "즐겨찾기 추가"}
+                        >
+                          <Star
+                            className="w-5 h-5 transition"
+                            style={{
+                              fill: stationId && favoriteStationIds.has(stationId) ? "#FFD700" : "none",
+                              color: stationId && favoriteStationIds.has(stationId) ? "#FFD700" : "#999",
+                            }}
+                          />
+                        </button>
+                        <MapPin className="w-5 h-5 text-[#00A862]" />
+                      </div>
                     </div>
-                    <MapPin className="w-5 h-5 text-[#00A862]" />
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${
-                        station.available / station.total > 0.5
-                          ? "bg-[#00A862]"
-                          : station.available / station.total > 0.2
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                      }`}
-                      style={{
-                        width: `${(station.available / station.total) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </Card>
-              ))}
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          available / total > 0.5
+                            ? "bg-[#00A862]"
+                            : available / total > 0.2
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                        style={{
+                          width: `${(available / total) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </Card>
+                );
+                })
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  대여소를 찾을 수 없습니다
+                </div>
+              )}
             </div>
           </div>
         </div>
