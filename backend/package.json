@@ -6,9 +6,8 @@
   "scripts": {
     "start": "chcp 65001 >nul && node server.js",
     "dev": "chcp 65001 >nul && set NODE_ENV=production && nodemon server.js",
-    "db:seed": "node seed.js",
-    "db:migrate-kakao": "node db/migrate_kakao_id.js",
-    "db:seed-ranking": "node seedRankingData.js"
+    "db:seed": "node seedDatabase.js",
+    "db:migrate-kakao": "node db/migrate_kakao_id.js"
   },
   "keywords": [],
   "author": "",

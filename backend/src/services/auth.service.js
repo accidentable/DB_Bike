@@ -119,30 +119,60 @@ const authService = {
       const kakaoEmail = kakaoUser.kakao_account?.email;
       const kakaoNickname = kakaoUser.kakao_account?.profile?.nickname || `카카오${kakaoId}`;
 
+      console.log('📝 카카오 로그인 시도:', { kakaoId, kakaoEmail, kakaoNickname });
+
+      // 1. 먼저 kakao_id로 사용자 조회
       let user = await memberRepository.findByKakaoId(kakaoId);
+      console.log('✅ findByKakaoId 결과:', user ? '사용자 존재' : '사용자 없음');
 
-      if (!user) {
-        if (kakaoEmail) {
-          const existingUser = await memberRepository.findByEmail(kakaoEmail);
-          if (existingUser) {
-            await memberRepository.updateKakaoId(existingUser.member_id, kakaoId);
-            user = await memberRepository.findByKakaoId(kakaoId);
-          }
-        }
-
-        if (!user) {
-          const randomPassword = require('crypto').randomBytes(32).toString('hex');
-          const hashedPassword = await bcrypt.hash(randomPassword, 10);
-          
-          const newUser = await memberRepository.createUser(
-            kakaoNickname,
-            kakaoEmail || `kakao_${kakaoId}@kakao.com`,
-            hashedPassword,
-            'user',
-            kakaoId
-          );
+      // 2. kakao_id로 없으면 이메일로 조회
+      if (!user && kakaoEmail) {
+        console.log('📧 이메일로 사용자 조회 시도:', kakaoEmail);
+        user = await memberRepository.findByEmail(kakaoEmail);
+        
+        // 3. 이메일로 찾은 사용자가 있으면 kakao_id 업데이트
+        if (user) {
+          console.log('✅ 이메일로 찾은 사용자 존재, kakao_id 업데이트');
+          await memberRepository.updateKakaoId(user.member_id, kakaoId);
           user = await memberRepository.findByKakaoId(kakaoId);
         }
+      }
+
+      // 4. 여전히 없으면 새로운 사용자 생성
+      if (!user) {
+        console.log('🆕 새 사용자 생성');
+        
+        // username 중복 체크 및 고유한 username 생성
+        let finalUsername = kakaoNickname;
+        let usernameExists = await memberRepository.findByUsername(finalUsername);
+        let counter = 1;
+        
+        while (usernameExists) {
+          // username이 이미 존재하면 suffix 추가
+          finalUsername = `${kakaoNickname}${counter}`;
+          usernameExists = await memberRepository.findByUsername(finalUsername);
+          counter++;
+        }
+        
+        console.log('✅ 최종 username:', finalUsername);
+        
+        const randomPassword = require('crypto').randomBytes(32).toString('hex');
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        await memberRepository.createUser(
+          finalUsername,
+          kakaoEmail || `kakao_${kakaoId}@kakao.com`,
+          hashedPassword,
+          'user',
+          kakaoId
+        );
+        
+        user = await memberRepository.findByKakaoId(kakaoId);
+        console.log('✅ 새 사용자 생성 완료');
+      }
+
+      if (!user) {
+        throw new Error('카카오 로그인 처리 중 오류가 발생했습니다.');
       }
 
       const token = jwt.sign(
@@ -154,6 +184,8 @@ const authService = {
         JWT_SECRET,
         { expiresIn: '1h' }
       );
+
+      console.log('✅ 카카오 로그인 성공:', { memberId: user.member_id, email: user.email });
 
       return {
         token: token,
@@ -167,7 +199,7 @@ const authService = {
         }
       };
     } catch (error) {
-      console.error('카카오 로그인 에러:', error);
+      console.error('❌ 카카오 로그인 에러:', error);
       throw new Error(error.message || '카카오 로그인에 실패했습니다.');
     }
   },

@@ -42,11 +42,12 @@ app.use('/api/rentals', verifyToken, rentalRoutes);
 // (수정) /api/stations 경로는 공개 API로 변경 (이전 대화 내용 반영)
 app.use('/api/stations', stationRoutes);
 
-// (신규) /api/posts (커뮤니티) 경로는 로그인이 필요
-app.use('/api/posts', verifyToken, postRoutes);
+// (신규) /api/posts (커뮤니티) 경로는 공개 (GET은 누구나, POST/PUT/DELETE는 로그인 필요)
+app.use('/api/posts', postRoutes);
 
 // /api/admin 경로는 관리자 권한(isAdmin)까지 필요
-app.use('/api/admin', verifyToken, isAdmin, adminRoutes);
+// (단, /api/admin/auth-password는 인증 없이 접근 가능 - admin.routes.js에서 미들웨어 순서로 관리)
+app.use('/api/admin', adminRoutes);
 
 // (신규) /api/tickets (이용권) 경로
 // - /api/tickets/types는 공개 (누구나 조회 가능)

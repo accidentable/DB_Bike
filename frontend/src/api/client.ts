@@ -13,6 +13,8 @@ client.interceptors.request.use(
     // localStorage에서 토큰을 가져옴
     const token = localStorage.getItem('authToken');
     
+    console.log('📤 API 요청:', config.url, '| 토큰:', token ? '✅ 있음' : '❌ 없음');
+    
     // 토큰이 있다면, HTTP 헤더에 'Authorization'을 추가
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

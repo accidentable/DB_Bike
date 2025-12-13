@@ -127,6 +127,7 @@ const memberRepository = {
       const query = `
         INSERT INTO members (username, email, password, role, point_balance, kakao_id)
         VALUES ($1, $2, $3, $4, 5000, $5)
+        ON CONFLICT (email) DO UPDATE SET kakao_id = EXCLUDED.kakao_id
         RETURNING member_id, email, username, role, point_balance;
       `;
       

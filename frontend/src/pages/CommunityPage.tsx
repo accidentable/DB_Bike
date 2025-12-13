@@ -45,6 +45,13 @@ export default function CommunityPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [sortBy, setSortBy] = useState<"latest" | "views" | "likes">("latest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 10;
+  
+  // 관리자 토큰 여부 확인
+  const hasAdminToken = !!localStorage.getItem('authToken');
+  
   const [newPost, setNewPost] = useState({
     title: "",
     content: "",
@@ -83,14 +90,15 @@ export default function CommunityPage() {
         const options = {
             category: selectedCategory === "전체" ? undefined : selectedCategory,
             sort_by: sortBy, // API는 sort_by를 기대함
-            page: 1, // 페이지네이션은 추후 구현
-            limit: 20,
+            page: currentPage,
+            limit: itemsPerPage,
             // searchQuery: undefined
         };
         const response = await getPosts(options);
         if (response.success && response.data && response.data.posts) {
             const normalPosts = response.data.posts.filter(p => !p.is_pinned);
             setPosts(normalPosts);
+            setTotalPages(response.data.pagination?.totalPages || 1);
         }
     } catch (err) {
         setError("게시글 목록을 불러오는데 실패했습니다.");
@@ -314,17 +322,22 @@ export default function CommunityPage() {
     }
   };
 
-  // 본인 글인지 확인하는 함수
+  // 본인 글인지 또는 관리자인지 확인하는 함수
   const isAuthor = (post: Post | null): boolean => {
-    if (!post || !user) {
-      console.log('isAuthor: post 또는 user가 없음', { post, user });
+    if (!post) {
       return false;
     }
-    console.log('isAuthor 체크:', {
-      post_member_id: post.member_id,
-      user_member_id: user.member_id,
-      isMatch: post.member_id === user.member_id
-    });
+    
+    // 관리자 토큰이 있으면 모든 글 수정/삭제 가능
+    if (hasAdminToken) {
+      return true;
+    }
+    
+    // 로그인 사용자가 작성자인지 확인
+    if (!user) {
+      return false;
+    }
+    
     return post.member_id === user.member_id;
   };
 
@@ -371,9 +384,14 @@ export default function CommunityPage() {
   };
   
   useEffect(() => {
+    setCurrentPage(1);
     fetchPosts();
     fetchPinnedPosts();
   }, [selectedCategory, sortBy]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [currentPage]);
 
   useEffect(() => {
     fetchPinnedPosts();
@@ -518,7 +536,7 @@ export default function CommunityPage() {
 
         {isWriting ? (
           // Write Post View
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full">
             <Card className="p-6">
               <h2 className="mb-6">게시글 작성</h2>
               
@@ -705,7 +723,7 @@ export default function CommunityPage() {
           </div>
         ) : selectedPost ? (
           // Post Detail View
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full">
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="outline"
@@ -1166,7 +1184,7 @@ export default function CommunityPage() {
           </div>
         ) : (
           // Post List View
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full">
             {isLoading && <div className="text-center py-10">목록을 불러오는 중입니다...</div>}
             
             {/* 고정된 게시글 섹션 */}
@@ -1275,6 +1293,46 @@ export default function CommunityPage() {
                 </div>
               )}
             </div>
+
+            {/* 페이지네이션 */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8 pb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3"
+                >
+                  ← 이전
+                </Button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-10 ${
+                        currentPage === page 
+                          ? "bg-[#00A862] hover:bg-[#008F54] text-white" 
+                          : ""
+                      }`}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3"
+                >
+                  다음 →
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

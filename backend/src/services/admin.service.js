@@ -106,3 +106,9 @@ exports.getDistrictStats = async () => {
 exports.getStationRentalRates = async () => {
   return await statsRepository.getStationRentalRates();
 };
+
+// 모든 자전거 조회
+exports.getBikes = async () => {
+  const bikeRepository = require('../repositories/bike.repository');
+  return await bikeRepository.findAll();
+};

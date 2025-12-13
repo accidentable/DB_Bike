@@ -1,22 +1,22 @@
 -- 깨끗한 재실행을 위해(옵션)
-DROP TABLE IF EXISTS member_tickets;
-DROP TABLE IF EXISTS point_transactions;
-DROP TABLE IF EXISTS ticket_types;
-DROP TABLE IF EXISTS rentals;
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS post_attachments;
-DROP TABLE IF EXISTS post_likes;
-DROP TABLE IF EXISTS station_favorites;
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS post_images;
-DROP TABLE IF EXISTS posts;
-DROP TABLE IF EXISTS members;
-DROP TABLE IF EXISTS bikes;
-DROP TABLE IF EXISTS stations;
--- 추가: 업적 및 랭킹 테이블
-DROP TABLE IF EXISTS weekly_rankings;
-DROP TABLE IF EXISTS member_achievements;
-DROP TABLE IF EXISTS achievements;
+DROP TABLE IF EXISTS member_tickets CASCADE;
+DROP TABLE IF EXISTS point_transactions CASCADE;
+DROP TABLE IF EXISTS ticket_types CASCADE;
+DROP TABLE IF EXISTS rentals CASCADE;
+DROP TABLE IF EXISTS reports CASCADE;
+DROP TABLE IF EXISTS post_attachments CASCADE;
+DROP TABLE IF EXISTS post_likes CASCADE;
+DROP TABLE IF EXISTS station_favorites CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS post_images CASCADE;
+DROP TABLE IF EXISTS posts CASCADE;
+-- 추가: 업적 및 랭킹 테이블 (members 의존)
+DROP TABLE IF EXISTS weekly_rankings CASCADE;
+DROP TABLE IF EXISTS member_achievements CASCADE;
+DROP TABLE IF EXISTS achievements CASCADE;
+DROP TABLE IF EXISTS members CASCADE;
+DROP TABLE IF EXISTS bikes CASCADE;
+DROP TABLE IF EXISTS stations CASCADE;
 
 -- 대여소
 CREATE TABLE stations (
@@ -320,3 +320,18 @@ CREATE INDEX IF NOT EXISTS idx_post_attachments_post ON post_attachments(post_id
 -- 기존 post_images 테이블에 file_size와 file_name 추가 (선택사항)
 ALTER TABLE post_images ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);
 ALTER TABLE post_images ADD COLUMN IF NOT EXISTS file_size BIGINT;
+
+-- 테스트용 회원 데이터 (암호는 $2b$10$N9qo8uLOickgx2ZMRZoMye로 "password" hashed)
+INSERT INTO members (username, email, password, role, point_balance, has_subscription) VALUES
+('admin_user', 'admin@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'admin', 10000, true),
+('user_kim', 'kim@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 5000, false),
+('user_lee', 'lee@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 3500, true),
+('user_park', 'park@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 2000, false),
+('user_choi', 'choi@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 4500, true),
+('user_jung', 'jung@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 1800, false),
+('user_kang', 'kang@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 6000, true),
+('user_jo', 'jo@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 3200, false),
+('user_oh', 'oh@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 2800, true),
+('user_seo', 'seo@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 5200, false),
+('user_han', 'han@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 4100, true),
+('user_moon', 'moon@example.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7Eb2fQ7XkuNEH5GhvB8S8Baa', 'user', 3600, false) ON CONFLICT DO NOTHING;

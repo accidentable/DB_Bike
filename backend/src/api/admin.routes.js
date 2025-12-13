@@ -15,8 +15,46 @@
 
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { verifyToken, isAdmin } = require('../middleware/auth.middleware');
 const adminService = require('../services/admin.service');
+
+// 관리자 비밀번호 (환경변수로 관리하는 것이 좋음)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const JWT_SECRET = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'dev-secret-key';
+
+// 비밀번호로 토큰 발급 (인증 없이 접근 가능)
+router.post('/auth-password', async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    console.log('📝 관리자 비밀번호 요청:', password);
+    
+    if (!password || password !== ADMIN_PASSWORD) {
+      console.log('❌ 비밀번호 불일치');
+      return res.status(401).json({
+        success: false,
+        message: '비밀번호가 올바르지 않습니다.'
+      });
+    }
+    
+    // JWT 토큰 발급 (관리자 권한으로)
+    const token = jwt.sign(
+      { id: 'admin-temp', role: 'admin', type: 'password-auth' },
+      JWT_SECRET,
+      { expiresIn: '2h' } // 2시간 유효
+    );
+    
+    console.log('✅ 토큰 발급됨:', token);
+    res.json({
+      success: true,
+      message: '관리자 인증 성공',
+      token
+    });
+  } catch (error) {
+    console.error('❌ 토큰 발급 에러:', error);
+    next(error);
+  }
+});
 
 // 모든 관리자 API는 토큰 검증 및 관리자 권한 확인이 필요합니다.
 router.use(verifyToken, isAdmin);
@@ -97,6 +135,39 @@ router.get('/station-rental-rates', async (req, res, next) => {
   try {
     const rates = await adminService.getStationRentalRates();
     res.json(rates);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 모든 자전거 목록
+router.get('/bikes', async (req, res, next) => {
+  try {
+    const bikes = await adminService.getBikes();
+    res.json(bikes);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 새 자전거 추가
+router.post('/bikes', async (req, res, next) => {
+  try {
+    const { bike_number, status, station_id } = req.body;
+    const bikeService = require('../services/bike.service');
+    const newBike = await bikeService.createBike({ bike_number, status, station_id });
+    res.status(201).json(newBike);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 자전거 삭제
+router.delete('/bikes/:bikeId', async (req, res, next) => {
+  try {
+    const bikeService = require('../services/bike.service');
+    await bikeService.deleteBike(req.params.bikeId);
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

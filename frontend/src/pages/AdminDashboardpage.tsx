@@ -20,7 +20,7 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser } from "../api/adminApi";
+import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser, getBikes, addBike, updateBike, deleteBike } from "../api/adminApi";
 import type { ActivityLog, DistrictStat, StationRentalRate } from "../api/adminApi";
 import { getTicketTypes } from "../api/ticketApi";
 import type { TicketType } from "../api/ticketApi";
@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>({totalUsers: 0, totalRentals: 0, activeRentals: 0, totalDistance: 0});
   const [users, setUsers] = useState<any[]>([]);
   const [rentals, setRentals] = useState<any[]>([]);
+  const [bikes, setBikes] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
   const [districtData, setDistrictData] = useState<DistrictStat[]>([]);  // 추가
 const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  // 추가
@@ -59,6 +60,22 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
   const [isDeleteStationDialogOpen, setIsDeleteStationDialogOpen] = useState(false);
   const [selectedStationForEdit, setSelectedStationForEdit] = useState<any>(null);
   const [selectedStationForDelete, setSelectedStationForDelete] = useState<any>(null);
+  const [isBikeDialogOpen, setIsBikeDialogOpen] = useState(false);
+  const [bikeCurrentPage, setBikeCurrentPage] = useState(1);
+  const bikesPerPage = 20; // 페이지당 자전거 개수
+  const [userCurrentPage, setUserCurrentPage] = useState(1);
+  const usersPerPage = 20; // 페이지당 사용자 개수
+  const [rentalCurrentPage, setRentalCurrentPage] = useState(1);
+  const rentalsPerPage = 20; // 페이지당 대여 이력 개수
+  const [logCurrentPage, setLogCurrentPage] = useState(1);
+  const logsPerPage = 5; // 페이지당 활동 로그 개수
+  const [stationCurrentPage, setStationCurrentPage] = useState(1);
+  const stationsPerPage = 20; // 페이지당 대여소 개수
+  const [bikeForm, setBikeForm] = useState({
+    bike_number: "",
+    status: "available",
+    station_id: ""
+  });
   const [stationForm, setStationForm] = useState({
     name: "",
     latitude: "",
@@ -108,13 +125,14 @@ useEffect(() => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [statsRes, usersRes, rentalsRes, stationsRes, districtStatsRes, rentalRatesRes] = await Promise.all([
+      const [statsRes, usersRes, rentalsRes, stationsRes, districtStatsRes, rentalRatesRes, bikesRes] = await Promise.all([
         getDashboardStats(),
         getUsers(),
         getRentals(),
         getAllStations(), // 관리자 페이지에서는 모든 대여소 조회
         getDistrictStats(),  // 추가
-        getStationRentalRates()  // 추가
+        getStationRentalRates(),  // 추가
+        getBikes()  // 자전거 목록 추가
       ]);
   
       // 통계 데이터 설정
@@ -156,6 +174,18 @@ useEffect(() => {
       if (stationsRes.success && stationsRes.data) {
         setStations(stationsRes.data);
       }
+
+      // 자전거 데이터 설정
+      if (Array.isArray(bikesRes)) {
+        setBikes(bikesRes);
+        setBikeCurrentPage(1); // 데이터 새로 로드 시 첫 페이지로 리셋
+      }
+
+      // 페이지 리셋
+      setUserCurrentPage(1);
+      setRentalCurrentPage(1);
+      setLogCurrentPage(1);
+      setStationCurrentPage(1);
       
     } catch (error) {
       console.error("Error loading admin data:", error);
@@ -349,12 +379,71 @@ useEffect(() => {
 
   const handleDeleteUser = async (email: string) => {
     if (!confirm("정말로 이 사용자를 삭제하시겠습니까?")) return;
+    
+    try {
+      // 이메일로 사용자를 찾아서 userId 가져오기
+      const user = users.find(u => u.email === email);
+      if (!user || !user.id) {
+        alert("사용자를 찾을 수 없습니다.");
+        return;
+      }
+      
+      await deleteUser(user.id);
+      alert("사용자가 삭제되었습니다.");
+      
+      // 목록 새로고침
+      loadData();
+    } catch (error) {
+      console.error("사용자 삭제 실패:", error);
+      alert("사용자 삭제에 실패했습니다.");
+    }
   };
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredStations = stations.filter((station) =>
+    station.name.toLowerCase().includes(stationSearchTerm.toLowerCase())
+  );
+
+  // 자전거 추가 핸들러
+  const handleAddBike = async () => {
+    if (!bikeForm.bike_number) {
+      alert("자전거 번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      await addBike({
+        bike_number: bikeForm.bike_number,
+        status: bikeForm.status,
+        station_id: bikeForm.station_id ? parseInt(bikeForm.station_id) : null
+      });
+      alert("자전거가 추가되었습니다.");
+      setBikeForm({ bike_number: "", status: "available", station_id: "" });
+      setIsBikeDialogOpen(false);
+      loadData();
+    } catch (error) {
+      console.error("자전거 추가 실패:", error);
+      alert("자전거 추가에 실패했습니다.");
+    }
+  };
+
+  // 자전거 삭제 핸들러
+  const handleDeleteBike = async (bikeId: number) => {
+    if (!confirm("이 자전거를 삭제하시겠습니까?")) return;
+
+    try {
+      await deleteBike(bikeId);
+      alert("자전거가 삭제되었습니다.");
+      loadData();
+    } catch (error) {
+      console.error("자전거 삭제 실패:", error);
+      alert("자전거 삭제에 실패했습니다.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -572,11 +661,8 @@ useEffect(() => {
                         <td colSpan={5} className="px-4 py-8 text-center text-gray-400">대여소 정보가 없습니다.</td>
                       </tr>
                     ) : (
-                      stations
-                        .filter((station) =>
-                          station.name.toLowerCase().includes(stationSearchTerm.toLowerCase())
-                        )
-                        .slice(0, 20)
+                      filteredStations
+                        .slice((stationCurrentPage - 1) * stationsPerPage, stationCurrentPage * stationsPerPage)
                         .map((station) => {
                           const rentedCount = rentals.filter(
                             (rental) => rental.returnedAt === null && rental.stationName === station.name
@@ -630,6 +716,72 @@ useEffect(() => {
                   </div>
                 </div>
               </div>
+
+              {/* 대여소 페이지네이션 */}
+              <div className="mt-4 flex items-center justify-between bg-gray-800 px-4 py-3 text-white rounded-b-md">
+                <div className="text-sm">
+                  {filteredStations.length > 0 ? `${(stationCurrentPage - 1) * stationsPerPage + 1} - ${Math.min(stationCurrentPage * stationsPerPage, filteredStations.length)} / 총 ${filteredStations.length}개` : '대여소 없음'}
+                </div>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStationCurrentPage(1)}
+                    disabled={stationCurrentPage === 1}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    처음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStationCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={stationCurrentPage === 1}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    이전
+                  </Button>
+                  
+                  {/* 현재 페이지 주변의 페이지만 표시 */}
+                  {Array.from({ length: Math.ceil(filteredStations.length / stationsPerPage) })
+                    .map((_, i) => i + 1)
+                    .filter(page => Math.abs(page - stationCurrentPage) <= 2 || page === 1 || page === Math.ceil(filteredStations.length / stationsPerPage))
+                    .map((page, idx, arr) => [
+                      idx > 0 && arr[idx - 1] !== page - 1 && <span key={`dot-${page}`} className="px-1 text-gray-400">...</span>,
+                      <Button
+                        key={page}
+                        variant={stationCurrentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setStationCurrentPage(page)}
+                        className={stationCurrentPage === page ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-700 hover:bg-gray-600 text-white border-gray-600"}
+                      >
+                        {page}
+                      </Button>
+                    ])
+                    .flat()
+                    .filter(Boolean)
+                  }
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStationCurrentPage(p => Math.min(Math.ceil(filteredStations.length / stationsPerPage), p + 1))}
+                    disabled={stationCurrentPage === Math.ceil(filteredStations.length / stationsPerPage)}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    다음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStationCurrentPage(Math.ceil(filteredStations.length / stationsPerPage))}
+                    disabled={stationCurrentPage === Math.ceil(filteredStations.length / stationsPerPage)}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                  >
+                    마지막
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
         </div>
@@ -655,7 +807,7 @@ useEffect(() => {
       </td>
     </tr>
   ) : activityLogs.length > 0 ? (
-    activityLogs.map((log, index) => {
+    activityLogs.slice((logCurrentPage - 1) * logsPerPage, logCurrentPage * logsPerPage).map((log, index) => {
       // timestamp 포맷팅
       const formattedTime = new Date(log.timestamp).toLocaleString('ko-KR', {
         year: 'numeric',
@@ -698,15 +850,79 @@ useEffect(() => {
     </tr>
   )}
 </tbody>
+        
             </table>
+          </div>
+
+          {/* 활동 로그 페이지네이션 */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {activityLogs.length > 0 ? `${(logCurrentPage - 1) * logsPerPage + 1} - ${Math.min(logCurrentPage * logsPerPage, activityLogs.length)} / 총 ${activityLogs.length}개` : '로그 없음'}
+            </div>
+            <div className="flex gap-2 items-center flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLogCurrentPage(1)}
+                disabled={logCurrentPage === 1}
+              >
+                처음
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLogCurrentPage(p => Math.max(1, p - 1))}
+                disabled={logCurrentPage === 1}
+              >
+                이전
+              </Button>
+              
+              {/* 현재 페이지 주변의 페이지만 표시 */}
+              {Array.from({ length: Math.ceil(activityLogs.length / logsPerPage) })
+                .map((_, i) => i + 1)
+                .filter(page => Math.abs(page - logCurrentPage) <= 2 || page === 1 || page === Math.ceil(activityLogs.length / logsPerPage))
+                .map((page, idx, arr) => [
+                  idx > 0 && arr[idx - 1] !== page - 1 && <span key={`dot-${page}`} className="px-1 text-gray-400">...</span>,
+                  <Button
+                    key={page}
+                    variant={logCurrentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setLogCurrentPage(page)}
+                    className={logCurrentPage === page ? "bg-[#00A862]" : ""}
+                  >
+                    {page}
+                  </Button>
+                ])
+                .flat()
+                .filter(Boolean)
+              }
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLogCurrentPage(p => Math.min(Math.ceil(activityLogs.length / logsPerPage), p + 1))}
+                disabled={logCurrentPage === Math.ceil(activityLogs.length / logsPerPage)}
+              >
+                다음
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLogCurrentPage(Math.ceil(activityLogs.length / logsPerPage))}
+                disabled={logCurrentPage === Math.ceil(activityLogs.length / logsPerPage)}
+              >
+                마지막
+              </Button>
+            </div>
           </div>
         </Card>
 
         {/* 탭 메뉴 */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">사용자 관리</TabsTrigger>
             <TabsTrigger value="rentals">대여 이력</TabsTrigger>
+            <TabsTrigger value="bikes">자전거 관리</TabsTrigger>
           </TabsList>
 
           {/* 사용자 관리 탭 */}
@@ -738,7 +954,7 @@ useEffect(() => {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredUsers.map((user) => (
+                    {filteredUsers.slice((userCurrentPage - 1) * usersPerPage, userCurrentPage * usersPerPage).map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">{user.name}</td>
                         <td className="px-4 py-3">{user.email}</td>
@@ -796,6 +1012,68 @@ useEffect(() => {
                   </tbody>
                 </table>
               </div>
+
+              {/* 사용자 페이지네이션 */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {filteredUsers.length > 0 ? `${(userCurrentPage - 1) * usersPerPage + 1} - ${Math.min(userCurrentPage * usersPerPage, filteredUsers.length)} / 총 ${filteredUsers.length}개` : '사용자 없음'}
+                </div>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUserCurrentPage(1)}
+                    disabled={userCurrentPage === 1}
+                  >
+                    처음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUserCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={userCurrentPage === 1}
+                  >
+                    이전
+                  </Button>
+                  
+                  {/* 현재 페이지 주변의 페이지만 표시 */}
+                  {Array.from({ length: Math.ceil(filteredUsers.length / usersPerPage) })
+                    .map((_, i) => i + 1)
+                    .filter(page => Math.abs(page - userCurrentPage) <= 2 || page === 1 || page === Math.ceil(filteredUsers.length / usersPerPage))
+                    .map((page, idx, arr) => [
+                      idx > 0 && arr[idx - 1] !== page - 1 && <span key={`dot-${page}`} className="px-1 text-gray-400">...</span>,
+                      <Button
+                        key={page}
+                        variant={userCurrentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setUserCurrentPage(page)}
+                        className={userCurrentPage === page ? "bg-[#00A862]" : ""}
+                      >
+                        {page}
+                      </Button>
+                    ])
+                    .flat()
+                    .filter(Boolean)
+                  }
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUserCurrentPage(p => Math.min(Math.ceil(filteredUsers.length / usersPerPage), p + 1))}
+                    disabled={userCurrentPage === Math.ceil(filteredUsers.length / usersPerPage)}
+                  >
+                    다음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUserCurrentPage(Math.ceil(filteredUsers.length / usersPerPage))}
+                    disabled={userCurrentPage === Math.ceil(filteredUsers.length / usersPerPage)}
+                  >
+                    마지막
+                  </Button>
+                </div>
+              </div>
             </Card>
           </TabsContent>
 
@@ -816,7 +1094,7 @@ useEffect(() => {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {rentals.slice(0, 50).map((rental) => (
+                    {rentals.slice((rentalCurrentPage - 1) * rentalsPerPage, rentalCurrentPage * rentalsPerPage).map((rental) => (
                       <tr key={rental.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           {rental.userName || "-"}
@@ -855,6 +1133,177 @@ useEffect(() => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* 대여 이력 페이지네이션 */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {rentals.length > 0 ? `${(rentalCurrentPage - 1) * rentalsPerPage + 1} - ${Math.min(rentalCurrentPage * rentalsPerPage, rentals.length)} / 총 ${rentals.length}개` : '대여 이력 없음'}
+                </div>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRentalCurrentPage(1)}
+                    disabled={rentalCurrentPage === 1}
+                  >
+                    처음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRentalCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={rentalCurrentPage === 1}
+                  >
+                    이전
+                  </Button>
+                  
+                  {/* 현재 페이지 주변의 페이지만 표시 */}
+                  {Array.from({ length: Math.ceil(rentals.length / rentalsPerPage) })
+                    .map((_, i) => i + 1)
+                    .filter(page => Math.abs(page - rentalCurrentPage) <= 2 || page === 1 || page === Math.ceil(rentals.length / rentalsPerPage))
+                    .map((page, idx, arr) => [
+                      idx > 0 && arr[idx - 1] !== page - 1 && <span key={`dot-${page}`} className="px-1 text-gray-400">...</span>,
+                      <Button
+                        key={page}
+                        variant={rentalCurrentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setRentalCurrentPage(page)}
+                        className={rentalCurrentPage === page ? "bg-[#00A862]" : ""}
+                      >
+                        {page}
+                      </Button>
+                    ])
+                    .flat()
+                    .filter(Boolean)
+                  }
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRentalCurrentPage(p => Math.min(Math.ceil(rentals.length / rentalsPerPage), p + 1))}
+                    disabled={rentalCurrentPage === Math.ceil(rentals.length / rentalsPerPage)}
+                  >
+                    다음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRentalCurrentPage(Math.ceil(rentals.length / rentalsPerPage))}
+                    disabled={rentalCurrentPage === Math.ceil(rentals.length / rentalsPerPage)}
+                  >
+                    마지막
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* 자전거 관리 탭 */}
+          <TabsContent value="bikes">
+            <Card className="p-6">
+              <div className="mb-4 flex justify-between items-center">
+                <h3 className="text-lg font-semibold">자전거 목록 ({bikes.length})</h3>
+                <Button onClick={() => setIsBikeDialogOpen(true)} className="bg-[#00A862] hover:bg-[#007F4E]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  새 자전거 추가
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm">자전거 번호</th>
+                      <th className="px-4 py-3 text-left text-sm">상태</th>
+                      <th className="px-4 py-3 text-left text-sm">대여소 ID</th>
+                      <th className="px-4 py-3 text-left text-sm">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bikes.slice((bikeCurrentPage - 1) * bikesPerPage, bikeCurrentPage * bikesPerPage).map((bike) => (
+                      <tr key={bike.bike_id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium">{bike.bike_number || bike.bike_id}</td>
+                        <td className="px-4 py-3">
+                          <Badge className={bike.status === 'available' ? 'bg-[#00A862]' : bike.status === 'rented' ? 'bg-blue-500' : 'bg-gray-500'}>
+                            {bike.status === 'available' ? '대여가능' : bike.status === 'rented' ? '대여중' : '정비중'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">{bike.station_id || "-"}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleDeleteBike(bike.bike_id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 자전거 페이지네이션 */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {bikes.length > 0 ? `${(bikeCurrentPage - 1) * bikesPerPage + 1} - ${Math.min(bikeCurrentPage * bikesPerPage, bikes.length)} / 총 ${bikes.length}개` : '자전거 없음'}
+                </div>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBikeCurrentPage(1)}
+                    disabled={bikeCurrentPage === 1}
+                  >
+                    처음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBikeCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={bikeCurrentPage === 1}
+                  >
+                    이전
+                  </Button>
+                  
+                  {/* 현재 페이지 주변의 페이지만 표시 */}
+                  {Array.from({ length: Math.ceil(bikes.length / bikesPerPage) })
+                    .map((_, i) => i + 1)
+                    .filter(page => Math.abs(page - bikeCurrentPage) <= 2 || page === 1 || page === Math.ceil(bikes.length / bikesPerPage))
+                    .map((page, idx, arr) => [
+                      idx > 0 && arr[idx - 1] !== page - 1 && <span key={`dot-${page}`} className="px-1 text-gray-400">...</span>,
+                      <Button
+                        key={page}
+                        variant={bikeCurrentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBikeCurrentPage(page)}
+                        className={bikeCurrentPage === page ? "bg-[#00A862]" : ""}
+                      >
+                        {page}
+                      </Button>
+                    ])
+                    .flat()
+                    .filter(Boolean)
+                  }
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBikeCurrentPage(p => Math.min(Math.ceil(bikes.length / bikesPerPage), p + 1))}
+                    disabled={bikeCurrentPage === Math.ceil(bikes.length / bikesPerPage)}
+                  >
+                    다음
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBikeCurrentPage(Math.ceil(bikes.length / bikesPerPage))}
+                    disabled={bikeCurrentPage === Math.ceil(bikes.length / bikesPerPage)}
+                  >
+                    마지막
+                  </Button>
+                </div>
               </div>
             </Card>
           </TabsContent>
@@ -1154,6 +1603,62 @@ useEffect(() => {
                 }}
               >
                 취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 자전거 추가 다이얼로그 */}
+      <Dialog open={isBikeDialogOpen} onOpenChange={setIsBikeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>새 자전거 추가</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bike-number">자전거 번호</Label>
+              <Input
+                id="bike-number"
+                placeholder="자전거 번호"
+                value={bikeForm.bike_number}
+                onChange={(e) => setBikeForm({ ...bikeForm, bike_number: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="bike-status">상태</Label>
+              <select
+                id="bike-status"
+                className="w-full border rounded px-3 py-2"
+                value={bikeForm.status}
+                onChange={(e) => setBikeForm({ ...bikeForm, status: e.target.value })}
+              >
+                <option value="available">대여가능</option>
+                <option value="rented">대여중</option>
+                <option value="maintenance">정비중</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="bike-station">대여소 ID (선택)</Label>
+              <Input
+                id="bike-station"
+                placeholder="대여소 ID"
+                value={bikeForm.station_id}
+                onChange={(e) => setBikeForm({ ...bikeForm, station_id: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsBikeDialogOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleAddBike}
+                className="bg-[#00A862] hover:bg-[#007F4E]"
+              >
+                추가
               </Button>
             </div>
           </div>

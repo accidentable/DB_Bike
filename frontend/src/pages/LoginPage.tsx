@@ -6,7 +6,7 @@
  * - authApi: login, kakaoLogin
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -98,7 +98,7 @@ export default function LoginPage() {
       const Kakao = (window as any).Kakao;
       
       if (!Kakao.isInitialized()) {
-        Kakao.init(process.env.REACT_APP_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
+        Kakao.init(import.meta.env.VITE_KAKAO_APP_KEY || '0ddb80336b17ea45f9f7c27852fbea10');
       }
 
       // 카카오 로그인 실행
@@ -112,7 +112,23 @@ export default function LoginPage() {
             const result = await kakaoLogin(authObj.access_token);
             
             if (result.success && result.data) {
-              alert(`환영합니다, ${result.data.user.username}님!`);
+              const { token, user } = result.data;
+              
+              // 로컬스토리지 초기화
+              localStorage.clear();
+              
+              // 새로운 인증 데이터 저장
+              localStorage.setItem('authToken', token);
+              localStorage.setItem('user', JSON.stringify(user));
+              
+              // 로그인 상태 변경 이벤트 발생
+              const loginEvent = new CustomEvent('loginStatusChanged', {
+                detail: { user }
+              });
+              window.dispatchEvent(loginEvent);
+              
+              alert(`환영합니다, ${user.username}님!`);
+              
               setTimeout(() => {
                 navigate('/');
               }, 100);

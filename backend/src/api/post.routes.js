@@ -199,6 +199,31 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/posts/pinned
+ * 고정된 게시글 목록 조회 (공개)
+ * * 성공 응답 (200):
+ * {
+ * success: true,
+ * data: Array // 고정된 게시글 배열
+ * }
+ */
+router.get('/pinned', async (req, res) => {
+  try {
+    const pinnedPosts = await postService.getPinnedPosts();
+    res.status(200).json({
+      success: true,
+      data: pinnedPosts
+    });
+  } catch (error) {
+    console.error('Error fetching pinned posts:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '고정된 게시글을 불러오는 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+/**
  * GET /api/posts/:id
  * 게시글 상세 조회
  * * 경로 파라미터:
@@ -619,31 +644,6 @@ router.get('/:id/like', optionalVerifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: '좋아요 정보를 불러오는 중 오류가 발생했습니다.'
-    });
-  }
-});
-
-/**
- * GET /api/posts/pinned
- * 고정된 게시글 목록 조회
- * * 성공 응답 (200):
- * {
- * success: true,
- * data: Array // 고정된 게시글 배열
- * }
- */
-router.get('/pinned', async (req, res) => {
-  try {
-    const pinnedPosts = await postService.getPinnedPosts();
-    res.status(200).json({
-      success: true,
-      data: pinnedPosts
-    });
-  } catch (error) {
-    console.error('Error fetching pinned posts:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || '고정된 게시글을 불러오는 중 오류가 발생했습니다.'
     });
   }
 });

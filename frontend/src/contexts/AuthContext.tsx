@@ -67,10 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 로그아웃 함수
   const logout = () => {
+    // 카카오 세션 제거
+    if (typeof window !== 'undefined' && (window as any).Kakao) {
+      const Kakao = (window as any).Kakao;
+      if (Kakao.isInitialized()) {
+        Kakao.Auth.logout();
+      }
+    }
+    
     setToken(null);
     setUser(null);
     localStorage.removeItem('authToken');
-    localStorage.removeItem('user'); // 'user' 키로 변경
+    localStorage.removeItem('user');
   };
 
   const isLoggedIn = !!token;
