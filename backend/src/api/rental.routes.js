@@ -63,7 +63,7 @@ router.post('/rent', async (req, res) => {
     const result = await rentalService.rentBike(memberId, bikeId, startStationId);
     res.status(200).json(result);
   } catch (error) {
-    // 서비스나 리포지토리에서 발생한 오류(예: '이용권 없음')
+    // 서비스나 리포지토리에서 발생한 오류
     res.status(400).json({ success: false, message: error.message });
   }
 });

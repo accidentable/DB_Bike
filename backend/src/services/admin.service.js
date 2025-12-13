@@ -112,3 +112,9 @@ exports.getBikes = async () => {
   const bikeRepository = require('../repositories/bike.repository');
   return await bikeRepository.findAll();
 };
+
+// 특정 사용자의 포인트 내역 조회 (관리자용)
+exports.getUserPointHistory = async (memberId, limit = 50) => {
+  const pointService = require('./point.service');
+  return await pointService.getPointHistory(memberId, limit);
+};

@@ -17,6 +17,7 @@ import PurchasePage from './pages/PurchasePage';
 import FAQPage from './pages/FAQPage';
 import RankingPage from './pages/RankingPage';
 import ContactPage from './pages/ContactPage'; // 문의 페이지 import
+import KakaoCallbackPage from './pages/KakaoCallbackPage'; // 카카오 콜백 페이지 import
 // ... (다른 페이지들도 import)
 
 import AdminRoute from './AdminRoute';
@@ -31,6 +32,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/kakao-callback" element={<KakaoCallbackPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/purchase" element={<PurchasePage />} />

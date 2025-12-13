@@ -6,6 +6,7 @@ export interface PointTransaction {
   amount: number;
   type: 'CHARGE' | 'USE' | 'SIGNUP_BONUS';
   description: string;
+  balance_after: number;
   created_at: string;
 }
 

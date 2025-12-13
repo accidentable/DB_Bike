@@ -101,7 +101,7 @@ const authService = {
   },
 
   // 카카오 로그인/회원가입 처리
-  kakaoLogin: async (accessToken) => {
+  kakaoLogin: async (accessToken, isSignup = false) => {
     try {
       const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
         headers: {
@@ -119,7 +119,7 @@ const authService = {
       const kakaoEmail = kakaoUser.kakao_account?.email;
       const kakaoNickname = kakaoUser.kakao_account?.profile?.nickname || `카카오${kakaoId}`;
 
-      console.log('📝 카카오 로그인 시도:', { kakaoId, kakaoEmail, kakaoNickname });
+      console.log('📝 카카오 로그인 시도:', { kakaoId, kakaoEmail, kakaoNickname, isSignup });
 
       // 1. 먼저 kakao_id로 사용자 조회
       let user = await memberRepository.findByKakaoId(kakaoId);
@@ -136,6 +136,11 @@ const authService = {
           await memberRepository.updateKakaoId(user.member_id, kakaoId);
           user = await memberRepository.findByKakaoId(kakaoId);
         }
+      }
+
+      // 회원가입 모드이고 이미 가입된 사용자면 에러 반환
+      if (isSignup && user) {
+        throw new Error('이미 가입된 카카오 계정입니다. 로그인 페이지에서 로그인해주세요.');
       }
 
       // 4. 여전히 없으면 새로운 사용자 생성

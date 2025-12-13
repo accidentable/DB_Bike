@@ -193,3 +193,26 @@ export async function getRentals(): Promise<Rental[]> {
   const response = await client.get('/api/admin/rentals');
   return response.data;
 }
+
+/**
+ * 포인트 트랜잭션 타입
+ */
+export interface PointTransaction {
+  transaction_id: number;
+  member_id: number;
+  amount: number;
+  type: 'CHARGE' | 'USE' | 'SIGNUP_BONUS';
+  description: string;
+  balance_after: number;
+  created_at: string;
+}
+
+/**
+ * 특정 사용자의 포인트 내역 조회 (관리자용)
+ */
+export async function getUserPointHistory(userId: number, limit: number = 50): Promise<PointTransaction[]> {
+  const response = await client.get(`/api/admin/users/${userId}/point-history`, {
+    params: { limit }
+  });
+  return response.data.data;
+}

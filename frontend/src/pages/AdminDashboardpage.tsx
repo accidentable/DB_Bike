@@ -20,8 +20,8 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser, getBikes, addBike, updateBike, deleteBike } from "../api/adminApi";
-import type { ActivityLog, DistrictStat, StationRentalRate } from "../api/adminApi";
+import { getDashboardStats, getUsers, getRentals, updateUser, deleteUser, getActivityLogs, getDistrictStats, getStationRentalRates, grantTicketToUser, getBikes, addBike, updateBike, deleteBike, getUserPointHistory } from "../api/adminApi";
+import type { ActivityLog, DistrictStat, StationRentalRate, PointTransaction } from "../api/adminApi";
 import { getTicketTypes } from "../api/ticketApi";
 import type { TicketType } from "../api/ticketApi";
 import { getAllStations, createStation, updateStation, deleteStation } from "../api/stationApi";
@@ -63,6 +63,9 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
   const [isBikeDialogOpen, setIsBikeDialogOpen] = useState(false);
   const [bikeCurrentPage, setBikeCurrentPage] = useState(1);
   const bikesPerPage = 20; // 페이지당 자전거 개수
+  const [isPointHistoryDialogOpen, setIsPointHistoryDialogOpen] = useState(false);
+  const [pointHistory, setPointHistory] = useState<PointTransaction[]>([]);
+  const [isLoadingPointHistory, setIsLoadingPointHistory] = useState(false);
   const [userCurrentPage, setUserCurrentPage] = useState(1);
   const usersPerPage = 20; // 페이지당 사용자 개수
   const [rentalCurrentPage, setRentalCurrentPage] = useState(1);
@@ -92,7 +95,7 @@ const [rentalRateData, setRentalRateData] = useState<StationRentalRate[]>([]);  
   useEffect(() => {
     loadData();
     loadTicketTypes();
-  }, []);
+  }, []); 
 
   const loadTicketTypes = async () => {
     try {
@@ -151,7 +154,7 @@ useEffect(() => {
         email: user.email,
         createdAt: user.created_at,
         totalRides: parseInt(user.total_rides || 0, 10), // Backend에서 계산된 대여 횟수 사용
-        currentTicket: null, // TODO: 이용권 정보 필요
+        currentTicket: null, // 이용권 정보 필요
         isAdmin: user.role === 'admin',
         role: user.role,
       }));
@@ -212,6 +215,22 @@ useEffect(() => {
       expiryTime: "",
     });
     setIsTicketDialogOpen(true);
+  };
+
+  const handleViewPointHistory = async (user: any) => {
+    setSelectedUser(user);
+    setIsPointHistoryDialogOpen(true);
+    setIsLoadingPointHistory(true);
+    try {
+      const history = await getUserPointHistory(user.id, 100);
+      setPointHistory(history);
+    } catch (error: any) {
+      console.error("포인트 내역 조회 실패:", error);
+      alert("포인트 내역을 불러오는 중 오류가 발생했습니다.");
+      setPointHistory([]);
+    } finally {
+      setIsLoadingPointHistory(false);
+    }
   };
 
   const handleSaveUser = async () => {
@@ -641,41 +660,41 @@ useEffect(() => {
             </div>
             <div className="border border-gray-300 rounded-md overflow-hidden">
               <div className="overflow-y-auto max-h-[500px]">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-800 text-white">
-                    <tr>
-                      <th className="px-4 py-3 text-left">대여소명 ▼</th>
-                      <th className="px-4 py-3 text-left">위치 (좌표) ▼</th>
-                      <th className="px-4 py-3 text-right">대여가능 ▼</th>
-                      <th className="px-4 py-3 text-right">대여중 ▼</th>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-800 text-white">
+                  <tr>
+                    <th className="px-4 py-3 text-left">대여소명 ▼</th>
+                    <th className="px-4 py-3 text-left">위치 (좌표) ▼</th>
+                    <th className="px-4 py-3 text-right">대여가능 ▼</th>
+                    <th className="px-4 py-3 text-right">대여중 ▼</th>
                       <th className="px-4 py-3 text-center">작업</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y bg-gray-700 text-white">
-                    {isLoading && stations.length === 0 ? (
-                      <tr>
+                  </tr>
+                </thead>
+                <tbody className="divide-y bg-gray-700 text-white">
+                  {isLoading && stations.length === 0 ? (
+                    <tr>
                         <td colSpan={5} className="px-4 py-8 text-center text-gray-400">대여소 정보를 불러오는 중...</td>
-                      </tr>
-                    ) : stations.length === 0 ? (
-                      <tr>
+                    </tr>
+                  ) : stations.length === 0 ? (
+                    <tr>
                         <td colSpan={5} className="px-4 py-8 text-center text-gray-400">대여소 정보가 없습니다.</td>
-                      </tr>
-                    ) : (
+                    </tr>
+                  ) : (
                       filteredStations
                         .slice((stationCurrentPage - 1) * stationsPerPage, stationCurrentPage * stationsPerPage)
                         .map((station) => {
-                          const rentedCount = rentals.filter(
-                            (rental) => rental.returnedAt === null && rental.stationName === station.name
-                          ).length;
-                          
-                          return (
-                            <tr key={station.station_id} className="hover:bg-gray-600 transition-colors">
-                              <td className="px-4 py-3">{station.name}</td>
-                              <td className="px-4 py-3 text-gray-300">
-                                {station.latitude.toFixed(6)}, {station.longitude.toFixed(6)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
-                              <td className="px-4 py-3 text-right">{rentedCount}</td>
+                      const rentedCount = rentals.filter(
+                        (rental) => rental.returnedAt === null && rental.stationName === station.name
+                      ).length;
+                      
+                      return (
+                        <tr key={station.station_id} className="hover:bg-gray-600 transition-colors">
+                          <td className="px-4 py-3">{station.name}</td>
+                          <td className="px-4 py-3 text-gray-300">
+                            {station.latitude.toFixed(6)}, {station.longitude.toFixed(6)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-blue-400">{station.bike_count}</td>
+                          <td className="px-4 py-3 text-right">{rentedCount}</td>
                               <td className="px-4 py-3 text-center">
                                 <div className="flex items-center justify-center gap-2">
                                   <Button
@@ -696,12 +715,12 @@ useEffect(() => {
                                   </Button>
                                 </div>
                               </td>
-                            </tr>
-                          );
-                        })
-                    )}
-                  </tbody>
-                </table>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
               </div>
               <div className="bg-gray-800 text-white border-t border-gray-700">
                 <div className="px-4 py-3 flex justify-between items-center">
@@ -1662,6 +1681,69 @@ useEffect(() => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 포인트 내역 다이얼로그 */}
+      <Dialog open={isPointHistoryDialogOpen} onOpenChange={setIsPointHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedUser?.name || selectedUser?.email}님의 포인트 사용 내역
+            </DialogTitle>
+          </DialogHeader>
+          {isLoadingPointHistory ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">포인트 내역을 불러오는 중...</p>
+            </div>
+          ) : pointHistory.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">포인트 사용 내역이 없습니다.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">날짜</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">유형</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">내용</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">금액</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">잔액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pointHistory.map((transaction) => (
+                    <tr key={transaction.transaction_id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {new Date(transaction.created_at).toLocaleString('ko-KR')}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          className={
+                            transaction.type === 'CHARGE' || transaction.type === 'SIGNUP_BONUS'
+                              ? 'bg-green-500'
+                              : 'bg-red-500'
+                          }
+                        >
+                          {transaction.type === 'CHARGE' ? '충전' : transaction.type === 'USE' ? '사용' : '보너스'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700">{transaction.description}</td>
+                      <td className={`py-3 px-4 text-sm text-right font-medium ${
+                        transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString()}P
+                      </td>
+                      <td className="py-3 px-4 text-sm text-right text-gray-600">
+                        {transaction.balance_after.toLocaleString()}P
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -134,10 +134,12 @@ export function isAuthenticated(): boolean {
 
 /**
  * 카카오 로그인
+ * @param accessToken 카카오 액세스 토큰
+ * @param isSignup 회원가입 모드 여부 (true면 이미 가입된 사용자면 에러 반환)
  */
-export async function kakaoLogin(accessToken: string): Promise<ApiResponse<LoginResponse>> {
+export async function kakaoLogin(accessToken: string, isSignup: boolean = false): Promise<ApiResponse<LoginResponse>> {
   try {
-    const response = await client.post('/api/auth/kakao', { accessToken });
+    const response = await client.post('/api/auth/kakao', { accessToken, isSignup });
     
     if (!response.data.success) {
       throw new Error(response.data.message || '카카오 로그인에 실패했습니다.');

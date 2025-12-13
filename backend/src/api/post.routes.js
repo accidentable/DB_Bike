@@ -255,7 +255,7 @@ router.get('/:id', async (req, res) => {
     // 내부적으로 조회수 증가 처리
     const post = await postService.getPostById(postId);
 
-    // 3. 성공 응답 반환 (200 OK)
+    // 3. 성공 응답 반환 
     res.status(200).json({
       success: true,
       data: post
@@ -361,7 +361,7 @@ router.put('/:id', verifyToken, upload.fields([
 });
 
 /**
- * DELETE /api/posts/:id
+ *  
  * 게시글 삭제
  * * 경로 파라미터:
  * - id: number (필수) - 게시글 ID

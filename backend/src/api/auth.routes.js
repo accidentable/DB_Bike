@@ -115,10 +115,11 @@ router.post('/signup', async (req, res) => {
  * 
  * 요청 본문:
  *   - accessToken: string (필수) - 카카오 액세스 토큰
+ *   - isSignup: boolean (선택) - 회원가입 모드 여부 (true면 이미 가입된 사용자면 에러 반환)
  */
 router.post('/kakao', async (req, res) => {
   try {
-    const { accessToken } = req.body;
+    const { accessToken, isSignup = false } = req.body;
 
     if (!accessToken) {
       return res.status(400).json({
@@ -127,7 +128,7 @@ router.post('/kakao', async (req, res) => {
       });
     }
 
-    const result = await authService.kakaoLogin(accessToken);
+    const result = await authService.kakaoLogin(accessToken, isSignup);
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {

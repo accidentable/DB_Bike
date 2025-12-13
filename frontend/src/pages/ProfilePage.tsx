@@ -25,6 +25,8 @@ import { getMyActiveTickets } from "../api/ticketApi";
 import { getRentalHistory } from "../api/rentalApi";
 import { getMyAchievements, claimAchievementPoints } from "../api/achievementApi";
 import { getTotalDistanceRanking } from "../api/rankingApi";
+import { getPointHistory } from "../api/pointApi";
+import type { PointTransaction } from "../api/pointApi";
 import { useNavigate } from "react-router-dom";
 
 
@@ -50,7 +52,7 @@ interface Achievement {
 
 export default function ProfilePage(_props: ProfilePageProps = {}) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"info" | "achievements">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "achievements" | "points">("info");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
@@ -60,6 +62,8 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [pointHistory, setPointHistory] = useState<PointTransaction[]>([]);
+  const [isLoadingPointHistory, setIsLoadingPointHistory] = useState(false);
   const [statsData, setStatsData] = useState({
     carbonReduction: 0,
     avgRentalTime: 0,
@@ -131,13 +135,13 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           };
         }
 
-        const historyResponse = await getRentalHistory();
-        let totalRides = 0;
-        let totalDistance = 0;
+const historyResponse = await getRentalHistory();
+let totalRides = 0;
+let totalDistance = 0;
         let totalRentalTime = 0;
 
-        if (historyResponse.success && historyResponse.data) {
-          totalRides = historyResponse.data.length;
+if (historyResponse.success && historyResponse.data) {
+  totalRides = historyResponse.data.length;
           historyResponse.data.forEach((rental) => {
             totalDistance += rental.distance_km || 0;
             if (rental.start_time && rental.end_time) {
@@ -223,6 +227,26 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
     loadUserData();
   }, [navigate]);
 
+  // 포인트 내역 로드
+  useEffect(() => {
+    if (activeTab === "points" && isAuthenticated()) {
+      const loadPointHistory = async () => {
+        setIsLoadingPointHistory(true);
+        try {
+          const response = await getPointHistory();
+          if (response.success && response.data) {
+            setPointHistory(response.data);
+          }
+        } catch (err) {
+          console.error("포인트 내역 로드 실패:", err);
+        } finally {
+          setIsLoadingPointHistory(false);
+        }
+      };
+      loadPointHistory();
+    }
+  }, [activeTab]);
+
   const handleEditProfile = async () => {
     setError("");
     setSuccess("");
@@ -292,7 +316,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
 
         setSuccess("프로필이 수정되었습니다.");
         setTimeout(() => {
-          setIsEditDialogOpen(false);
+    setIsEditDialogOpen(false);
           setEditForm({
             name: response.data.username,
             phone: editForm.phone,
@@ -340,7 +364,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
       setError("새 비밀번호가 일치하지 않습니다.");
       return;
     }
-
+    
     setIsLoading(true);
 
     try {
@@ -390,7 +414,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
         setPasswordStep("complete");
         setSuccess("비밀번호가 성공적으로 변경되었습니다.");
         setTimeout(() => {
-          setIsPasswordDialogOpen(false);
+    setIsPasswordDialogOpen(false);
           setPasswordStep("password");
           setPasswordForm({
             currentPassword: "",
@@ -564,6 +588,16 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           >
             업적
           </button>
+          <button
+            onClick={() => setActiveTab("points")}
+            className={`px-6 py-3 transition-colors ${
+              activeTab === "points"
+                ? "border-b-2 border-[#00A862] text-[#00A862]"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            포인트 내역
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -603,7 +637,7 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
               </div>
             </Card>
           </div>
-        ) : (
+        ) : activeTab === "achievements" ? (
           <div>
             <div className="mb-6">
               <h2 className="mb-2">업적 ({achievements.filter(a => a.earned).length}/{achievements.length})</h2>
@@ -683,7 +717,68 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
               ))}
             </div>
           </div>
-        )}
+        ) : activeTab === "points" ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="mb-2">포인트 사용 내역</h2>
+              <p className="text-gray-600">포인트 충전 및 사용 내역을 확인할 수 있습니다.</p>
+            </div>
+            {isLoadingPointHistory ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">포인트 내역을 불러오는 중...</p>
+              </div>
+            ) : pointHistory.length === 0 ? (
+              <Card className="p-6">
+                <p className="text-center text-gray-500">포인트 사용 내역이 없습니다.</p>
+              </Card>
+            ) : (
+              <Card className="p-6">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">날짜</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">유형</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">내용</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">금액</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">잔액</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pointHistory.map((transaction) => (
+                        <tr key={transaction.transaction_id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {new Date(transaction.created_at).toLocaleString('ko-KR')}
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge
+                              className={
+                                transaction.type === 'CHARGE' || transaction.type === 'SIGNUP_BONUS'
+                                  ? 'bg-green-500'
+                                  : 'bg-red-500'
+                              }
+                            >
+                              {transaction.type === 'CHARGE' ? '충전' : transaction.type === 'USE' ? '사용' : '보너스'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700">{transaction.description}</td>
+                          <td className={`py-3 px-4 text-sm text-right font-medium ${
+                            transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString()}P
+                          </td>
+                          <td className="py-3 px-4 text-sm text-right text-gray-600">
+                            {transaction.balance_after.toLocaleString()}P
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </div>
+        ) : null}
 
       </div>
 
@@ -904,14 +999,14 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
           <div className="space-y-4">
             {passwordStep === "password" && (
               <>
-                <div>
-                  <Label htmlFor="current-password">현재 비밀번호</Label>
+            <div>
+              <Label htmlFor="current-password">현재 비밀번호</Label>
                   <div className="relative mt-1">
-                    <Input
-                      id="current-password"
+              <Input
+                id="current-password"
                       type={passwordForm.showCurrentPassword ? "text" : "password"}
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                       placeholder="현재 비밀번호를 입력하세요"
                       className="pr-12"
                     />
@@ -925,17 +1020,17 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                     >
                       {passwordForm.showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </div>
+            </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="new-password">새 비밀번호</Label>
+            <div>
+              <Label htmlFor="new-password">새 비밀번호</Label>
                   <div className="relative mt-1">
-                    <Input
-                      id="new-password"
+              <Input
+                id="new-password"
                       type={passwordForm.showNewPassword ? "text" : "password"}
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                       placeholder="새 비밀번호를 입력하세요 (6자 이상)"
                       className="pr-12"
                     />
@@ -949,17 +1044,17 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                     >
                       {passwordForm.showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </div>
+            </div>
                 </div>
 
-                <div>
+            <div>
                   <Label htmlFor="confirm-password">비밀번호 확인</Label>
                   <div className="relative mt-1">
-                    <Input
-                      id="confirm-password"
+              <Input
+                id="confirm-password"
                       type={passwordForm.showConfirmPassword ? "text" : "password"}
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       placeholder="비밀번호를 다시 입력하세요"
                       className="pr-12"
                     />
@@ -973,14 +1068,14 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                     >
                       {passwordForm.showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </div>
+            </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
+            <div className="flex gap-2">
+              <Button
                     onClick={handleRequestPasswordChange}
-                    className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
-                    disabled={isLoading}
+                className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
+                disabled={isLoading}
                   >
                     {isLoading ? "확인 중..." : "다음"}
                   </Button>
@@ -1022,11 +1117,11 @@ export default function ProfilePage(_props: ProfilePageProps = {}) {
                     onClick={handleCompletePasswordChange}
                     className="flex-1 bg-[#00A862] hover:bg-[#008F54]"
                     disabled={isLoading || passwordForm.verificationCode.length !== 6}
-                  >
-                    {isLoading ? "변경 중..." : "변경"}
-                  </Button>
-                  <Button
-                    variant="outline"
+              >
+                {isLoading ? "변경 중..." : "변경"}
+              </Button>
+              <Button
+                variant="outline"
                     onClick={() => setPasswordStep("password")}
                     disabled={isLoading}
                   >

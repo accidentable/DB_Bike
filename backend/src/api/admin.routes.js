@@ -11,6 +11,7 @@
  * - GET    /api/admin/activity-logs             - Activity Log 조회
  * - GET    /api/admin/district-stats            - 지역구별 대여소 현황 조회
  * - GET    /api/admin/station-rental-rates      - 대여소별 대여율 조회
+ * - GET    /api/admin/users/:userId/point-history - 특정 사용자의 포인트 내역 조회
  */
 
 const express = require('express');
@@ -193,6 +194,30 @@ router.post('/users/:userId/tickets', async (req, res, next) => {
       success: true,
       message: result.message,
       data: result.ticket
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 특정 사용자의 포인트 내역 조회 (관리자용)
+router.get('/users/:userId/point-history', async (req, res, next) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const limit = parseInt(req.query.limit, 10) || 50;
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: '유효하지 않은 사용자 ID입니다.'
+      });
+    }
+
+    const history = await adminService.getUserPointHistory(userId, limit);
+    
+    res.status(200).json({
+      success: true,
+      data: history
     });
   } catch (error) {
     next(error);
