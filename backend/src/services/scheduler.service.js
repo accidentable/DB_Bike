@@ -54,7 +54,7 @@ async function updateBikeCounts() {
     });
 
     await Promise.all(updatePromises);
-    console.log(`[스케줄러] ✅ 성공: ${allStations.length}개 대여소의 재고가 업데이트되었습니다.`);
+    console.log(`[스케줄러] 성공: ${allStations.length}개 대여소의 재고가 업데이트되었습니다.`);
 
   } catch (error) {
     console.error('[스케줄러] DB 업데이트 중 오류:', error);

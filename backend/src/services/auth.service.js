@@ -119,20 +119,15 @@ const authService = {
       const kakaoEmail = kakaoUser.kakao_account?.email;
       const kakaoNickname = kakaoUser.kakao_account?.profile?.nickname || `카카오${kakaoId}`;
 
-      console.log('📝 카카오 로그인 시도:', { kakaoId, kakaoEmail, kakaoNickname, isSignup });
-
       // 1. 먼저 kakao_id로 사용자 조회
       let user = await memberRepository.findByKakaoId(kakaoId);
-      console.log('✅ findByKakaoId 결과:', user ? '사용자 존재' : '사용자 없음');
 
       // 2. kakao_id로 없으면 이메일로 조회
       if (!user && kakaoEmail) {
-        console.log('📧 이메일로 사용자 조회 시도:', kakaoEmail);
         user = await memberRepository.findByEmail(kakaoEmail);
         
         // 3. 이메일로 찾은 사용자가 있으면 kakao_id 업데이트
         if (user) {
-          console.log('✅ 이메일로 찾은 사용자 존재, kakao_id 업데이트');
           await memberRepository.updateKakaoId(user.member_id, kakaoId);
           user = await memberRepository.findByKakaoId(kakaoId);
         }
@@ -145,8 +140,6 @@ const authService = {
 
       // 4. 여전히 없으면 새로운 사용자 생성
       if (!user) {
-        console.log('🆕 새 사용자 생성');
-        
         // username 중복 체크 및 고유한 username 생성
         let finalUsername = kakaoNickname;
         let usernameExists = await memberRepository.findByUsername(finalUsername);
@@ -158,8 +151,6 @@ const authService = {
           usernameExists = await memberRepository.findByUsername(finalUsername);
           counter++;
         }
-        
-        console.log('✅ 최종 username:', finalUsername);
         
         const randomPassword = require('crypto').randomBytes(32).toString('hex');
         const hashedPassword = await bcrypt.hash(randomPassword, 10);
@@ -173,7 +164,6 @@ const authService = {
         );
         
         user = await memberRepository.findByKakaoId(kakaoId);
-        console.log('✅ 새 사용자 생성 완료');
       }
 
       if (!user) {
@@ -190,8 +180,6 @@ const authService = {
         { expiresIn: '1h' }
       );
 
-      console.log('✅ 카카오 로그인 성공:', { memberId: user.member_id, email: user.email });
-
       return {
         token: token,
         user: {
@@ -204,7 +192,6 @@ const authService = {
         }
       };
     } catch (error) {
-      console.error('❌ 카카오 로그인 에러:', error);
       throw new Error(error.message || '카카오 로그인에 실패했습니다.');
     }
   },

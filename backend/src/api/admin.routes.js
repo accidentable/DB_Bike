@@ -28,10 +28,8 @@ const JWT_SECRET = process.env.JWT_SECRET_KEY || process.env.JWT_SECRET || 'dev-
 router.post('/auth-password', async (req, res, next) => {
   try {
     const { password } = req.body;
-    console.log('📝 관리자 비밀번호 요청:', password);
     
     if (!password || password !== ADMIN_PASSWORD) {
-      console.log('❌ 비밀번호 불일치');
       return res.status(401).json({
         success: false,
         message: '비밀번호가 올바르지 않습니다.'
@@ -42,17 +40,15 @@ router.post('/auth-password', async (req, res, next) => {
     const token = jwt.sign(
       { id: 'admin-temp', role: 'admin', type: 'password-auth' },
       JWT_SECRET,
-      { expiresIn: '2h' } // 2시간 유효
+      { expiresIn: '2h' }
     );
     
-    console.log('✅ 토큰 발급됨:', token);
     res.json({
       success: true,
       message: '관리자 인증 성공',
       token
     });
   } catch (error) {
-    console.error('❌ 토큰 발급 에러:', error);
     next(error);
   }
 });

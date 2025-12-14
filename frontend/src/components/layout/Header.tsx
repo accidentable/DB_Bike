@@ -44,7 +44,6 @@ export default function Header() {
       if (response.data.success && response.data.token) {
         // 토큰을 localStorage에 저장
         localStorage.setItem('authToken', response.data.token);
-        console.log('✅ 토큰 저장됨:', response.data.token);
         
         // 모달 닫고 관리자 페이지로 이동
         setIsAdminDialogOpen(false);
@@ -53,7 +52,6 @@ export default function Header() {
         navigate('/admin');
       }
     } catch (error) {
-      console.error('❌ 관리자 인증 실패:', error);
       setAdminError('비밀번호가 틀렸습니다.');
       setAdminPassword('');
     }

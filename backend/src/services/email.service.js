@@ -32,9 +32,8 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       pass: process.env.EMAIL_PASS
     }
   });
-  console.log('✅ Gmail SMTP 설정 완료');
 } else {
-  console.log('❌ Gmail SMTP 설정 실패 - 환경변수 누락');
+  console.log('Gmail SMTP 설정 실패 - 환경변수 누락');
 }
 
 const emailService = {
@@ -95,7 +94,6 @@ const emailService = {
       }
 
       await transporter.sendMail(mailOptions);
-      console.log(`✅ 인증 코드 이메일 발송 완료: ${email}`);
       
       return code;
     } catch (error) {
